@@ -26,6 +26,19 @@ spec = do
   specBoolOps "Bool" True
   specBoolOps "Maybe Bool" (Just True)
   specBoolOps "Maybe (Maybe Bool)" (Just (Just True))
+  describe "mixed type ops" $ do
+    it "can do True || Just False" $ do
+      True || Just False `shouldBe` Just True
+    it "can do True || Nothing" $ do
+      True || (Nothing :: Maybe Bool) `shouldBe` Just True
+    it "can do Nothing || True" $ do
+      (Nothing :: Maybe Bool) || True `shouldBe` Just True
+    it "can do True || Just (Just False)" $ do
+      True || Just (Just False) `shouldBe` Just (Just True)
+    it "can do True || Just Nothing" $ do
+      True || Just (Nothing :: Maybe Bool) `shouldBe` Just (Just True)
+    it "can do Just Nothing || True" $ do
+      Just (Nothing :: Maybe Bool) || True `shouldBe` Just (Just True)
   where
   specBoolOps typeName (_typeSample :: t) =
     describe (printf "ops on %s" typeName) $ do

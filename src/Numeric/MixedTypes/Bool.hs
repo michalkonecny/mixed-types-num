@@ -137,24 +137,42 @@ instance CanAndOr Bool Bool where
   and2 = (P.&&)
   or2 = (P.||)
 
-instance (CanAndOr t1 t2) => CanAndOr (Maybe t1) (Maybe t2) where
+instance (CanAndOr t1 t2, HasBools t1, HasBools t2, HasBools (AndOrType t1 t2)) =>
+  CanAndOr (Maybe t1) (Maybe t2)
+  where
   type AndOrType (Maybe t1) (Maybe t2) = Maybe (AndOrType t1 t2)
+  and2 (Just b1) _ | isCertainlyFalse b1 = Just (convert False)
+  and2 _ (Just b2) | isCertainlyFalse b2 = Just (convert False)
   and2 (Just b1) (Just b2) = Just (b1 && b2)
   and2 _ _ = Nothing
+  or2 (Just b1) _ | isCertainlyTrue b1 = Just (convert True)
+  or2 _ (Just b2) | isCertainlyTrue b2 = Just (convert True)
   or2 (Just b1) (Just b2) = Just (b1 || b2)
   or2 _ _ = Nothing
 
-instance (CanAndOr Bool t2) => CanAndOr Bool (Maybe t2) where
+instance (CanAndOr Bool t2, HasBools t2, HasBools (AndOrType Bool t2)) =>
+  CanAndOr Bool (Maybe t2)
+  where
   type AndOrType Bool (Maybe t2) = Maybe (AndOrType Bool t2)
+  and2 False _ = Just (convert False)
+  and2 _ (Just b2) | isCertainlyFalse b2 = Just (convert False)
   and2 b1 (Just b2) = Just (b1 && b2)
   and2 _ _ = Nothing
+  or2 True _ = Just (convert True)
+  or2 _ (Just b2) | isCertainlyTrue b2 = Just (convert True)
   or2 b1 (Just b2) = Just (b1 || b2)
   or2 _ _ = Nothing
 
-instance (CanAndOr t1 Bool) => CanAndOr (Maybe t1) Bool where
+instance (CanAndOr t1 Bool, HasBools t1, HasBools (AndOrType t1 Bool)) =>
+  CanAndOr (Maybe t1) Bool
+  where
   type AndOrType (Maybe t1) Bool = Maybe (AndOrType t1 Bool)
+  and2 _ False = Just (convert False)
+  and2 (Just b1) _ | isCertainlyFalse b1 = Just (convert False)
   and2 (Just b1) b2 = Just (b1 && b2)
   and2 _ _ = Nothing
+  or2 _ True = Just (convert True)
+  or2 (Just b1) _ | isCertainlyTrue b1 = Just (convert True)
   or2 (Just b1) b2 = Just (b1 || b2)
   or2 _ _ = Nothing
 
