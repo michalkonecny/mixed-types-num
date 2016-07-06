@@ -1,6 +1,6 @@
 {-|
     Module      :  Numeric.MixedType.BoolSpec
-    Description :  hspec tests for Literals
+    Description :  hspec tests for generic Boolean operations
     Copyright   :  (c) Michal Konecny
     License     :  BSD3
 
