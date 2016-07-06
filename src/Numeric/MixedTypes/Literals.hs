@@ -1,6 +1,6 @@
 {-|
     Module      :  Numeric.MixedType.Literals
-    Description :  Fixed-type numeric literals + conversions
+    Description :  Fixed-type numeric literals, conversions
     Copyright   :  (c) Michal Konecny
     License     :  BSD3
 

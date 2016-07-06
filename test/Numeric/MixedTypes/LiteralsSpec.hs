@@ -21,6 +21,11 @@ import Test.QuickCheck
 
 spec :: Spec
 spec = do
+  describe "generic list index (!!)" $ do
+    it "works using Int index" $ do
+      property $ \ x -> (x P.>= (int 0)) ==> ([(int 0)..x] !! x) P.== x
+    it "works using Integer index" $ do
+      property $ \ x -> (x P.>= 0) ==> ([0..x] !! x) P.== x
   describe "numeric conversions" $ do
     it "convert int to integer and back" $ do
       property $ \ x -> (int $ integer x) P.== x
