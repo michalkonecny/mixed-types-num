@@ -71,7 +71,9 @@ test-suite spec
       -Wall
   extensions:
     RebindableSyntax,
-    PostfixOperators
+    PostfixOperators,
+    ScopedTypeVariables,
+    FlexibleContexts
   hs-source-dirs:
       test
   main-is:
@@ -79,5 +81,7 @@ test-suite spec
   build-depends:
     base == 4.*
     , mixed-types-num
-    , hspec == 2.*
+    , hspec == 2.2.*
+    , hspec-smallcheck == 0.4.*
     , QuickCheck == 2.8.*
+    , smallcheck == 1.1.*

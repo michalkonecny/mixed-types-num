@@ -14,26 +14,30 @@ module Numeric.MixedTypes.LiteralsSpec (spec) where
 import Numeric.MixedTypes
 import qualified Prelude as P
 
+import Text.Printf
 import Control.Exception (evaluate)
 
 import Test.Hspec
-import Test.QuickCheck
+import qualified Test.QuickCheck as QC
+-- import qualified Test.Hspec.SmallCheck as SC
 
 spec :: Spec
 spec = do
-  describe "generic list index (!!)" $ do
-    it "works using Int index" $ do
-      property $ \ x -> (x P.>= (int 0)) ==> ([(int 0)..x] !! x) P.== x
-    it "works using Integer index" $ do
-      property $ \ x -> (x P.>= 0) ==> ([0..x] !! x) P.== x
+  specIndex "Int" (int 0)
+  specIndex "Integer" 0
   describe "numeric conversions" $ do
     it "convert int to integer and back" $ do
-      property $ \ x -> (int $ integer x) P.== x
+      QC.property $ \ (x :: Int) -> (int $ integer x) P.== x
     it "throws exception when converting large integer to int" $ do
       (evaluate $ int (integer (maxBound :: Int) P.+ 1)) `shouldThrow` anyException
     it "convert int to rational and back" $ do
-      property $ \ x -> (round $ rational x) P.== (x :: Int)
+      QC.property $ \ (x :: Int) -> (round $ rational x) P.== x
     it "convert integer to rational and back" $ do
-      property $ \ x -> (round $ rational x) P.== (x :: Integer)
+      QC.property $ \ (x :: Integer) -> (round $ rational x) P.== x
     it "convert double to rational and back" $ do
-      property $ \ x -> (double $ toRational x) P.== (x :: Double)
+      QC.property $ \ (x :: Double) -> (double $ toRational x) P.== x
+    where
+    specIndex typeName (_typeSample :: t) =
+      describe "generic list index (!!)" $ do
+        it (printf "works using %s index" typeName) $ do
+          QC.property $ \ (x :: t) -> let xi = integer x in (xi P.>= 0) QC.==> ([0..xi] !! x) P.== xi
