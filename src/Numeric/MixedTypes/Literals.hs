@@ -40,7 +40,7 @@ module Numeric.MixedTypes.Literals
     -- * Generic list index
     , (!!)
     -- * Convenient conversions
-    , CanBeInteger, integer, integers
+    , CanBeInteger, integer, integers, specCanBeInteger
     , CanBeInt, int, ints
     , CanBeRational, rational, rationals
     , CanBeDouble, double, doubles
@@ -49,11 +49,16 @@ module Numeric.MixedTypes.Literals
 where
 
 import Prelude hiding (fromInteger, fromRational, (!!))
--- import qualified Prelude as P
+import qualified Prelude as P
+import Text.Printf
 
 import qualified Data.Convertible as CVT
 
 import qualified Data.List as List
+
+import Test.Hspec
+import qualified Test.QuickCheck as QC
+-- import qualified Test.Hspec.SmallCheck as SC
 
 {-| Replacement for 'Prelude.fromInteger' using the RebindableSyntax extension.
     This version of fromInteger arranges that integer literals
@@ -87,14 +92,25 @@ integer = convert
 integers :: (CanBeInteger t) => [t] -> [Integer]
 integers = map convert
 
+(!!) :: (CanBeInteger t) => [a] -> t -> a
+list !! ix = List.genericIndex list (integer ix)
+
+{-|
+  HSpec properties that each implementation of CanBeInteger should satisfy.
+ -}
+specCanBeInteger ::
+  (CanBeInteger t, Show t, QC.Arbitrary t) =>
+  String -> t -> Spec
+specCanBeInteger typeName (_typeSample :: t) =
+  describe "generic list index (!!)" $ do
+    it (printf "works using %s index" typeName) $ do
+      QC.property $ \ (x :: t) -> let xi = integer x in (xi P.>= 0) QC.==> ([0..xi] !! x) P.== xi
+
 type CanBeInt t = Convertible t Int
 int :: (CanBeInt t) => t -> Int
 int = convert
 ints :: (CanBeInt t) => [t] -> [Int]
 ints = map convert
-
-(!!) :: (CanBeInteger t) => [a] -> t -> a
-list !! ix = List.genericIndex list (integer ix)
 
 type CanBeRational t = Convertible t Rational
 rational :: (CanBeRational t) => t -> Rational

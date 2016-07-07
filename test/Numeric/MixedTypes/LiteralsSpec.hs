@@ -14,7 +14,7 @@ module Numeric.MixedTypes.LiteralsSpec (spec) where
 import Numeric.MixedTypes
 import qualified Prelude as P
 
-import Text.Printf
+-- import Text.Printf
 import Control.Exception (evaluate)
 
 import Test.Hspec
@@ -23,8 +23,13 @@ import qualified Test.QuickCheck as QC
 
 spec :: Spec
 spec = do
-  specIndex "Int" (int 0)
-  specIndex "Integer" 0
+  specCanBeInteger "Int" (int 0)
+  specCanBeInteger "Integer" 0
+  specConversions
+
+specConversions :: Spec
+specConversions =
+  do
   describe "numeric conversions" $ do
     it "convert int to integer and back" $ do
       QC.property $ \ (x :: Int) -> (int $ integer x) P.== x
@@ -36,8 +41,3 @@ spec = do
       QC.property $ \ (x :: Integer) -> (round $ rational x) P.== x
     it "convert double to rational and back" $ do
       QC.property $ \ (x :: Double) -> (double $ toRational x) P.== x
-    where
-    specIndex typeName (_typeSample :: t) =
-      describe "generic list index (!!)" $ do
-        it (printf "works using %s index" typeName) $ do
-          QC.property $ \ (x :: t) -> let xi = integer x in (xi P.>= 0) QC.==> ([0..xi] !! x) P.== xi

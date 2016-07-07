@@ -39,12 +39,17 @@ Description:
 library
   hs-source-dirs:  src
   build-depends:
-    base == 4.*,
-    convertible >= 1.1.1.0 && < 1.2
+    base == 4.*
+    , convertible >= 1.1.1.0 && < 1.2
+    , hspec == 2.2.*
+    , hspec-smallcheck == 0.4.*
+    , smallcheck == 1.1.*
+    , QuickCheck == 2.8.*
   ghc-options:     -Wall -fno-warn-orphans
   extensions:
     RebindableSyntax,
     PostfixOperators,
+    ScopedTypeVariables,
     TypeFamilies,
     TypeOperators,
     ConstraintKinds,
@@ -84,4 +89,3 @@ test-suite spec
     , hspec == 2.2.*
     , hspec-smallcheck == 0.4.*
     , QuickCheck == 2.8.*
-    , smallcheck == 1.1.*

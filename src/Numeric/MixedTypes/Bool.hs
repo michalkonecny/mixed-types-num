@@ -12,31 +12,30 @@
 
 module Numeric.MixedTypes.Bool
 (
-  IsBool
+  IsBool, specIsBool
   -- * Conversion to/from Bool
-  , HasBools(..)
+  , HasBools(..), HasBoolsX, specHasBools
   -- * Negation
-  , CanNeg(..), not, CanNegSameType
+  , CanNeg(..), not, CanNegSameType, CanNegX, specCanNeg
   -- * And and or
-  , CanAndOr(..), (&&), (||), CanAndOrWith, CanAndOrSameType, and, or
+  , CanAndOr(..), (&&), (||), CanAndOrWith, CanAndOrSameType, and, or,
+    CanAndOrX, specCanAndOr, specCanAndOrNotMixed
 )
 where
 
 import Prelude hiding (negate,not,(&&),(||),and,or)
 import qualified Prelude as P
+import Text.Printf
 
 import qualified Data.List as List
 
 import Numeric.MixedTypes.Literals (Convertible(..), convert)
 
-{-|
-  A type constraint synonym that stipulates that the type behaves very
-  much like Bool, except it does not necessarily satisfy the law of excluded middle,
-  which means that the type can contain a "do-not-know" value.
-
-  Examples: @Bool@, @Maybe Bool@, @Maybe (Maybe Bool)@
--}
-type IsBool t = (HasBools t, CanNegSameType t, CanAndOrSameType t)
+import Test.Hspec
+-- import qualified Test.QuickCheck as QC
+import qualified Test.Hspec.SmallCheck as HSC
+import qualified Test.SmallCheck as SC
+import qualified Test.SmallCheck.Series as SCS
 
 {-|
   Tests for truth or falsity.  Beware, when @isCertainlyTrue@ returns @False@,
@@ -47,6 +46,27 @@ class (Convertible Bool t) => HasBools t
   where
     isCertainlyTrue :: t -> Bool
     isCertainlyFalse :: t -> Bool
+
+{-|
+  HasBools extended with other type constraints that make
+  the type suitable for testing.
+-}
+type HasBoolsX t = (HasBools t, Show t, SCS.Serial IO t)
+
+{-|
+  HSpec properties that each implementation of HasBools should satisfy.
+ -}
+specHasBools :: (HasBools t) => String -> t -> Spec
+specHasBools typeName (_typeSample :: t) =
+  describe (printf "HasBools %s" typeName) $ do
+    it "detects True using isCertainlyTrue" $ do
+      isCertainlyTrue (convert True :: t) `shouldBe`  True
+    it "does not detect False using isCertainlyTrue" $ do
+      isCertainlyTrue (convert False :: t) `shouldBe`  False
+    it "detects False using isCertainlyFalse" $ do
+      isCertainlyFalse (convert False :: t) `shouldBe`  True
+    it "does not detect True using isCertainlyFalse" $ do
+      isCertainlyFalse (convert True :: t) `shouldBe`  False
 
 instance Convertible Bool Bool where
   safeConvert b = Right b
@@ -86,6 +106,28 @@ not :: (CanNeg t) => t -> NegType t
 not = negate
 
 type CanNegSameType t = (CanNeg t, NegType t ~ t)
+
+type CanNegX t =
+  (CanNeg t, HasBoolsX t, HasBoolsX (NegType t))
+
+{-|
+  HSpec properties that each implementation of CanNegSameType should satisfy.
+ -}
+specCanNeg ::
+  (CanNegX t, CanNegX (NegType t))
+  =>
+  String -> t -> Spec
+specCanNeg typeName (_typeSample :: t) =
+  describe (printf "CanNegSameType %s" typeName) $ do
+    it "ignores double negation" $ do
+      HSC.property $ \ (x :: t) -> (not (not x)) `scEquals` x
+    it "negates True to False" $ do
+      HSC.property $ \ (x :: t) ->
+        (isCertainlyTrue x) SC.==> (isCertainlyFalse (not x))
+    it "negates False to True" $ do
+      HSC.property $ \ (x :: t) ->
+        (isCertainlyFalse x) SC.==> (isCertainlyTrue (not x))
+
 
 instance CanNeg Bool where
   type NegType Bool = Bool
@@ -131,6 +173,75 @@ and = List.foldl' (&&) (convert True)
 
 or :: (CanAndOrSameType t, HasBools t) => [t] -> t
 or = List.foldl' (||) (convert True)
+
+type CanAndOrX t1 t2 =
+  (CanAndOr t1 t2,
+   CanNeg t1,
+   CanNeg t2,
+   CanAndOr (NegType t1) t2,
+   CanAndOr t1 (NegType t2),
+   CanAndOr (NegType t1) (NegType t2),
+   HasBoolsX t1,
+   HasBoolsX t2,
+   HasBoolsX (AndOrType t1 t2),
+   HasBoolsX (NegType (AndOrType t1 t2)),
+   HasBoolsX (AndOrType (NegType t1) t2),
+   HasBoolsX (AndOrType t1 (NegType t2)),
+   HasBoolsX (AndOrType (NegType t1) (NegType t2))
+   )
+
+{-|
+  HSpec properties that each implementation of CanAndOr should satisfy.
+ -}
+specCanAndOr ::
+  (CanAndOrX t1 t1,
+   CanAndOrX t1 t2, CanAndOrX t2 t1,
+   CanAndOrX t1 t3, CanAndOrX t2 t3,
+   CanAndOrX (AndOrType t1 t2) t3, CanAndOrX t1 (AndOrType t2 t3),
+   CanAndOrX (AndOrType t1 t2) (AndOrType t1 t3))
+  =>
+  String -> t1 ->
+  String -> t2 ->
+  String -> t3 ->
+  Spec
+specCanAndOr typeName1 (_typeSample1 :: t1) typeName2 (_typeSample2 :: t2) typeName3 (_typeSample3 :: t3) =
+  describe (printf "CanAndOr %s %s, CanAndOr %s %s)" typeName1 typeName2 typeName2 typeName3) $ do
+    it "has idempotent ||" $ do
+      HSC.property $ \ (x :: t1) -> (x || x) `scEquals` x
+    it "has idempotent &&" $ do
+      HSC.property $ \ (x :: t1) -> (x && x) `scEquals` x
+    it "has commutative ||" $ do
+      HSC.property $ \ (x :: t1) (y :: t2) -> (x || y) `scEquals` (y || x)
+    it "has commutative &&" $ do
+      HSC.property $ \ (x :: t1) (y :: t2) -> (x && y) `scEquals` (y && x)
+    it "has associative ||" $ do
+      HSC.property $ \ (x :: t1) (y :: t2) (z :: t3) ->
+                      (x || (y || z)) `scEquals` ((x || y) || z)
+    it "has associative &&" $ do
+      HSC.property $ \ (x :: t1) (y :: t2) (z :: t3) ->
+                      (x && (y && z)) `scEquals` ((x && y) && z)
+    it "distributes || over &&" $ do
+      HSC.property $ \ (x :: t1) (y :: t2) (z :: t3) ->
+                      (x || (y && z)) `scEquals` ((x || y) && (x || z))
+    it "distributes && over ||" $ do
+      HSC.property $ \ (x :: t1) (y :: t2) (z :: t3) ->
+                      (x && (y || z)) `scEquals` ((x && y) || (x && z))
+    it "distributes not over ||" $ do
+      HSC.property $ \ (x :: t1) (y :: t2) -> (not (x || y)) `scEquals` ((not x) && (not y))
+    it "distributes not over &&" $ do
+      HSC.property $ \ (x :: t1) (y :: t2) -> (not (x && y)) `scEquals` ((not x) || (not y))
+
+{-|
+  HSpec properties that each implementation of CanAndOr should satisfy.
+ -}
+specCanAndOrNotMixed ::
+  (CanAndOrX t t,
+   CanAndOrX (AndOrType t t) t, CanAndOrX t (AndOrType t t),
+   CanAndOrX (AndOrType t t) (AndOrType t t))
+  =>
+  String -> t -> Spec
+specCanAndOrNotMixed typeName typeSample =
+  specCanAndOr typeName typeSample typeName typeSample typeName typeSample
 
 instance CanAndOr Bool Bool where
   type AndOrType Bool Bool = Bool
@@ -184,3 +295,35 @@ _testAndOr2 = (Just (Just True)) || False
 
 _testAndOr3 :: Maybe Bool
 _testAndOr3 = and [Just True, Nothing, Just False]
+
+{-|
+  A type constraint synonym that stipulates that the type behaves very
+  much like Bool, except it does not necessarily satisfy the law of excluded middle,
+  which means that the type can contain a "do-not-know" value.
+
+  Examples: @Bool@, @Maybe Bool@, @Maybe (Maybe Bool)@
+-}
+type IsBool t = (HasBools t, CanNegSameType t, CanAndOrSameType t)
+
+{-|
+  HSpec properties that each implementation of IsBool should satisfy.
+ -}
+specIsBool :: (IsBool t, Show t, SCS.Serial IO t) => String -> t -> Spec
+specIsBool typeName (typeSample :: t) =
+  describe (printf "IsBool %s" typeName) $ do
+    specHasBools typeName typeSample
+    specCanNeg typeName typeSample
+    specCanAndOrNotMixed typeName typeSample
+
+scEquals ::
+  (Show t1, HasBools t1, Show t2, HasBools t2) =>
+  t1 -> t2 -> Either String String
+scEquals l r
+  | l `sameBool` r = Right "OK"
+  | otherwise = Left $ printf "(%s) /= (%s)" (show l) (show r)
+
+sameBool :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
+sameBool l r =
+  (isCertainlyTrue l P.== isCertainlyTrue r)
+  P.&&
+  (isCertainlyFalse l P.== isCertainlyFalse r)
