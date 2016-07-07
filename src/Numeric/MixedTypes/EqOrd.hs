@@ -16,7 +16,8 @@ module Numeric.MixedTypes.EqOrd
     HasEq(..),  (==), (/=), specHasEq, specHasEqNotMixed
     , CanTestZero(..)
     -- * Inequality tests
-    , HasOrder(..), (>), (<), (<=), (>=), CanTestPosNeg(..)
+    , HasOrder(..), (>), (<), (<=), (>=), specHasOrder, specHasOrderNotMixed
+    , CanTestPosNeg(..)
     -- * Helper functions
     , convertFirst, convertSecond
 )
@@ -177,6 +178,55 @@ class (IsBool (OrderCompareType a b)) => HasOrder a b where
 (>=) = geq
 (<=) :: (HasOrder a b) => a -> b -> OrderCompareType a b
 (<=) = leq
+
+
+type HasOrderX t1 t2 = (HasOrder t1 t2, Show t1, QC.Arbitrary t1, Show t2, QC.Arbitrary t2)
+
+{-|
+  HSpec properties that each implementation of 'HasOrder' should satisfy.
+ -}
+specHasOrder ::
+  (HasOrderX t1 t1,
+   HasOrderX t1 t2, HasOrderX t2 t1,
+   HasOrderX t1 t3, HasOrderX t2 t3,
+   CanAndOrX (OrderCompareType t1 t2) (OrderCompareType t2 t3))
+  =>
+  String -> t1 ->
+  String -> t2 ->
+  String -> t3 ->
+  Spec
+specHasOrder typeName1 (_typeSample1 :: t1) typeName2 (_typeSample2 :: t2) typeName3 (_typeSample3 :: t3) =
+  describe (printf "HasOrd %s %s, HasOrd %s %s" typeName1 typeName2 typeName2 typeName3) $ do
+    it "has reflexive >=" $ do
+      QC.property $ \ (x :: t1) -> not $ isCertainlyFalse (x >= x)
+    it "has reflexive <=" $ do
+      QC.property $ \ (x :: t1) -> not $ isCertainlyFalse (x <= x)
+    it "has anti-reflexive >" $ do
+      QC.property $ \ (x :: t1) -> not $ isCertainlyTrue (x > x)
+    it "has anti-reflexive <" $ do
+      QC.property $ \ (x :: t1) -> not $ isCertainlyTrue (x < x)
+    it "> stronly implies >=" $ do
+      QC.property $ \ (x :: t1) (y :: t2) -> (x > y) `stronglyImplies` (x >= y)
+    it "< stronly implies <=" $ do
+      QC.property $ \ (x :: t1) (y :: t2) -> (x < y) `stronglyImplies` (x <= y)
+    it "has stronly equivalent > and <" $ do
+      QC.property $ \ (x :: t1) (y :: t2) -> (x < y) `stronglyEquivalentTo` (y > x)
+    it "has stronly equivalent >= and <=" $ do
+      QC.property $ \ (x :: t1) (y :: t2) -> (x <= y) `stronglyEquivalentTo` (y >= x)
+    it "has stronly transitive <" $ do
+      QC.property $ \ (x :: t1) (y :: t2) (z :: t3) -> ((x < y) && (y < z)) `stronglyImplies` (y < z)
+
+{-|
+  HSpec properties that each implementation of 'HasOrder' should satisfy.
+ -}
+specHasOrderNotMixed ::
+  (HasOrderX t t,
+   CanAndOrX (OrderCompareType t t) (OrderCompareType t t))
+  =>
+  String -> t -> Spec
+specHasOrderNotMixed typeName typeSample =
+  specHasOrder typeName typeSample typeName typeSample typeName typeSample
+
 
 instance HasOrder Int Int
 instance HasOrder Integer Integer
