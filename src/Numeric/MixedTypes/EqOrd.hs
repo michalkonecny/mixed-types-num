@@ -14,11 +14,13 @@ module Numeric.MixedTypes.EqOrd
 (
     -- * Equality tests
     HasEq(..),  (==), (/=), specHasEq, specHasEqNotMixed
-    , certainlyEqualTo, certainlyNotEqualTo, notDifferentFrom, (//==)
+    , certainlyEqualTo, certainlyNotEqualTo, notDifferentFrom
+    , (//==)
     , CanTestZero(..)
     -- * Inequality tests
-    , HasOrder(..), (>), (<), (<=), (>=)
+    , HasOrder(..), (>), (<), (<=), (>=), HasOrderX
     , specHasOrder, specHasOrderNotMixed
+    , (//<=), (//<), (//>=), (//>)
     , CanTestPosNeg(..)
     -- * Helper functions
     , convertFirst, convertSecond
@@ -41,7 +43,7 @@ import qualified Test.QuickCheck as QC
 import Numeric.MixedTypes.Literals (Convertible, convert, fromInteger)
 import Numeric.MixedTypes.Bool
 
-infix  4  ==, /=, <, <=, >=, >, //==
+infix  4  ==, /=, <, <=, >=, >, //==, //<=, //<, //>=, //>
 
 {---- Equality tests -----}
 
@@ -191,8 +193,20 @@ class (IsBool (OrderCompareType a b)) => HasOrder a b where
 (<=) :: (HasOrder a b) => a -> b -> OrderCompareType a b
 (<=) = leq
 
+(//>) :: (HasOrder a b) => a -> b -> Bool
+a //> b = isNotFalse $ a > b
 
-type HasOrderX t1 t2 = (HasOrder t1 t2, Show t1, QC.Arbitrary t1, Show t2, QC.Arbitrary t2)
+(//<) :: (HasOrder a b) => a -> b -> Bool
+a //< b = isNotFalse $ a < b
+
+(//>=) :: (HasOrder a b) => a -> b -> Bool
+a //>= b = isNotFalse $ a >= b
+
+(//<=) :: (HasOrder a b) => a -> b -> Bool
+a //<= b = isNotFalse $ a <= b
+
+type HasOrderX t1 t2 =
+  (HasOrder t1 t2, Show t1, QC.Arbitrary t1, Show t2, QC.Arbitrary t2)
 
 {-|
   HSpec properties that each implementation of 'HasOrder' should satisfy.

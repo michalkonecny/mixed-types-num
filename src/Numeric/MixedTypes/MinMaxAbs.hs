@@ -13,7 +13,7 @@
 module Numeric.MixedTypes.MinMaxAbs
 (
     -- * Minimum and maximum
-    CanMinMax(..), specCanMinMax, specCanMinMaxNotMixed
+    CanMinMax(..), CanMinMaxX, specCanMinMax, specCanMinMaxNotMixed
 )
 where
 
@@ -31,8 +31,8 @@ import qualified Test.QuickCheck as QC
 -- import qualified Test.SmallCheck as SC
 -- import qualified Test.SmallCheck.Series as SCS
 
-import Numeric.MixedTypes.Literals (Convertible, convert, fromInteger)
--- import Numeric.MixedTypes.Bool
+-- import Numeric.MixedTypes.Literals
+import Numeric.MixedTypes.Bool
 import Numeric.MixedTypes.EqOrd
 
 {---- Min and max -----}
@@ -53,10 +53,14 @@ type CanMinMaxX t1 t2 =
    Show t2, QC.Arbitrary t2,
    HasEq t1 (MinMaxType t1 t2), HasEq (MinMaxType t1 t2) t1,
    HasEq t2 (MinMaxType t1 t2), HasEq (MinMaxType t1 t2) t2,
-   HasEq (MinMaxType t1 t2) (MinMaxType t1 t2))
+   HasEq (MinMaxType t1 t2) (MinMaxType t1 t2),
+   HasOrder t1 (MinMaxType t1 t2), HasOrder (MinMaxType t1 t2) t1,
+   HasOrder t2 (MinMaxType t1 t2), HasOrder (MinMaxType t1 t2) t2,
+   HasOrder (MinMaxType t1 t2) (MinMaxType t1 t2))
 
 type CanMinMaxXX t1 t2 =
-  (CanMinMaxX t1 t2, CanMinMaxX t2 t1, HasEq (MinMaxType t1 t2) (MinMaxType t2 t1))
+  (CanMinMaxX t1 t2, CanMinMaxX t2 t1,
+   HasEq (MinMaxType t1 t2) (MinMaxType t2 t1))
 
 {-|
   HSpec properties that each implementation of CanMinMax should satisfy.
@@ -75,6 +79,10 @@ specCanMinMax ::
   Spec
 specCanMinMax typeName1 (_typeSample1 :: t1) typeName2 (_typeSample2 :: t2) typeName3 (_typeSample3 :: t3) =
   describe (printf "CanMinMax %s %s, CanMinMax %s %s" typeName1 typeName2 typeName2 typeName3) $ do
+    it "`min` is not larger than its arguments" $ do
+      QC.property $ \ (x :: t1) (y :: t2) -> let m = x `min` y in (m //<= y) && (m //<= x)
+    it "`max` is not smaller than its arguments" $ do
+      QC.property $ \ (x :: t1) (y :: t2) -> let m = x `max` y in (m //>= y) && (m //>= x)
     it "has idempotent `min`" $ do
       QC.property $ \ (x :: t1) -> (x `min` x) //== x
     it "has idempotent `max`" $ do
@@ -125,6 +133,10 @@ instance CanMinMax Rational Int where
   min = convertSecond min
   max = convertSecond max
 
+instance CanMinMax Integer Rational where
+  type MinMaxType Integer Rational = Rational
+  min = convertFirst min
+  max = convertFirst max
 instance CanMinMax Rational Integer where
   type MinMaxType Rational Integer = Rational
   min = convertSecond min
