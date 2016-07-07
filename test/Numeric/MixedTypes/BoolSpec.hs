@@ -1,6 +1,6 @@
 {-|
     Module      :  Numeric.MixedType.BoolSpec
-    Description :  hspec tests for generic Boolean operations
+    Description :  hspec tests for Boolean operations
     Copyright   :  (c) Michal Konecny
     License     :  BSD3
 
@@ -24,11 +24,11 @@ import Test.Hspec
 spec :: Spec
 spec = do
   specIsBool "Bool" True
-  specIsBool "Maybe Bool" (Just True)
-  specIsBool "Maybe (Maybe Bool)" (Just (Just True))
+  specIsBool "(Maybe Bool)" (Just True)
+  specIsBool "(Maybe (Maybe Bool))" (Just (Just True))
   -- mixed-type tests:
-  specCanAndOr "Bool" True "Maybe Bool" (Just True) "Bool" True
-  specCanAndOr "Maybe (Maybe Bool)" (Just (Just True)) "Maybe Bool" (Just True) "Bool" True
+  specCanAndOr "Bool" True "(Maybe Bool)" (Just True) "Bool" True
+  specCanAndOr "(Maybe (Maybe Bool))" (Just (Just True)) "(Maybe Bool)" (Just True) "Bool" True
   describe "mixed-type Boolean operation examples" $ do
     it "can do True || Just False" $ do
       True || Just False `shouldBe` Just True

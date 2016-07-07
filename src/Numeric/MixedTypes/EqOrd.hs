@@ -13,7 +13,7 @@
 module Numeric.MixedTypes.EqOrd
 (
     -- * Equality tests
-    HasEq(..),  (==), (/=), specHasEq
+    HasEq(..),  (==), (/=), specHasEq, specHasEqNotMixed
     , CanTestZero(..)
     -- * Inequality tests
     , HasOrder(..), (>), (<), (<=), (>=), CanTestPosNeg(..)
@@ -77,7 +77,7 @@ specHasEq ::
   String -> t3 ->
   Spec
 specHasEq typeName1 (_typeSample1 :: t1) typeName2 (_typeSample2 :: t2) typeName3 (_typeSample3 :: t3) =
-  describe (printf "HasEq %s %s, HasEq %s %s)" typeName1 typeName2 typeName2 typeName3) $ do
+  describe (printf "HasEq %s %s, HasEq %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "has reflexive ==" $ do
       QC.property $ \ (x :: t1) -> not $ isCertainlyFalse (x == x)
     it "has anti-reflexive /=" $ do
@@ -88,6 +88,17 @@ specHasEq typeName1 (_typeSample1 :: t1) typeName2 (_typeSample2 :: t2) typeName
       QC.property $ \ (x :: t1) (y :: t2) -> (x /= y) `stronglyEquivalentTo` (y /= x)
     it "has stronly transitive ==" $ do
       QC.property $ \ (x :: t1) (y :: t2) (z :: t3) -> ((x == y) && (y == z)) `stronglyImplies` (y == z)
+
+{-|
+  HSpec properties that each implementation of HasEq should satisfy.
+ -}
+specHasEqNotMixed ::
+  (HasEqX t t,
+   CanAndOrX (EqCompareType t t) (EqCompareType t t))
+  =>
+  String -> t -> Spec
+specHasEqNotMixed typeName typeSample =
+  specHasEq typeName typeSample typeName typeSample typeName typeSample
 
 instance HasEq Int Int
 instance HasEq Integer Integer

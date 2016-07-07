@@ -56,6 +56,28 @@ class (Convertible Bool t) => HasBools t
 type HasBoolsX t = (HasBools t, Show t, SCS.Serial IO t)
 
 {-|
+  If l is certainly True, then r is also certainly True.
+-}
+stronglyImplies :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
+stronglyImplies l r =
+  (P.not (isCertainlyTrue l) P.|| isCertainlyTrue r)
+
+{-|
+  If l is certainly True, then r is not certainly False.
+-}
+weaklyImplies :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
+weaklyImplies l r =
+  (P.not $ isCertainlyTrue l) P.|| (P.not $ isCertainlyFalse r)
+
+stronglyEquivalentTo :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
+stronglyEquivalentTo l r =
+  stronglyImplies l r P.&& stronglyImplies r l
+
+weaklyEquivalentTo :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
+weaklyEquivalentTo l r =
+  weaklyImplies l r P.&& weaklyImplies r l
+
+{-|
   HSpec properties that each implementation of HasBools should satisfy.
  -}
 specHasBools :: (HasBools t) => String -> t -> Spec
@@ -323,25 +345,3 @@ scEquals ::
 scEquals l r
   | l `stronglyEquivalentTo` r = Right "OK"
   | otherwise = Left $ printf "(%s) /= (%s)" (show l) (show r)
-
-{-|
-  If l is certainly True, then r is also certainly True.
--}
-stronglyImplies :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
-stronglyImplies l r =
-  (P.not (isCertainlyTrue l) P.|| isCertainlyTrue r)
-
-{-|
-  If l is certainly True, then r is not certainly False.
--}
-weaklyImplies :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
-weaklyImplies l r =
-  (P.not $ isCertainlyTrue l) P.|| (P.not $ isCertainlyFalse r)
-
-stronglyEquivalentTo :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
-stronglyEquivalentTo l r =
-  stronglyImplies l r P.&& stronglyImplies r l
-
-weaklyEquivalentTo :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
-weaklyEquivalentTo l r =
-  weaklyImplies l r P.&& weaklyImplies r l
