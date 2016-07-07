@@ -13,7 +13,8 @@
 module Numeric.MixedTypes.EqOrd
 (
     -- * Equality tests
-    HasEq(..),  (==), (/=), CanTestZero(..)
+    HasEq(..),  (==), (/=), specHasEq
+    , CanTestZero(..)
     -- * Inequality tests
     , HasOrder(..), (>), (<), (<=), (>=), CanTestPosNeg(..)
     -- * Helper functions
@@ -26,6 +27,13 @@ import Prelude hiding
    negate,not,(&&),(||),and,or,
    (==), (/=), (>), (<), (<=), (>=))
 import qualified Prelude as P
+import Text.Printf
+
+import Test.Hspec
+import qualified Test.QuickCheck as QC
+-- import qualified Test.Hspec.SmallCheck as HSC
+-- import qualified Test.SmallCheck as SC
+-- import qualified Test.SmallCheck.Series as SCS
 
 import Numeric.MixedTypes.Literals (Convertible, convert, fromInteger)
 import Numeric.MixedTypes.Bool
@@ -53,6 +61,34 @@ class (IsBool (EqCompareType a b)) => HasEq a b where
 (/=) :: (HasEq a b) => a -> b -> EqCompareType a b
 (/=) = notEqualTo
 
+type HasEqX t1 t2 = (HasEq t1 t2, Show t1, QC.Arbitrary t1, Show t2, QC.Arbitrary t2)
+
+{-|
+  HSpec properties that each implementation of HasEq should satisfy.
+ -}
+specHasEq ::
+  (HasEqX t1 t1,
+   HasEqX t1 t2, HasEqX t2 t1,
+   HasEqX t1 t3, HasEqX t2 t3,
+   CanAndOrX (EqCompareType t1 t2) (EqCompareType t2 t3))
+  =>
+  String -> t1 ->
+  String -> t2 ->
+  String -> t3 ->
+  Spec
+specHasEq typeName1 (_typeSample1 :: t1) typeName2 (_typeSample2 :: t2) typeName3 (_typeSample3 :: t3) =
+  describe (printf "HasEq %s %s, HasEq %s %s)" typeName1 typeName2 typeName2 typeName3) $ do
+    it "has reflexive ==" $ do
+      QC.property $ \ (x :: t1) -> not $ isCertainlyFalse (x == x)
+    it "has anti-reflexive /=" $ do
+      QC.property $ \ (x :: t1) -> not $ isCertainlyTrue (x /= x)
+    it "has stronly commutative ==" $ do
+      QC.property $ \ (x :: t1) (y :: t2) -> (x == y) `stronglyEquivalentTo` (y == x)
+    it "has stronly commutative /=" $ do
+      QC.property $ \ (x :: t1) (y :: t2) -> (x /= y) `stronglyEquivalentTo` (y /= x)
+    it "has stronly transitive ==" $ do
+      QC.property $ \ (x :: t1) (y :: t2) (z :: t3) -> ((x == y) && (y == z)) `stronglyImplies` (y == z)
+
 instance HasEq Int Int
 instance HasEq Integer Integer
 instance HasEq Rational Rational
@@ -77,6 +113,12 @@ instance (HasEq a b) => HasEq [a] [b] where
   type EqCompareType [a] [b] = EqCompareType a b
   equalTo [] [] = convert True
   equalTo (x:xs) (y:ys) = (x == y) && (xs == ys)
+  equalTo _ _ = convert False
+
+instance (HasEq a b) => HasEq (Maybe a) (Maybe b) where
+  type EqCompareType (Maybe a) (Maybe b) = EqCompareType a b
+  equalTo Nothing Nothing = convert True
+  equalTo (Just x) (Just y) = (x == y)
   equalTo _ _ = convert False
 
 class CanTestZero t where

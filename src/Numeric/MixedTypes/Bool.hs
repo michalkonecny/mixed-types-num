@@ -13,6 +13,8 @@
 module Numeric.MixedTypes.Bool
 (
   IsBool, specIsBool
+  , stronglyImplies, stronglyEquivalentTo
+  , weaklyImplies, weaklyEquivalentTo
   -- * Conversion to/from Bool
   , HasBools(..), HasBoolsX, specHasBools
   -- * Negation
@@ -319,11 +321,27 @@ scEquals ::
   (Show t1, HasBools t1, Show t2, HasBools t2) =>
   t1 -> t2 -> Either String String
 scEquals l r
-  | l `sameBool` r = Right "OK"
+  | l `stronglyEquivalentTo` r = Right "OK"
   | otherwise = Left $ printf "(%s) /= (%s)" (show l) (show r)
 
-sameBool :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
-sameBool l r =
-  (isCertainlyTrue l P.== isCertainlyTrue r)
-  P.&&
-  (isCertainlyFalse l P.== isCertainlyFalse r)
+{-|
+  If l is certainly True, then r is also certainly True.
+-}
+stronglyImplies :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
+stronglyImplies l r =
+  (P.not (isCertainlyTrue l) P.|| isCertainlyTrue r)
+
+{-|
+  If l is certainly True, then r is not certainly False.
+-}
+weaklyImplies :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
+weaklyImplies l r =
+  (P.not $ isCertainlyTrue l) P.|| (P.not $ isCertainlyFalse r)
+
+stronglyEquivalentTo :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
+stronglyEquivalentTo l r =
+  stronglyImplies l r P.&& stronglyImplies r l
+
+weaklyEquivalentTo :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
+weaklyEquivalentTo l r =
+  weaklyImplies l r P.&& weaklyImplies r l
