@@ -1,6 +1,6 @@
 {-|
     Module      :  Numeric.MixedType.Bool
-    Description :  Mixed-type generic Boolean operations
+    Description :  Bottom-up typed Boolean operations
     Copyright   :  (c) Michal Konecny
     License     :  BSD3
 
@@ -13,10 +13,11 @@
 module Numeric.MixedTypes.Bool
 (
   IsBool, specIsBool
-  , stronglyImplies, stronglyEquivalentTo
-  , weaklyImplies, weaklyEquivalentTo
   -- * Conversion to/from Bool
   , HasBools(..), HasBoolsX, specHasBools
+  , isNotTrue, isNotFalse
+  , stronglyImplies, stronglyEquivalentTo
+  , weaklyImplies, weaklyEquivalentTo
   -- * Negation
   , CanNeg(..), not, CanNegSameType, CanNegX, specCanNeg
   -- * And and or
@@ -49,11 +50,11 @@ class (Convertible Bool t) => HasBools t
     isCertainlyTrue :: t -> Bool
     isCertainlyFalse :: t -> Bool
 
-{-|
-  HasBools extended with other type constraints that make
-  the type suitable for testing.
--}
-type HasBoolsX t = (HasBools t, Show t, SCS.Serial IO t)
+isNotFalse :: (HasBools t) => t -> Bool
+isNotFalse = P.not . isCertainlyFalse
+
+isNotTrue :: (HasBools t) => t -> Bool
+isNotTrue = P.not . isCertainlyTrue
 
 {-|
   If l is certainly True, then r is also certainly True.
@@ -130,6 +131,12 @@ not :: (CanNeg t) => t -> NegType t
 not = negate
 
 type CanNegSameType t = (CanNeg t, NegType t ~ t)
+
+{-|
+  HasBools extended with other type constraints that make
+  the type suitable for testing.
+-}
+type HasBoolsX t = (HasBools t, Show t, SCS.Serial IO t)
 
 type CanNegX t =
   (CanNeg t, HasBoolsX t, HasBoolsX (NegType t))
