@@ -63,11 +63,11 @@ library
     Numeric.MixedTypes.Literals
     Numeric.MixedTypes.Bool
     Numeric.MixedTypes.EqOrd
-    -- Numeric.MixedTypes.MinMaxAbs
+    Numeric.MixedTypes.MinMaxAbs
     -- Numeric.MixedTypes.AddSub
     -- Numeric.MixedTypes.RingPow
     -- Numeric.MixedTypes.Field
-    -- Numeric.MixedTypes.Elem
+    -- Numeric.MixedTypes.Elementary
 
 test-suite spec
   type:

@@ -17,7 +17,8 @@ module Numeric.MixedTypes
   module Prelude,
   module Numeric.MixedTypes.Literals,
   module Numeric.MixedTypes.Bool,
-  module Numeric.MixedTypes.EqOrd
+  module Numeric.MixedTypes.EqOrd,
+  module Numeric.MixedTypes.MinMaxAbs
 )
 where
 
@@ -25,9 +26,11 @@ import Prelude hiding
   (
     fromInteger, fromRational, (!!),
     negate, not, (&&), (||), and, or,
-    (==),(/=),(<),(>),(<=),(>=)
+    (==),(/=),(<),(>),(<=),(>=),
+    abs, min, max, minimum, maximum
   )
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
 import Numeric.MixedTypes.EqOrd
+import Numeric.MixedTypes.MinMaxAbs

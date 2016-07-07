@@ -1,6 +1,6 @@
 {-|
     Module      :  Numeric.MixedType.EqOrd
-    Description :  Mixed-type comparisons
+    Description :  Bottom-up typed comparisons
     Copyright   :  (c) Michal Konecny
     License     :  BSD3
 
@@ -14,9 +14,11 @@ module Numeric.MixedTypes.EqOrd
 (
     -- * Equality tests
     HasEq(..),  (==), (/=), specHasEq, specHasEqNotMixed
+    , certainlyEqualTo, certainlyNotEqualTo, notDifferentFrom, (//==)
     , CanTestZero(..)
     -- * Inequality tests
-    , HasOrder(..), (>), (<), (<=), (>=), specHasOrder, specHasOrderNotMixed
+    , HasOrder(..), (>), (<), (<=), (>=)
+    , specHasOrder, specHasOrderNotMixed
     , CanTestPosNeg(..)
     -- * Helper functions
     , convertFirst, convertSecond
@@ -39,7 +41,7 @@ import qualified Test.QuickCheck as QC
 import Numeric.MixedTypes.Literals (Convertible, convert, fromInteger)
 import Numeric.MixedTypes.Bool
 
-infix  4  ==, /=, <, <=, >=, >
+infix  4  ==, /=, <, <=, >=, >, //==
 
 {---- Equality tests -----}
 
@@ -61,6 +63,16 @@ class (IsBool (EqCompareType a b)) => HasEq a b where
 (==) = equalTo
 (/=) :: (HasEq a b) => a -> b -> EqCompareType a b
 (/=) = notEqualTo
+
+certainlyEqualTo :: (HasEq a b) => a -> b -> Bool
+certainlyEqualTo a b = isCertainlyTrue $ a == b
+certainlyNotEqualTo :: (HasEq a b) => a -> b -> Bool
+certainlyNotEqualTo a b = isCertainlyTrue $ a /= b
+notDifferentFrom :: (HasEq a b) => a -> b -> Bool
+notDifferentFrom a b = isNotFalse $ a == b
+
+(//==) :: (HasEq a b) => a -> b -> Bool
+(//==) = notDifferentFrom
 
 type HasEqX t1 t2 = (HasEq t1 t2, Show t1, QC.Arbitrary t1, Show t2, QC.Arbitrary t2)
 
