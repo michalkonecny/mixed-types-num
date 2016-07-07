@@ -165,6 +165,10 @@ instance Convertible Double Double where
 
 {-- auxiliary type and functions for specifying type(s) to use in tests  --}
 
+{-|
+  A runtime representative of type @t@.
+  Used for specialising polymorphic tests to concrete types.
+-}
 data T t = T String
 
 tInt :: T Int
