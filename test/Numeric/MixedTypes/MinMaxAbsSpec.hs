@@ -17,8 +17,8 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
-  specCanMinMaxNotMixed "Int" (int 0)
-  specCanMinMaxNotMixed "Integer" 0
-  specCanMinMaxNotMixed "Rational" 0.0
-  specCanMinMax "Int" (int 0) "Integer" 0 "Rational" 0.0
-  specCanMinMax "Integer" 0 "Rational" 0.0  "Int" (int 0)
+  specCanMinMaxNotMixed tInt
+  specCanMinMaxNotMixed tInteger
+  specCanMinMaxNotMixed tRational
+  specCanMinMax tInt tInteger tRational
+  specCanMinMax tInteger tRational tInt

@@ -13,13 +13,14 @@
 module Numeric.MixedTypes.EqOrd
 (
     -- * Equality tests
-    HasEq(..),  (==), (/=), specHasEq, specHasEqNotMixed
+    HasEq(..),  (==), (/=)
     , certainlyEqualTo, certainlyNotEqualTo, notDifferentFrom
     , (//==)
+    , specHasEq, specHasEqNotMixed, HasEqX
     , CanTestZero(..)
     -- * Inequality tests
-    , HasOrder(..), (>), (<), (<=), (>=), HasOrderX
-    , specHasOrder, specHasOrderNotMixed
+    , HasOrder(..), (>), (<), (<=), (>=)
+    , specHasOrder, specHasOrderNotMixed, HasOrderX
     , (//<=), (//<), (//>=), (//>)
     , CanTestPosNeg(..)
     -- * Helper functions
@@ -40,7 +41,7 @@ import qualified Test.QuickCheck as QC
 -- import qualified Test.SmallCheck as SC
 -- import qualified Test.SmallCheck.Series as SCS
 
-import Numeric.MixedTypes.Literals (Convertible, convert, fromInteger)
+import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
 
 infix  4  ==, /=, <, <=, >=, >, //==, //<=, //<, //>=, //>
@@ -76,7 +77,9 @@ notDifferentFrom a b = isNotFalse $ a == b
 (//==) :: (HasEq a b) => a -> b -> Bool
 (//==) = notDifferentFrom
 
-type HasEqX t1 t2 = (HasEq t1 t2, Show t1, QC.Arbitrary t1, Show t2, QC.Arbitrary t2)
+{-| Compound type constraint useful for test definition. -}
+type HasEqX t1 t2 =
+  (HasEq t1 t2, Show t1, QC.Arbitrary t1, Show t2, QC.Arbitrary t2)
 
 {-|
   HSpec properties that each implementation of HasEq should satisfy.
@@ -87,11 +90,8 @@ specHasEq ::
    HasEqX t1 t3, HasEqX t2 t3,
    CanAndOrX (EqCompareType t1 t2) (EqCompareType t2 t3))
   =>
-  String -> t1 ->
-  String -> t2 ->
-  String -> t3 ->
-  Spec
-specHasEq typeName1 (_typeSample1 :: t1) typeName2 (_typeSample2 :: t2) typeName3 (_typeSample3 :: t3) =
+  T t1 -> T t2 -> T t3 -> Spec
+specHasEq (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "HasEq %s %s, HasEq %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "has reflexive ==" $ do
       QC.property $ \ (x :: t1) -> not $ isCertainlyFalse (x == x)
@@ -111,9 +111,8 @@ specHasEqNotMixed ::
   (HasEqX t t,
    CanAndOrX (EqCompareType t t) (EqCompareType t t))
   =>
-  String -> t -> Spec
-specHasEqNotMixed typeName typeSample =
-  specHasEq typeName typeSample typeName typeSample typeName typeSample
+  T t -> Spec
+specHasEqNotMixed t = specHasEq t t t
 
 instance HasEq Int Int
 instance HasEq Integer Integer
@@ -205,6 +204,7 @@ a //>= b = isNotFalse $ a >= b
 (//<=) :: (HasOrder a b) => a -> b -> Bool
 a //<= b = isNotFalse $ a <= b
 
+{-| Compound type constraint useful for test definition. -}
 type HasOrderX t1 t2 =
   (HasOrder t1 t2, Show t1, QC.Arbitrary t1, Show t2, QC.Arbitrary t2)
 
@@ -217,11 +217,8 @@ specHasOrder ::
    HasOrderX t1 t3, HasOrderX t2 t3,
    CanAndOrX (OrderCompareType t1 t2) (OrderCompareType t2 t3))
   =>
-  String -> t1 ->
-  String -> t2 ->
-  String -> t3 ->
-  Spec
-specHasOrder typeName1 (_typeSample1 :: t1) typeName2 (_typeSample2 :: t2) typeName3 (_typeSample3 :: t3) =
+  T t1 -> T t2 -> T t3 -> Spec
+specHasOrder (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "HasOrd %s %s, HasOrd %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "has reflexive >=" $ do
       QC.property $ \ (x :: t1) -> not $ isCertainlyFalse (x >= x)
@@ -249,10 +246,8 @@ specHasOrderNotMixed ::
   (HasOrderX t t,
    CanAndOrX (OrderCompareType t t) (OrderCompareType t t))
   =>
-  String -> t -> Spec
-specHasOrderNotMixed typeName typeSample =
-  specHasOrder typeName typeSample typeName typeSample typeName typeSample
-
+  T t -> Spec
+specHasOrderNotMixed t = specHasOrder t t t
 
 instance HasOrder Int Int
 instance HasOrder Integer Integer

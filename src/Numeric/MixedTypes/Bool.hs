@@ -14,15 +14,15 @@ module Numeric.MixedTypes.Bool
 (
   IsBool, specIsBool
   -- * Conversion to/from Bool
-  , HasBools(..), HasBoolsX, specHasBools
+  , HasBools(..), specHasBools, HasBoolsX
   , isNotTrue, isNotFalse
   , stronglyImplies, stronglyEquivalentTo
   , weaklyImplies, weaklyEquivalentTo
   -- * Negation
-  , CanNeg(..), not, CanNegSameType, CanNegX, specCanNeg
+  , CanNeg(..), not, CanNegSameType, specCanNeg, CanNegX
   -- * And and or
-  , CanAndOr(..), (&&), (||), CanAndOrWith, CanAndOrSameType, and, or,
-    CanAndOrX, specCanAndOr, specCanAndOrNotMixed
+  , CanAndOr(..), (&&), (||), CanAndOrWith, CanAndOrSameType, and, or
+  , specCanAndOr, specCanAndOrNotMixed, CanAndOrX
 )
 where
 
@@ -32,7 +32,7 @@ import Text.Printf
 
 import qualified Data.List as List
 
-import Numeric.MixedTypes.Literals (Convertible(..), convert)
+import Numeric.MixedTypes.Literals
 
 import Test.Hspec
 -- import qualified Test.QuickCheck as QC
@@ -81,8 +81,8 @@ weaklyEquivalentTo l r =
 {-|
   HSpec properties that each implementation of HasBools should satisfy.
  -}
-specHasBools :: (HasBools t) => String -> t -> Spec
-specHasBools typeName (_typeSample :: t) =
+specHasBools :: (HasBools t) => T t -> Spec
+specHasBools (T typeName :: T t) =
   describe (printf "HasBools %s" typeName) $ do
     it "detects True using isCertainlyTrue" $ do
       isCertainlyTrue (convert True :: t) `shouldBe`  True
@@ -132,12 +132,10 @@ not = negate
 
 type CanNegSameType t = (CanNeg t, NegType t ~ t)
 
-{-|
-  HasBools extended with other type constraints that make
-  the type suitable for testing.
--}
+{-| Compound type constraint useful for test definition. -}
 type HasBoolsX t = (HasBools t, Show t, SCS.Serial IO t)
 
+{-| Compound type constraint useful for test definition. -}
 type CanNegX t =
   (CanNeg t, HasBoolsX t, HasBoolsX (NegType t))
 
@@ -147,8 +145,8 @@ type CanNegX t =
 specCanNeg ::
   (CanNegX t, CanNegX (NegType t))
   =>
-  String -> t -> Spec
-specCanNeg typeName (_typeSample :: t) =
+  T t -> Spec
+specCanNeg (T typeName :: T t) =
   describe (printf "CanNegSameType %s" typeName) $ do
     it "ignores double negation" $ do
       HSC.property $ \ (x :: t) -> (not (not x)) `scEquals` x
@@ -205,6 +203,7 @@ and = List.foldl' (&&) (convert True)
 or :: (CanAndOrSameType t, HasBools t) => [t] -> t
 or = List.foldl' (||) (convert True)
 
+{-| Compound type constraint useful for test definition. -}
 type CanAndOrX t1 t2 =
   (CanAndOr t1 t2,
    CanNeg t1,
@@ -231,12 +230,9 @@ specCanAndOr ::
    CanAndOrX (AndOrType t1 t2) t3, CanAndOrX t1 (AndOrType t2 t3),
    CanAndOrX (AndOrType t1 t2) (AndOrType t1 t3))
   =>
-  String -> t1 ->
-  String -> t2 ->
-  String -> t3 ->
-  Spec
-specCanAndOr typeName1 (_typeSample1 :: t1) typeName2 (_typeSample2 :: t2) typeName3 (_typeSample3 :: t3) =
-  describe (printf "CanAndOr %s %s, CanAndOr %s %s)" typeName1 typeName2 typeName2 typeName3) $ do
+  T t1 -> T t2 -> T t3 -> Spec
+specCanAndOr (T typeName1 ::T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
+  describe (printf "CanAndOr %s %s, CanAndOr %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "has idempotent ||" $ do
       HSC.property $ \ (x :: t1) -> (x || x) `scEquals` x
     it "has idempotent &&" $ do
@@ -270,9 +266,8 @@ specCanAndOrNotMixed ::
    CanAndOrX (AndOrType t t) t, CanAndOrX t (AndOrType t t),
    CanAndOrX (AndOrType t t) (AndOrType t t))
   =>
-  String -> t -> Spec
-specCanAndOrNotMixed typeName typeSample =
-  specCanAndOr typeName typeSample typeName typeSample typeName typeSample
+  T t -> Spec
+specCanAndOrNotMixed t = specCanAndOr t t t
 
 instance CanAndOr Bool Bool where
   type AndOrType Bool Bool = Bool
@@ -339,12 +334,12 @@ type IsBool t = (HasBools t, CanNegSameType t, CanAndOrSameType t)
 {-|
   HSpec properties that each implementation of IsBool should satisfy.
  -}
-specIsBool :: (IsBool t, Show t, SCS.Serial IO t) => String -> t -> Spec
-specIsBool typeName (typeSample :: t) =
+specIsBool :: (IsBool t, Show t, SCS.Serial IO t) => T t -> Spec
+specIsBool t@(T typeName :: T t) =
   describe (printf "IsBool %s" typeName) $ do
-    specHasBools typeName typeSample
-    specCanNeg typeName typeSample
-    specCanAndOrNotMixed typeName typeSample
+    specHasBools t
+    specCanNeg t
+    specCanAndOrNotMixed t
 
 scEquals ::
   (Show t1, HasBools t1, Show t2, HasBools t2) =>

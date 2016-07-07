@@ -45,6 +45,9 @@ module Numeric.MixedTypes.Literals
     , CanBeRational, rational, rationals
     , CanBeDouble, double, doubles
     , Convertible(..), convert
+    -- * Testing support functions
+    , T(..), tInt, tInteger, tRational, tDouble
+    , tBool, tMaybeBool, tMaybeMaybeBool
 )
 where
 
@@ -100,8 +103,8 @@ list !! ix = List.genericIndex list (integer ix)
  -}
 specCanBeInteger ::
   (CanBeInteger t, Show t, QC.Arbitrary t) =>
-  String -> t -> Spec
-specCanBeInteger typeName (_typeSample :: t) =
+  T t -> Spec
+specCanBeInteger (T typeName :: T t) =
   describe "generic list index (!!)" $ do
     it (printf "works using %s index" typeName) $ do
       QC.property $ \ (x :: t) -> let xi = integer x in (xi P.>= 0) QC.==> ([0..xi] !! x) P.== xi
@@ -159,3 +162,28 @@ instance Convertible Double Double where
   safeConvert d = Right d
 
 {-- we deliberately do not allow converions from Double to any other type --}
+
+{-- auxiliary type and functions for specifying type(s) to use in tests  --}
+
+data T t = T String
+
+tInt :: T Int
+tInt = T "Int"
+
+tInteger :: T Integer
+tInteger = T "Integer"
+
+tRational :: T Rational
+tRational = T "Rational"
+
+tDouble :: T Double
+tDouble = T "Double"
+
+tBool :: T Bool
+tBool = T "Bool"
+
+tMaybeBool :: T (Maybe Bool)
+tMaybeBool = T "(Maybe Bool)"
+
+tMaybeMaybeBool :: T (Maybe (Maybe Bool))
+tMaybeMaybeBool = T "(Maybe (Maybe Bool))"

@@ -13,7 +13,7 @@
 module Numeric.MixedTypes.MinMaxAbs
 (
     -- * Minimum and maximum
-    CanMinMax(..), CanMinMaxX, specCanMinMax, specCanMinMaxNotMixed
+    CanMinMax(..), specCanMinMax, specCanMinMaxNotMixed, CanMinMaxX, CanMinMaxXX
 )
 where
 
@@ -31,7 +31,7 @@ import qualified Test.QuickCheck as QC
 -- import qualified Test.SmallCheck as SC
 -- import qualified Test.SmallCheck.Series as SCS
 
--- import Numeric.MixedTypes.Literals
+import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
 import Numeric.MixedTypes.EqOrd
 
@@ -47,6 +47,7 @@ class CanMinMax a b where
   default max :: (MinMaxType a b ~ a, a~b, P.Ord a) => a -> a -> a
   max = P.max
 
+{-| Compound type constraint useful for test definition. -}
 type CanMinMaxX t1 t2 =
   (CanMinMax t1 t2,
    Show t1, QC.Arbitrary t1,
@@ -58,6 +59,7 @@ type CanMinMaxX t1 t2 =
    HasOrder t2 (MinMaxType t1 t2), HasOrder (MinMaxType t1 t2) t2,
    HasOrder (MinMaxType t1 t2) (MinMaxType t1 t2))
 
+{-| Compound type constraint useful for test definition. -}
 type CanMinMaxXX t1 t2 =
   (CanMinMaxX t1 t2, CanMinMaxX t2 t1,
    HasEq (MinMaxType t1 t2) (MinMaxType t2 t1))
@@ -73,11 +75,8 @@ specCanMinMax ::
    CanMinMaxXX (MinMaxType t1 t2) t3,
    HasEq (MinMaxType t1 (MinMaxType t2 t3)) (MinMaxType (MinMaxType t1 t2) t3))
   =>
-  String -> t1 ->
-  String -> t2 ->
-  String -> t3 ->
-  Spec
-specCanMinMax typeName1 (_typeSample1 :: t1) typeName2 (_typeSample2 :: t2) typeName3 (_typeSample3 :: t3) =
+  T t1 -> T t2 -> T t3 -> Spec
+specCanMinMax (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "CanMinMax %s %s, CanMinMax %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "`min` is not larger than its arguments" $ do
       QC.property $ \ (x :: t1) (y :: t2) -> let m = x `min` y in (m //<= y) && (m //<= x)
@@ -106,9 +105,8 @@ specCanMinMaxNotMixed ::
    CanMinMaxXX t (MinMaxType t t),
    HasEq (MinMaxType (MinMaxType t t) t) (MinMaxType t (MinMaxType t t)) )
   =>
-  String -> t -> Spec
-specCanMinMaxNotMixed typeName typeSample =
-  specCanMinMax typeName typeSample typeName typeSample typeName typeSample
+  T t -> Spec
+specCanMinMaxNotMixed t = specCanMinMax t t t
 
 instance CanMinMax Int Int
 instance CanMinMax Integer Integer

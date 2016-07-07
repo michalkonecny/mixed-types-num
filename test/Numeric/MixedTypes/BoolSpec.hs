@@ -17,12 +17,12 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
-  specIsBool "Bool" True
-  specIsBool "(Maybe Bool)" (Just True)
-  specIsBool "(Maybe (Maybe Bool))" (Just (Just True))
+  specIsBool tBool
+  specIsBool tMaybeBool
+  specIsBool tMaybeMaybeBool
   -- mixed-type tests:
-  specCanAndOr "Bool" True "(Maybe Bool)" (Just True) "Bool" True
-  specCanAndOr "(Maybe (Maybe Bool))" (Just (Just True)) "(Maybe Bool)" (Just True) "Bool" True
+  specCanAndOr tBool tMaybeBool tBool
+  specCanAndOr tMaybeMaybeBool tMaybeBool tBool
   describe "mixed-type Boolean operation examples" $ do
     it "can do True || Just False" $ do
       True || Just False `shouldBe` Just True

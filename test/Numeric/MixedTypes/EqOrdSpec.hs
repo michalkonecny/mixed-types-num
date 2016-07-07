@@ -17,15 +17,15 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
-  specHasEqNotMixed "Int" (int 0)
-  specHasEqNotMixed "Integer" 0
-  specHasEqNotMixed "Rational" 0.0
-  specHasEqNotMixed "Double" (double 0)
-  specHasEq "Int" (int 0) "Integer" 0 "Rational" 0.0
-  specHasEq "Integer" 0 "Rational" 0.0  "Int" (int 0)
-  specHasOrderNotMixed "Int" (int 0)
-  specHasOrderNotMixed "Integer" 0
-  specHasOrderNotMixed "Rational" 0.0
-  specHasOrderNotMixed "Double" (double 0)
-  specHasOrder "Int" (int 0) "Integer" 0 "Rational" 0.0
-  specHasOrder "Integer" 0 "Rational" 0.0  "Int" (int 0)
+  specHasEqNotMixed tInt
+  specHasEqNotMixed tInteger
+  specHasEqNotMixed tRational
+  specHasEqNotMixed tDouble
+  specHasEq tInt tInteger tRational
+  specHasEq tInteger tRational tInt
+  specHasOrderNotMixed tInt
+  specHasOrderNotMixed tInteger
+  specHasOrderNotMixed tRational
+  specHasOrderNotMixed tDouble
+  specHasOrder tInt tInteger tRational
+  specHasOrder tInteger tRational tInt

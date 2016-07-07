@@ -23,8 +23,8 @@ import qualified Test.QuickCheck as QC
 
 spec :: Spec
 spec = do
-  specCanBeInteger "Int" (int 0)
-  specCanBeInteger "Integer" 0
+  specCanBeInteger tInt
+  specCanBeInteger tInteger
   specConversions
 
 specConversions :: Spec
