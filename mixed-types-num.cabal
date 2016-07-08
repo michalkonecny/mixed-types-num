@@ -35,7 +35,19 @@ Description:
       .
       (Exact real numbers are not provided by this package.
         They will be provided in a different package soon.)
---        They are provided, /e.g./, by aern2-real.)
+      --  They are provided, /e.g./, by aern2-real.)
+   .
+    Arithmetic operations are provided via multi-parameter type classes
+    and the result type is given by associated
+    type families. For example:
+    .
+    @(+) :: (CanAddAsymmetric t1 t2) => t1 -> t2 -> AddType t1 t2@
+    .
+    Each such type class is accompanied by a hspec test suite,
+    which can be applied to instance types.
+    .
+    To find out more, please read the documentation for the modules
+    in the order specified in "Numeric.MixedTypes".
 
 library
   hs-source-dirs:  src

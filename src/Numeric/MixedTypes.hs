@@ -9,12 +9,14 @@
     Portability :  portable
 
     A single-import module for the package
-    mixed-types-num.  Please see the package description.
+    mixed-types-num.  Please see the package description (under Contents).
 -}
 
 module Numeric.MixedTypes
 (
+  -- ** Re-exporting Prelude, hiding the operators we are changing
   module Prelude,
+  -- ** Modules with Prelude alternatives
   module Numeric.MixedTypes.Literals,
   module Numeric.MixedTypes.Bool,
   module Numeric.MixedTypes.EqOrd,
