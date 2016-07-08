@@ -13,7 +13,8 @@
 module Numeric.MixedTypes.MinMaxAbs
 (
     -- * Minimum and maximum
-    CanMinMax(..), CanMinMaxThis, CanMinMaxSameType, minimum, maximum
+    CanMinMaxAsymmetric(..), CanMinMax, CanMinMaxThis, CanMinMaxSameType
+    , minimum, maximum
     , specCanMinMax, specCanMinMaxNotMixed, CanMinMaxX, CanMinMaxXX
     -- * Absolute value
     , CanAbs(..), CanAbsSameType
@@ -43,11 +44,15 @@ import Numeric.MixedTypes.EqOrd
 
 {---- Min and max -----}
 
+type CanMinMax t1 t2 =
+  (CanMinMaxAsymmetric t1 t2, CanMinMaxAsymmetric t2 t1,
+   MinMaxType t1 t2 ~ MinMaxType t2 t1)
+
 {-|
   A replacement for Prelude's `P.min` and `P.max`.  If @t1 = t2@ and @Ord t1@,
   then one can use the default implementation to mirror Prelude's @min@ and @max@.
 -}
-class CanMinMax t1 t2 where
+class CanMinMaxAsymmetric t1 t2 where
   type MinMaxType t1 t2
   type MinMaxType t1 t2 = t1 -- default
   min :: t1 -> t2 -> MinMaxType t1 t2
@@ -58,8 +63,7 @@ class CanMinMax t1 t2 where
   max = P.max
 
 type CanMinMaxThis t1 t2 =
-  (CanMinMax t1 t2, MinMaxType t1 t2 ~ t1,
-   CanMinMax t2 t1, MinMaxType t2 t1 ~ t1)
+  (CanMinMax t1 t2, MinMaxType t1 t2 ~ t1)
 type CanMinMaxSameType t =
   CanMinMaxThis t t
 
@@ -76,16 +80,16 @@ type CanMinMaxX t1 t2 =
   (CanMinMax t1 t2,
    Show t1, QC.Arbitrary t1,
    Show t2, QC.Arbitrary t2,
-   HasEq t1 (MinMaxType t1 t2), HasEq (MinMaxType t1 t2) t1,
-   HasEq t2 (MinMaxType t1 t2), HasEq (MinMaxType t1 t2) t2,
+   HasEq t1 (MinMaxType t1 t2),
+   HasEq t2 (MinMaxType t1 t2),
    HasEq (MinMaxType t1 t2) (MinMaxType t1 t2),
-   HasOrder t1 (MinMaxType t1 t2), HasOrder (MinMaxType t1 t2) t1,
-   HasOrder t2 (MinMaxType t1 t2), HasOrder (MinMaxType t1 t2) t2,
+   HasOrder t1 (MinMaxType t1 t2),
+   HasOrder t2 (MinMaxType t1 t2),
    HasOrder (MinMaxType t1 t2) (MinMaxType t1 t2))
 
 {-| Compound type constraint useful for test definition. -}
 type CanMinMaxXX t1 t2 =
-  (CanMinMaxX t1 t2, CanMinMaxX t2 t1,
+  (CanMinMaxX t1 t2,
    HasEq (MinMaxType t1 t2) (MinMaxType t2 t1))
 
 {-|
@@ -132,46 +136,46 @@ specCanMinMaxNotMixed ::
   T t -> Spec
 specCanMinMaxNotMixed t = specCanMinMax t t t
 
-instance CanMinMax Int Int
-instance CanMinMax Integer Integer
-instance CanMinMax Rational Rational
-instance CanMinMax Double Double
+instance CanMinMaxAsymmetric Int Int
+instance CanMinMaxAsymmetric Integer Integer
+instance CanMinMaxAsymmetric Rational Rational
+instance CanMinMaxAsymmetric Double Double
 
-instance CanMinMax Int Integer where
+instance CanMinMaxAsymmetric Int Integer where
   type MinMaxType Int Integer = Integer
   min = convertFirst min
   max = convertFirst max
-instance CanMinMax Integer Int where
+instance CanMinMaxAsymmetric Integer Int where
   type MinMaxType Integer Int = Integer
   min = convertSecond min
   max = convertSecond max
 
-instance CanMinMax Int Rational where
+instance CanMinMaxAsymmetric Int Rational where
   type MinMaxType Int Rational = Rational
   min = convertFirst min
   max = convertFirst max
-instance CanMinMax Rational Int where
+instance CanMinMaxAsymmetric Rational Int where
   type MinMaxType Rational Int = Rational
   min = convertSecond min
   max = convertSecond max
 
-instance CanMinMax Integer Rational where
+instance CanMinMaxAsymmetric Integer Rational where
   type MinMaxType Integer Rational = Rational
   min = convertFirst min
   max = convertFirst max
-instance CanMinMax Rational Integer where
+instance CanMinMaxAsymmetric Rational Integer where
   type MinMaxType Rational Integer = Rational
   min = convertSecond min
   max = convertSecond max
 
-instance (CanMinMax a b) => CanMinMax [a] [b] where
+instance (CanMinMaxAsymmetric a b) => CanMinMaxAsymmetric [a] [b] where
   type MinMaxType [a] [b] = [MinMaxType a b]
   min (x:xs) (y:ys) = (min x y) : (min xs ys)
   min _ _ = []
   max (x:xs) (y:ys) = (max x y) : (max xs ys)
   max _ _ = []
 
-instance (CanMinMax a b) => CanMinMax (Maybe a) (Maybe b) where
+instance (CanMinMaxAsymmetric a b) => CanMinMaxAsymmetric (Maybe a) (Maybe b) where
   type MinMaxType (Maybe a) (Maybe b) = Maybe (MinMaxType a b)
   min (Just x) (Just y) = Just (min x y)
   min _ _ = Nothing
