@@ -13,7 +13,7 @@
 module Numeric.MixedTypes.EqOrd
 (
   -- * Equality tests
-  HasEqAsymmetric(..), HasEq,  (==), (/=)
+  HasEq,  HasEqAsymmetric(..), (==), (/=)
   , certainlyEqualTo, certainlyNotEqualTo, notDifferentFrom
   , (//==)
   -- ** Tests
@@ -22,7 +22,7 @@ module Numeric.MixedTypes.EqOrd
   , CanTestZero(..), specCanTestZero
   , CanPickNonZero(..), specCanPickNonZero
   -- * Comparisons in numeric order
-  , HasOrderAsymmetric(..), HasOrder, (>), (<), (<=), (>=)
+  , HasOrder, HasOrderAsymmetric(..), (>), (<), (<=), (>=)
   -- ** Tests
   , specHasOrder, specHasOrderNotMixed, HasOrderX
   -- ** Specific comparisons

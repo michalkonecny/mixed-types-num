@@ -13,7 +13,7 @@
 module Numeric.MixedTypes.AddSub
 (
     -- * Addition
-    CanAddAsymmetric(..), CanAdd, CanAddThis, CanAddSameType
+    CanAdd, CanAddAsymmetric(..), CanAddThis, CanAddSameType
     , (+), sum
   -- ** Tests
     , specCanAdd, specCanAddNotMixed, specCanAddSameType, CanAddX, CanAddXX,

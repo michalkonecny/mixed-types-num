@@ -23,7 +23,7 @@ module Numeric.MixedTypes.Bool
   -- ** Tests
   , specCanNegBool, CanNegBoolX
   -- * And and or
-  , CanAndOrAsymmetric(..), CanAndOr, (&&), (||), CanAndOrWith, CanAndOrSameType, and, or
+  , CanAndOr, CanAndOrAsymmetric(..), (&&), (||), CanAndOrWith, CanAndOrSameType, and, or
   -- ** Tests
   , specCanAndOr, specCanAndOrNotMixed, CanAndOrX
 )

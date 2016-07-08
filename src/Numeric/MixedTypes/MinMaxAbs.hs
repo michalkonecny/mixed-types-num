@@ -13,7 +13,7 @@
 module Numeric.MixedTypes.MinMaxAbs
 (
   -- * Minimum and maximum
-  CanMinMaxAsymmetric(..), CanMinMax, CanMinMaxThis, CanMinMaxSameType
+  CanMinMax, CanMinMaxAsymmetric(..), CanMinMaxThis, CanMinMaxSameType
   , minimum, maximum
   -- ** Tests
   , specCanMinMax, specCanMinMaxNotMixed, CanMinMaxX, CanMinMaxXX
