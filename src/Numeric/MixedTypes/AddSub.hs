@@ -16,7 +16,7 @@ module Numeric.MixedTypes.AddSub
     CanAddAsymmetric(..), CanAdd, CanAddThis, CanAddSameType
     , (+), sum
   -- ** Tests
-    , specCanAdd, specCanAddNotMixed, CanAddX, CanAddXX
+    , specCanAdd, specCanAddNotMixed, specCanAddSameType, CanAddX, CanAddXX
 )
 where
 
@@ -66,9 +66,8 @@ type CanAddThis t1 t2 =
 type CanAddSameType t =
   CanAddThis t t
 
-sum :: (CanAddSameType t) => [t] -> t
-sum (x:xs) = List.foldl' add x xs
-sum [] = error $ "maximum: empty list"
+sum :: (CanAddSameType t, Convertible Integer t) => [t] -> t
+sum xs = List.foldl' add (convert 0) xs
 
 {-| Compound type constraint useful for test definition. -}
 type CanAddX t1 t2 =
@@ -116,6 +115,7 @@ specCanAdd (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
     it "decreases when negative" $ do
       QC.property $ \ (x :: t1) (y :: t2) ->
         (isCertainlyNegative x) QC.==> (x + y) //< y
+
 --
 {-|
   HSpec properties that each implementation of CanAdd should satisfy.
@@ -129,6 +129,23 @@ specCanAddNotMixed ::
   =>
   T t -> Spec
 specCanAddNotMixed t = specCanAdd t t t
+
+{-|
+  HSpec properties that each implementation of CanAddSameType should satisfy.
+ -}
+specCanAddSameType ::
+  (Convertible Integer t,
+   HasEqAsymmetric t t, CanAddSameType t)
+   =>
+   T t -> SpecWith ()
+specCanAddSameType (T typeName :: T t) =
+  describe (printf "CanAddSameType %s" typeName) $ do
+    it "has sum working over integers" $ do
+      QC.property $ \ (xsi :: [Integer]) ->
+        (sum $ (map convert xsi :: [t])) //== (convert (sum xsi) :: t)
+    it "has sum [] = 0" $ do
+        (sum ([] :: [t])) //== (convert 0 :: t)
+
 
 instance CanAddAsymmetric Int Int
 instance CanAddAsymmetric Integer Integer
