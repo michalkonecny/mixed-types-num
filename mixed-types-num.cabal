@@ -90,7 +90,7 @@ library
     Numeric.MixedTypes.EqOrd
     Numeric.MixedTypes.MinMaxAbs
     Numeric.MixedTypes.AddSub
-    -- Numeric.MixedTypes.Ring
+    Numeric.MixedTypes.Ring
     -- Numeric.MixedTypes.Field
     -- Numeric.MixedTypes.Elementary
 

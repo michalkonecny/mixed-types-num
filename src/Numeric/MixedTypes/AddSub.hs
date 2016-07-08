@@ -140,9 +140,9 @@ specCanAddNotMixed t = specCanAdd t t t
  -}
 specCanAddSameType ::
   (Convertible Integer t,
-   HasEqAsymmetric t t, CanAddSameType t)
+   HasEq t t, CanAddSameType t)
    =>
-   T t -> SpecWith ()
+   T t -> Spec
 specCanAddSameType (T typeName :: T t) =
   describe (printf "CanAddSameType %s" typeName) $ do
     it "has sum working over integers" $ do
@@ -152,7 +152,10 @@ specCanAddSameType (T typeName :: T t) =
         (sum ([] :: [t])) //== (convert 0 :: t)
 
 
-instance CanAddAsymmetric Int Int
+instance CanAddAsymmetric Int Int where
+  type AddType Int Int = Integer -- do not risk overflow
+  add a b = (integer a) P.+ (integer b)
+
 instance CanAddAsymmetric Integer Integer
 instance CanAddAsymmetric Rational Rational
 instance CanAddAsymmetric Double Double
@@ -273,7 +276,10 @@ specCanSubNotMixed ::
   T t -> Spec
 specCanSubNotMixed t = specCanSub t t
 
-instance CanSub Int Int
+instance CanSub Int Int where
+  type SubType Int Int = Integer -- do not risk overflow
+  sub a b = (integer a) P.- (integer b)
+
 instance CanSub Integer Integer
 instance CanSub Rational Rational
 instance CanSub Double Double

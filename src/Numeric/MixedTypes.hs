@@ -21,7 +21,8 @@ module Numeric.MixedTypes
   module Numeric.MixedTypes.Bool,
   module Numeric.MixedTypes.EqOrd,
   module Numeric.MixedTypes.MinMaxAbs,
-  module Numeric.MixedTypes.AddSub
+  module Numeric.MixedTypes.AddSub,
+  module Numeric.MixedTypes.Ring
 )
 where
 
@@ -31,7 +32,7 @@ import Prelude hiding
     negate, not, (&&), (||), and, or,
     (==),(/=),(<),(>),(<=),(>=),
     abs, min, max, minimum, maximum,
-    (+), (-), sum
+   (-), (+), sum, (*), (^), (^^), product
   )
 
 import Numeric.MixedTypes.Literals
@@ -39,3 +40,4 @@ import Numeric.MixedTypes.Bool
 import Numeric.MixedTypes.EqOrd
 import Numeric.MixedTypes.MinMaxAbs
 import Numeric.MixedTypes.AddSub
+import Numeric.MixedTypes.Ring
