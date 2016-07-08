@@ -13,7 +13,7 @@
 module Numeric.MixedTypes.EqOrd
 (
     -- * Equality tests
-    HasEq(..),  (==), (/=)
+    HasEqAsymmetric(..), HasEq,  (==), (/=)
     , certainlyEqualTo, certainlyNotEqualTo, notDifferentFrom
     , (//==)
     , specHasEq, specHasEqNotMixed, HasEqX
@@ -21,7 +21,7 @@ module Numeric.MixedTypes.EqOrd
     , CanTestZero(..), specCanTestZero
     , CanPickNonZero(..), specCanPickNonZero
     -- * Inequality tests
-    , HasOrder(..), (>), (<), (<=), (>=)
+    , HasOrderAsymmetric(..), HasOrder, (>), (<), (<=), (>=)
     , specHasOrder, specHasOrderNotMixed, HasOrderX
     , (//<=), (//<), (//>=), (//>)
     , CanTestPosNeg(..)
@@ -48,7 +48,11 @@ infix  4  ==, /=, <, <=, >=, >, //==, //<=, //<, //>=, //>
 
 {---- Equality tests -----}
 
-class (IsBool (EqCompareType a b)) => HasEq a b where
+type HasEq t1 t2 =
+    (HasEqAsymmetric t1 t2,  HasEqAsymmetric t2 t1,
+     EqCompareType t1 t2 ~ EqCompareType t2 t1)
+
+class (IsBool (EqCompareType a b)) => HasEqAsymmetric a b where
     type EqCompareType a b
     type EqCompareType a b = Bool -- default
     equalTo :: a -> b -> (EqCompareType a b)
@@ -62,19 +66,19 @@ class (IsBool (EqCompareType a b)) => HasEq a b where
         a -> b -> (EqCompareType a b)
     notEqualTo a b = not $ equalTo a b
 
-(==) :: (HasEq a b) => a -> b -> EqCompareType a b
+(==) :: (HasEqAsymmetric a b) => a -> b -> EqCompareType a b
 (==) = equalTo
-(/=) :: (HasEq a b) => a -> b -> EqCompareType a b
+(/=) :: (HasEqAsymmetric a b) => a -> b -> EqCompareType a b
 (/=) = notEqualTo
 
-certainlyEqualTo :: (HasEq a b) => a -> b -> Bool
+certainlyEqualTo :: (HasEqAsymmetric a b) => a -> b -> Bool
 certainlyEqualTo a b = isCertainlyTrue $ a == b
-certainlyNotEqualTo :: (HasEq a b) => a -> b -> Bool
+certainlyNotEqualTo :: (HasEqAsymmetric a b) => a -> b -> Bool
 certainlyNotEqualTo a b = isCertainlyTrue $ a /= b
-notDifferentFrom :: (HasEq a b) => a -> b -> Bool
+notDifferentFrom :: (HasEqAsymmetric a b) => a -> b -> Bool
 notDifferentFrom a b = isNotFalse $ a == b
 
-(//==) :: (HasEq a b) => a -> b -> Bool
+(//==) :: (HasEqAsymmetric a b) => a -> b -> Bool
 (//==) = notDifferentFrom
 
 {-| Compound type constraint useful for test definition. -}
@@ -114,33 +118,33 @@ specHasEqNotMixed ::
   T t -> Spec
 specHasEqNotMixed t = specHasEq t t t
 
-instance HasEq Int Int
-instance HasEq Integer Integer
-instance HasEq Rational Rational
-instance HasEq Double Double
+instance HasEqAsymmetric Int Int
+instance HasEqAsymmetric Integer Integer
+instance HasEqAsymmetric Rational Rational
+instance HasEqAsymmetric Double Double
 
-instance HasEq Int Integer where
+instance HasEqAsymmetric Int Integer where
   equalTo = convertFirst equalTo
-instance HasEq Integer Int where
+instance HasEqAsymmetric Integer Int where
   equalTo = convertSecond equalTo
 
-instance HasEq Int Rational where
+instance HasEqAsymmetric Int Rational where
   equalTo = convertFirst equalTo
-instance HasEq Rational Int where
+instance HasEqAsymmetric Rational Int where
   equalTo = convertSecond equalTo
 
-instance HasEq Integer Rational where
+instance HasEqAsymmetric Integer Rational where
   equalTo = convertFirst equalTo
-instance HasEq Rational Integer where
+instance HasEqAsymmetric Rational Integer where
   equalTo = convertSecond equalTo
 
-instance (HasEq a b) => HasEq [a] [b] where
+instance (HasEqAsymmetric a b) => HasEqAsymmetric [a] [b] where
   type EqCompareType [a] [b] = EqCompareType a b
   equalTo [] [] = convert True
   equalTo (x:xs) (y:ys) = (x == y) && (xs == ys)
   equalTo _ _ = convert False
 
-instance (HasEq a b) => HasEq (Maybe a) (Maybe b) where
+instance (HasEqAsymmetric a b) => HasEqAsymmetric (Maybe a) (Maybe b) where
   type EqCompareType (Maybe a) (Maybe b) = EqCompareType a b
   equalTo Nothing Nothing = convert True
   equalTo (Just x) (Just y) = (x == y)
@@ -225,7 +229,11 @@ instance CanPickNonZero Rational
 
 {---- Inequality -----}
 
-class (IsBool (OrderCompareType a b)) => HasOrder a b where
+type HasOrder t1 t2 =
+  (HasOrderAsymmetric t1 t2, HasOrderAsymmetric t2 t1,
+   OrderCompareType t1 t2 ~ OrderCompareType t2 t1)
+
+class (IsBool (OrderCompareType a b)) => HasOrderAsymmetric a b where
     type OrderCompareType a b
     type OrderCompareType a b = Bool -- default
     lessThan :: a -> b -> (OrderCompareType a b)
@@ -247,26 +255,26 @@ class (IsBool (OrderCompareType a b)) => HasOrder a b where
       a -> b -> (OrderCompareType a b)
     geq a b = leq b a
 
-(>) :: (HasOrder a b) => a -> b -> OrderCompareType a b
+(>) :: (HasOrderAsymmetric a b) => a -> b -> OrderCompareType a b
 (>) = greaterThan
-(<) :: (HasOrder a b) => a -> b -> OrderCompareType a b
+(<) :: (HasOrderAsymmetric a b) => a -> b -> OrderCompareType a b
 (<) = lessThan
 
-(>=) :: (HasOrder a b) => a -> b -> OrderCompareType a b
+(>=) :: (HasOrderAsymmetric a b) => a -> b -> OrderCompareType a b
 (>=) = geq
-(<=) :: (HasOrder a b) => a -> b -> OrderCompareType a b
+(<=) :: (HasOrderAsymmetric a b) => a -> b -> OrderCompareType a b
 (<=) = leq
 
-(//>) :: (HasOrder a b) => a -> b -> Bool
+(//>) :: (HasOrderAsymmetric a b) => a -> b -> Bool
 a //> b = isNotFalse $ a > b
 
-(//<) :: (HasOrder a b) => a -> b -> Bool
+(//<) :: (HasOrderAsymmetric a b) => a -> b -> Bool
 a //< b = isNotFalse $ a < b
 
-(//>=) :: (HasOrder a b) => a -> b -> Bool
+(//>=) :: (HasOrderAsymmetric a b) => a -> b -> Bool
 a //>= b = isNotFalse $ a >= b
 
-(//<=) :: (HasOrder a b) => a -> b -> Bool
+(//<=) :: (HasOrderAsymmetric a b) => a -> b -> Bool
 a //<= b = isNotFalse $ a <= b
 
 {-| Compound type constraint useful for test definition. -}
@@ -278,7 +286,7 @@ type HasOrderX t1 t2 =
  -}
 specHasOrder ::
   (HasOrderX t1 t1,
-   HasOrderX t1 t2, HasOrderX t2 t1,
+   HasOrderX t1 t2,
    HasOrderX t1 t3, HasOrderX t2 t3,
    CanAndOrX (OrderCompareType t1 t2) (OrderCompareType t2 t3))
   =>
@@ -314,29 +322,29 @@ specHasOrderNotMixed ::
   T t -> Spec
 specHasOrderNotMixed t = specHasOrder t t t
 
-instance HasOrder Int Int
-instance HasOrder Integer Integer
-instance HasOrder Rational Rational
-instance HasOrder Double Double
+instance HasOrderAsymmetric Int Int
+instance HasOrderAsymmetric Integer Integer
+instance HasOrderAsymmetric Rational Rational
+instance HasOrderAsymmetric Double Double
 
-instance HasOrder Int Integer where
+instance HasOrderAsymmetric Int Integer where
   lessThan = convertFirst lessThan
   leq = convertFirst leq
-instance HasOrder Integer Int where
+instance HasOrderAsymmetric Integer Int where
   lessThan = convertSecond lessThan
   leq = convertSecond leq
 
-instance HasOrder Int Rational where
+instance HasOrderAsymmetric Int Rational where
   lessThan = convertFirst lessThan
   leq = convertFirst leq
-instance HasOrder Rational Int where
+instance HasOrderAsymmetric Rational Int where
   lessThan = convertSecond lessThan
   leq = convertSecond leq
 
-instance HasOrder Integer Rational where
+instance HasOrderAsymmetric Integer Rational where
   lessThan = convertFirst lessThan
   leq = convertFirst leq
-instance HasOrder Rational Integer where
+instance HasOrderAsymmetric Rational Integer where
   lessThan = convertSecond lessThan
   leq = convertSecond leq
 
