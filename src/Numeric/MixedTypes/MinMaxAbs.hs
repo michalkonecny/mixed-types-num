@@ -41,17 +41,17 @@ import Numeric.MixedTypes.EqOrd
 {---- Min and max -----}
 
 {-|
-  A replacement for Prelude's `P.min` and `P.max`.  If @a = b@ and @Ord a@,
+  A replacement for Prelude's `P.min` and `P.max`.  If @t1 = t2@ and @Ord t1@,
   then one can use the default implementation to mirror Prelude's @min@ and @max@.
 -}
-class CanMinMax a b where
-  type MinMaxType a b
-  type MinMaxType a b = a -- default
-  min :: a -> b -> MinMaxType a b
-  max :: a -> b -> MinMaxType a b
-  default min :: (MinMaxType a b ~ a, a~b, P.Ord a) => a -> a -> a
+class CanMinMax t1 t2 where
+  type MinMaxType t1 t2
+  type MinMaxType t1 t2 = t1 -- default
+  min :: t1 -> t2 -> MinMaxType t1 t2
+  max :: t1 -> t2 -> MinMaxType t1 t2
+  default min :: (MinMaxType t1 t2 ~ t1, t1~t2, P.Ord t1) => t1 -> t1 -> t1
   min = P.min
-  default max :: (MinMaxType a b ~ a, a~b, P.Ord a) => a -> a -> a
+  default max :: (MinMaxType t1 t2 ~ t1, t1~t2, P.Ord t1) => t1 -> t1 -> t1
   max = P.max
 
 type CanMinMaxThis t1 t2 =
