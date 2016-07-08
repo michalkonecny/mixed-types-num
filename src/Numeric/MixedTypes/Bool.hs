@@ -39,6 +39,7 @@ import Test.Hspec
 import qualified Test.Hspec.SmallCheck as HSC
 import qualified Test.SmallCheck as SC
 import qualified Test.SmallCheck.Series as SCS
+-- import Control.Exception (evaluate)
 
 {-|
   Tests for truth or falsity.  Beware, when @isCertainlyTrue@ returns @False@,
@@ -201,7 +202,7 @@ and :: (CanAndOrSameType t, HasBools t) => [t] -> t
 and = List.foldl' (&&) (convert True)
 
 or :: (CanAndOrSameType t, HasBools t) => [t] -> t
-or = List.foldl' (||) (convert True)
+or = List.foldl' (||) (convert False)
 
 {-| Compound type constraint useful for test definition. -}
 type CanAndOrX t1 t2 =

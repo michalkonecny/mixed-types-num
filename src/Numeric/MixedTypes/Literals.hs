@@ -61,7 +61,7 @@ import qualified Data.List as List
 
 import Test.Hspec
 import qualified Test.QuickCheck as QC
--- import qualified Test.Hspec.SmallCheck as SC
+-- import Control.Exception (evaluate)
 
 {-| Replacement for 'Prelude.fromInteger' using the RebindableSyntax extension.
     This version of fromInteger arranges that integer literals

@@ -17,7 +17,9 @@ module Numeric.MixedTypes.EqOrd
     , certainlyEqualTo, certainlyNotEqualTo, notDifferentFrom
     , (//==)
     , specHasEq, specHasEqNotMixed, HasEqX
-    , CanTestZero(..)
+    -- ** Specific equality tests
+    , CanTestZero(..), specCanTestZero
+    , CanPickNonZero(..), specCanPickNonZero
     -- * Inequality tests
     , HasOrder(..), (>), (<), (<=), (>=)
     , specHasOrder, specHasOrderNotMixed, HasOrderX
@@ -29,7 +31,7 @@ module Numeric.MixedTypes.EqOrd
 where
 
 import Prelude hiding
-  (fromInteger,
+  (fromInteger, fromRational,
    negate,not,(&&),(||),and,or,
    (==), (/=), (>), (<), (<=), (>=))
 import qualified Prelude as P
@@ -37,9 +39,7 @@ import Text.Printf
 
 import Test.Hspec
 import qualified Test.QuickCheck as QC
--- import qualified Test.Hspec.SmallCheck as HSC
--- import qualified Test.SmallCheck as SC
--- import qualified Test.SmallCheck.Series as SCS
+import Control.Exception (evaluate)
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -154,9 +154,74 @@ class CanTestZero t where
     default isNonZero :: (HasEq t Integer) => t -> Bool
     isNonZero a = isCertainlyTrue (a /= 0)
 
+{-|
+  HSpec properties that each implementation of CanTestZero should satisfy.
+ -}
+specCanTestZero ::
+  (CanTestZero t, Convertible Integer t)
+  =>
+  T t -> Spec
+specCanTestZero (T typeName :: T t) =
+  describe (printf "CanTestZero %s" typeName) $ do
+    it "converted non-zero Integer is not isCertainlyZero" $ do
+      QC.property $ \ (x :: Integer) ->
+        x /= 0 QC.==> (not $ isCertainlyZero (convert x :: t))
+    it "converted non-zero Integer is isNonZero" $ do
+      QC.property $ \ (x :: Integer) ->
+        x /= 0 QC.==> (isNonZero (convert x :: t))
+    it "converted 0.0 is not isNonZero" $ do
+      (isNonZero (convert 0 :: t)) `shouldBe` False
+
 instance CanTestZero Int
 instance CanTestZero Integer
 instance CanTestZero Rational
+
+class CanPickNonZero t where
+  {-|
+    Given a list @[(a1,b1),(a2,b2),...]@ and assuming that
+    at least one of @a1,a2,...@ is non-zero, pick one of them
+    and return the corresponding pair @(ai,bi)@.
+
+    If none of @a1,a2,...@ is zero, either throws an exception
+    or loops forever.
+
+    The default implementation is based on a `CanTestZero` instance
+    and is not parallel.
+   -}
+  pickNonZero :: [(t,s)] -> (t,s)
+  default pickNonZero :: (CanTestZero t, Show t) => [(t,s)] -> (t,s)
+  pickNonZero list =
+    case aux list of
+      Just result -> result
+      Nothing ->
+        error $ "pickNonZero: failed to find a non-zero element in "
+                  ++ show (map fst list)
+    where
+      aux ((a,b):rest)
+        | isNonZero a = Just (a,b)
+        | otherwise = aux rest
+      aux [] = Nothing
+
+{-|
+  HSpec properties that each implementation of CanPickNonZero should satisfy.
+ -}
+specCanPickNonZero ::
+  (CanPickNonZero t, CanTestZero t, Convertible Integer t, Show t, QC.Arbitrary t)
+  =>
+  T t -> Spec
+specCanPickNonZero (T typeName :: T t) =
+  describe (printf "CanPickNonZero %s" typeName) $ do
+    it "picks a non-zero element if there is one" $ do
+      QC.property $ \ (xs :: [(t, ())]) ->
+        or (map (isNonZero . fst) xs) -- if at least one is non-zero
+          QC.==> (isNonZero $ fst $ pickNonZero xs)
+    it "throws exception when all the elements are 0" $ do
+      (evaluate $ pickNonZero [(convert i :: t, ()) | i <- [0,0,0]])
+        `shouldThrow` anyException
+
+instance CanPickNonZero Int
+instance CanPickNonZero Integer
+instance CanPickNonZero Rational
 
 {---- Inequality -----}
 
