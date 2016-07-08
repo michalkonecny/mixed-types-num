@@ -14,7 +14,7 @@ copyright:      (c) 2015, 2016 Michal Konecny, Pieter Collins
 license-file:   LICENSE
 Description:
     This package provides a version of Prelude where
-    binary and unary operations such as @+@, @==@, @not@
+    unary and binary operations such as @not@, @+@, @==@
     have their result type derived from the parameter type(s),
     allowing, /e.g./:
     .
@@ -34,7 +34,8 @@ Description:
       @if (isCertainlyTrue (x > 1)) then ...@
       .
       (Exact real numbers are not provided by this package.
-        They are provided, /e.g./, by aern2-real.)
+        They will be provided in a different package soon.)
+--        They are provided, /e.g./, by aern2-real.)
 
 library
   hs-source-dirs:  src

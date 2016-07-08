@@ -1,6 +1,6 @@
 {-|
     Module      :  Numeric.MixedType
-    Description :  Mixed-type numeric expressions
+    Description :  Bottom-up typed numeric expressions
     Copyright   :  (c) Michal Konecny, Pieter Collins
     License     :  BSD3
 
