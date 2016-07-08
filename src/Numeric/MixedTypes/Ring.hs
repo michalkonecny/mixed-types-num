@@ -13,12 +13,12 @@
 module Numeric.MixedTypes.Ring
 (
     -- * Multiplication
-    CanMul, CanMulAsymmetric(..), CanMulThis, CanMulSameType
+    CanMul, CanMulAsymmetric(..), CanMulBy, CanMulSameType
     , (*), product
   -- ** Tests
     , specCanMul, specCanMulNotMixed, specCanMulSameType, CanMulX
     -- * Exponentiation
-    , CanPow(..), CanPowThis
+    , CanPow(..), CanPowBy
     , (^), (^^)
   -- ** Tests
     , specCanPow, CanPowX
@@ -68,10 +68,10 @@ infixl 7  *
 (*) :: (CanMulAsymmetric t1 t2) => t1 -> t2 -> MulType t1 t2
 (*) = mul
 
-type CanMulThis t1 t2 =
+type CanMulBy t1 t2 =
   (CanMul t1 t2, MulType t1 t2 ~ t1)
 type CanMulSameType t =
-  CanMulThis t t
+  CanMulBy t t
 
 product :: (CanMulSameType t, Convertible Integer t) => [t] -> t
 product xs = List.foldl' mul (convert 1) xs
@@ -229,7 +229,7 @@ class CanPow t1 t2 where
 (^^) :: (CanPow t1 t2) => t1 -> t2 -> PowType t1 t2
 (^^) = (^)
 
-type CanPowThis t1 t2 =
+type CanPowBy t1 t2 =
   (CanPow t1 t2, PowType t1 t2 ~ t1)
 
 {-| Compound type constraint useful for test definition. -}
