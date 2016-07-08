@@ -1,6 +1,6 @@
 {-|
     Module      :  Numeric.MixedType.MinMaxAbsSpec
-    Description :  hspec tests for Boolean operations
+    Description :  hspec tests for min, max, negation and abs
     Copyright   :  (c) Michal Konecny
     License     :  BSD3
 
