@@ -13,7 +13,8 @@
 module Numeric.MixedTypes.MinMaxAbs
 (
     -- * Minimum and maximum
-    CanMinMax(..), specCanMinMax, specCanMinMaxNotMixed, CanMinMaxX, CanMinMaxXX
+    CanMinMax(..), CanMinMaxThis, CanMinMaxSameType, minimum, maximum
+    , specCanMinMax, specCanMinMaxNotMixed, CanMinMaxX, CanMinMaxXX
 )
 where
 
@@ -24,6 +25,8 @@ import Prelude hiding
    abs, min, max, minimum, maximum)
 import qualified Prelude as P
 import Text.Printf
+
+import qualified Data.List as List
 
 import Test.Hspec
 import qualified Test.QuickCheck as QC
@@ -37,6 +40,10 @@ import Numeric.MixedTypes.EqOrd
 
 {---- Min and max -----}
 
+{-|
+  A replacement for Prelude's `P.min` and `P.max`.  If @a = b@ and @Ord a@,
+  then one can use the default implementation to mirror Prelude's @min@ and @max@.
+-}
 class CanMinMax a b where
   type MinMaxType a b
   type MinMaxType a b = a -- default
@@ -46,6 +53,20 @@ class CanMinMax a b where
   min = P.min
   default max :: (MinMaxType a b ~ a, a~b, P.Ord a) => a -> a -> a
   max = P.max
+
+type CanMinMaxThis t1 t2 =
+  (CanMinMax t1 t2, MinMaxType t1 t2 ~ t1,
+   CanMinMax t2 t1, MinMaxType t2 t1 ~ t1)
+type CanMinMaxSameType t =
+  CanMinMaxThis t t
+
+maximum :: (CanMinMaxSameType t) => [t] -> t
+maximum (x:xs) = List.foldl' max x xs
+maximum [] = error $ "maximum: empty list"
+
+minimum :: (CanMinMaxSameType t) => [t] -> t
+minimum (x:xs) = List.foldl' min x xs
+minimum [] = error $ "minimum: empty list"
 
 {-| Compound type constraint useful for test definition. -}
 type CanMinMaxX t1 t2 =
