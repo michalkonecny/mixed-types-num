@@ -19,9 +19,9 @@ module Numeric.MixedTypes.Bool
   , stronglyImplies, stronglyEquivalentTo
   , weaklyImplies, weaklyEquivalentTo
   -- * Negation
-  , CanNeg(..), not, CanNegSameType, specCanNeg, CanNegX
+  , CanNeg(..), not, CanNegSameType, specCanNegBool, CanNegBoolX
   -- * And and or
-  , CanAndOr(..), (&&), (||), CanAndOrWith, CanAndOrSameType, and, or
+  , CanAndOrAsymmetric(..), CanAndOr, (&&), (||), CanAndOrWith, CanAndOrSameType, and, or
   , specCanAndOr, specCanAndOrNotMixed, CanAndOrX
 )
 where
@@ -137,18 +137,18 @@ type CanNegSameType t = (CanNeg t, NegType t ~ t)
 type HasBoolsX t = (HasBools t, Show t, SCS.Serial IO t)
 
 {-| Compound type constraint useful for test definition. -}
-type CanNegX t =
+type CanNegBoolX t =
   (CanNeg t, HasBoolsX t, HasBoolsX (NegType t))
 
 {-|
   HSpec properties that each implementation of CanNegSameType should satisfy.
  -}
-specCanNeg ::
-  (CanNegX t, CanNegX (NegType t))
+specCanNegBool ::
+  (CanNegBoolX t, CanNegBoolX (NegType t))
   =>
   T t -> Spec
-specCanNeg (T typeName :: T t) =
-  describe (printf "CanNegSameType %s" typeName) $ do
+specCanNegBool (T typeName :: T t) =
+  describe (printf "CanNeg %s" typeName) $ do
     it "ignores double negation" $ do
       HSC.property $ \ (x :: t) -> (not (not x)) `scEquals` x
     it "negates True to False" $ do
@@ -172,6 +172,10 @@ _testNeg1 = not (Just True)
 
 {---- And/Or ----}
 
+type CanAndOr t1 t2 =
+  (CanAndOrAsymmetric t1 t2, CanAndOrAsymmetric t2 t1,
+   AndOrType t1 t2 ~ AndOrType t2 t1)
+
 {-|
   Binary logical `and' and `or' for generalised Booleans.  For example:
 
@@ -180,7 +184,7 @@ _testNeg1 = not (Just True)
   (Just (Just True)) || False = (Just (Just True))
   @
  -}
-class CanAndOr t1 t2 where
+class CanAndOrAsymmetric t1 t2 where
   type AndOrType t1 t2
   and2 :: t1 -> t2 -> AndOrType t1 t2
   or2 :: t1 -> t2 -> AndOrType t1 t2
@@ -192,10 +196,10 @@ infixr 3  &&
 infixr 2  ||
 
 {-| A synonym of 'and2'. -}
-(&&) :: (CanAndOr a b) => a -> b -> AndOrType a b
+(&&) :: (CanAndOrAsymmetric a b) => a -> b -> AndOrType a b
 (&&) = and2
 {-| A synonym of 'or2'. -}
-(||) :: (CanAndOr a b) => a -> b -> AndOrType a b
+(||) :: (CanAndOrAsymmetric a b) => a -> b -> AndOrType a b
 (||) = or2
 
 and :: (CanAndOrSameType t, HasBools t) => [t] -> t
@@ -270,13 +274,13 @@ specCanAndOrNotMixed ::
   T t -> Spec
 specCanAndOrNotMixed t = specCanAndOr t t t
 
-instance CanAndOr Bool Bool where
+instance CanAndOrAsymmetric Bool Bool where
   type AndOrType Bool Bool = Bool
   and2 = (P.&&)
   or2 = (P.||)
 
-instance (CanAndOr t1 t2, HasBools t1, HasBools t2, HasBools (AndOrType t1 t2)) =>
-  CanAndOr (Maybe t1) (Maybe t2)
+instance (CanAndOrAsymmetric t1 t2, HasBools t1, HasBools t2, HasBools (AndOrType t1 t2)) =>
+  CanAndOrAsymmetric (Maybe t1) (Maybe t2)
   where
   type AndOrType (Maybe t1) (Maybe t2) = Maybe (AndOrType t1 t2)
   and2 (Just b1) _ | isCertainlyFalse b1 = Just (convert False)
@@ -288,8 +292,8 @@ instance (CanAndOr t1 t2, HasBools t1, HasBools t2, HasBools (AndOrType t1 t2)) 
   or2 (Just b1) (Just b2) = Just (b1 || b2)
   or2 _ _ = Nothing
 
-instance (CanAndOr Bool t2, HasBools t2, HasBools (AndOrType Bool t2)) =>
-  CanAndOr Bool (Maybe t2)
+instance (CanAndOrAsymmetric Bool t2, HasBools t2, HasBools (AndOrType Bool t2)) =>
+  CanAndOrAsymmetric Bool (Maybe t2)
   where
   type AndOrType Bool (Maybe t2) = Maybe (AndOrType Bool t2)
   and2 False _ = Just (convert False)
@@ -301,8 +305,8 @@ instance (CanAndOr Bool t2, HasBools t2, HasBools (AndOrType Bool t2)) =>
   or2 b1 (Just b2) = Just (b1 || b2)
   or2 _ _ = Nothing
 
-instance (CanAndOr t1 Bool, HasBools t1, HasBools (AndOrType t1 Bool)) =>
-  CanAndOr (Maybe t1) Bool
+instance (CanAndOrAsymmetric t1 Bool, HasBools t1, HasBools (AndOrType t1 Bool)) =>
+  CanAndOrAsymmetric (Maybe t1) Bool
   where
   type AndOrType (Maybe t1) Bool = Maybe (AndOrType t1 Bool)
   and2 _ False = Just (convert False)
@@ -339,7 +343,7 @@ specIsBool :: (IsBool t, Show t, SCS.Serial IO t) => T t -> Spec
 specIsBool t@(T typeName :: T t) =
   describe (printf "IsBool %s" typeName) $ do
     specHasBools t
-    specCanNeg t
+    specCanNegBool t
     specCanAndOrNotMixed t
 
 scEquals ::
