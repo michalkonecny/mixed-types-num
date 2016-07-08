@@ -19,9 +19,12 @@ module Numeric.MixedTypes.Bool
   , stronglyImplies, stronglyEquivalentTo
   , weaklyImplies, weaklyEquivalentTo
   -- * Negation
-  , CanNeg(..), not, CanNegSameType, specCanNegBool, CanNegBoolX
+  , CanNeg(..), not, CanNegSameType
+  -- ** Tests
+  , specCanNegBool, CanNegBoolX
   -- * And and or
   , CanAndOrAsymmetric(..), CanAndOr, (&&), (||), CanAndOrWith, CanAndOrSameType, and, or
+  -- ** Tests
   , specCanAndOr, specCanAndOrNotMixed, CanAndOrX
 )
 where

@@ -37,14 +37,14 @@ module Numeric.MixedTypes.Literals
     -- * Fixed-type literals
     fromInteger, fromRational
     , ifThenElse
-    -- * Generic list index
-    , (!!)
     -- * Convenient conversions
-    , CanBeInteger, integer, integers, specCanBeInteger
+    , CanBeInteger, integer, integers
     , CanBeInt, int, ints
     , CanBeRational, rational, rationals
     , CanBeDouble, double, doubles
     , Convertible(..), convert
+    -- * Generic list index
+    , (!!), specCanBeInteger
     -- * Testing support functions
     , T(..), tInt, tInteger, tRational, tDouble
     , tBool, tMaybeBool, tMaybeMaybeBool

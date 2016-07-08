@@ -12,21 +12,24 @@
 
 module Numeric.MixedTypes.EqOrd
 (
-    -- * Equality tests
-    HasEqAsymmetric(..), HasEq,  (==), (/=)
-    , certainlyEqualTo, certainlyNotEqualTo, notDifferentFrom
-    , (//==)
-    , specHasEq, specHasEqNotMixed, HasEqX
-    -- ** Specific equality tests
-    , CanTestZero(..), specCanTestZero
-    , CanPickNonZero(..), specCanPickNonZero
-    -- * Inequality tests
-    , HasOrderAsymmetric(..), HasOrder, (>), (<), (<=), (>=)
-    , specHasOrder, specHasOrderNotMixed, HasOrderX
-    , (//<=), (//<), (//>=), (//>)
-    , CanTestPosNeg(..)
-    -- * Helper functions
-    , convertFirst, convertSecond
+  -- * Equality tests
+  HasEqAsymmetric(..), HasEq,  (==), (/=)
+  , certainlyEqualTo, certainlyNotEqualTo, notDifferentFrom
+  , (//==)
+  -- ** Tests
+  , specHasEq, specHasEqNotMixed, HasEqX
+  -- ** Specific tests
+  , CanTestZero(..), specCanTestZero
+  , CanPickNonZero(..), specCanPickNonZero
+  -- * Comparisons in numeric order
+  , HasOrderAsymmetric(..), HasOrder, (>), (<), (<=), (>=)
+  -- ** Tests
+  , specHasOrder, specHasOrderNotMixed, HasOrderX
+  -- ** Specific comparisons
+  , CanTestPosNeg(..)
+  -- * Helper ops and functions
+  , (//<=), (//<), (//>=), (//>)
+  , convertFirst, convertSecond
 )
 where
 
