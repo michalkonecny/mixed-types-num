@@ -25,3 +25,9 @@ spec = do
   specCanAddSameType tInt
   specCanAddSameType tInteger
   specCanAddSameType tRational
+  specCanSubNotMixed tInt
+  specCanSubNotMixed tInteger
+  specCanSubNotMixed tRational
+  specCanSub tInt tInteger
+  specCanSub tInt tRational
+  specCanSub tInteger tRational

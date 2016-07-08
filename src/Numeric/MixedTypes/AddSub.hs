@@ -16,7 +16,12 @@ module Numeric.MixedTypes.AddSub
     CanAddAsymmetric(..), CanAdd, CanAddThis, CanAddSameType
     , (+), sum
   -- ** Tests
-    , specCanAdd, specCanAddNotMixed, specCanAddSameType, CanAddX, CanAddXX
+    , specCanAdd, specCanAddNotMixed, specCanAddSameType, CanAddX, CanAddXX,
+    -- * Subtraction
+    CanSub(..), CanSubThis, CanSubSameType
+    , (-)
+  -- ** Tests
+    , specCanSub, specCanSubNotMixed, CanSubX
 )
 where
 
@@ -35,9 +40,9 @@ import Test.Hspec
 import qualified Test.QuickCheck as QC
 
 import Numeric.MixedTypes.Literals
--- import Numeric.MixedTypes.Bool
+import Numeric.MixedTypes.Bool (CanNeg(..))
 import Numeric.MixedTypes.EqOrd
--- import Numeric.MixedTypes.MinMaxAbs
+import Numeric.MixedTypes.MinMaxAbs ()
 
 {---- Addition -----}
 
@@ -203,3 +208,124 @@ instance (CanAddAsymmetric a b) => CanAddAsymmetric (Maybe a) (Maybe b) where
   type AddType (Maybe a) (Maybe b) = Maybe (AddType a b)
   add (Just x) (Just y) = Just (add x y)
   add _ _ = Nothing
+
+{---- Subtraction -----}
+
+{-|
+  A replacement for Prelude's binary `P.-`.  If @t1 = t2@ and @Num t1@,
+  then one can use the default implementation to mirror Prelude's @-@.
+-}
+class CanSub t1 t2 where
+  type SubType t1 t2
+  type SubType t1 t2 = t1 -- default
+  sub :: t1 -> t2 -> SubType t1 t2
+  default sub :: (SubType t1 t2 ~ t1, t1~t2, P.Num t1) => t1 -> t1 -> t1
+  sub = (P.-)
+
+(-) :: (CanSub t1 t2) => t1 -> t2 -> SubType t1 t2
+(-) = sub
+
+type CanSubThis t1 t2 =
+  (CanSub t1 t2, SubType t1 t2 ~ t1)
+type CanSubSameType t =
+  CanSubThis t t
+
+{-| Compound type constraint useful for test definition. -}
+type CanSubX t1 t2 =
+  (CanSub t1 t2,
+   HasEq t1 (SubType t1 t2),
+   CanAddXX t1 t2)
+
+{-|
+  HSpec properties that each implementation of CanSub should satisfy.
+ -}
+specCanSub ::
+  (CanSubX t1 t1,
+   CanSubX t1 t2,
+   CanNeg t2,
+   CanAdd t1 (NegType t2),
+   HasEq (SubType t1 t2) (AddType t1 (NegType t2)),
+   Convertible Integer t1)
+  =>
+  T t1 -> T t2 -> Spec
+specCanSub (T typeName1 :: T t1) (T typeName2 :: T t2) =
+  describe (printf "CanSub %s %s" typeName1 typeName2) $ do
+    it "x-0 = x" $ do
+      QC.property $ \ (x :: t1) -> let z = (convert 0 :: t1) in (x - z) //== x
+    it "x-x = 0" $ do
+      QC.property $ \ (x :: t1) -> let z = (convert 0 :: t1) in (x - x) //== z
+    it "x-y = x+(-y)" $ do
+      QC.property $ \ (x :: t1) (y :: t2) ->
+        (x - y) //== (x + (negate y))
+
+--
+{-|
+  HSpec properties that each implementation of CanSub should satisfy.
+ -}
+specCanSubNotMixed ::
+  (CanSubX t t,
+   CanSubX t (SubType t t),
+   CanNeg t,
+   CanAdd t (NegType t),
+   HasEq (SubType t t) (AddType t (NegType t)),
+   Convertible Integer t)
+  =>
+  T t -> Spec
+specCanSubNotMixed t = specCanSub t t
+
+instance CanSub Int Int
+instance CanSub Integer Integer
+instance CanSub Rational Rational
+instance CanSub Double Double
+
+instance CanSub Int Integer where
+  type SubType Int Integer = Integer
+  sub = convertFirst sub
+instance CanSub Integer Int where
+  type SubType Integer Int = Integer
+  sub = convertSecond sub
+
+instance CanSub Int Rational where
+  type SubType Int Rational = Rational
+  sub = convertFirst sub
+instance CanSub Rational Int where
+  type SubType Rational Int = Rational
+  sub = convertSecond sub
+
+instance CanSub Integer Rational where
+  type SubType Integer Rational = Rational
+  sub = convertFirst sub
+instance CanSub Rational Integer where
+  type SubType Rational Integer = Rational
+  sub = convertSecond sub
+
+instance CanSub Int Double where
+  type SubType Int Double = Double
+  sub = convertFirst sub
+instance CanSub Double Int where
+  type SubType Double Int = Double
+  sub = convertSecond sub
+
+instance CanSub Integer Double where
+  type SubType Integer Double = Double
+  sub = convertFirst sub
+instance CanSub Double Integer where
+  type SubType Double Integer = Double
+  sub = convertSecond sub
+
+instance CanSub Rational Double where
+  type SubType Rational Double = Double
+  sub = convertFirst sub
+instance CanSub Double Rational where
+  type SubType Double Rational = Double
+  sub = convertSecond sub
+
+instance (CanSub a b) => CanSub [a] [b] where
+  type SubType [a] [b] = [SubType a b]
+  sub (x:xs) (y:ys) = (sub x y) : (sub xs ys)
+  sub _ _ = []
+
+instance (CanSub a b) => CanSub (Maybe a) (Maybe b) where
+  type SubType (Maybe a) (Maybe b) = Maybe (SubType a b)
+  sub (Just x) (Just y) = Just (sub x y)
+  sub _ _ = Nothing
