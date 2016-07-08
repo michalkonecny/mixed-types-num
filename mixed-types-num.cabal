@@ -8,11 +8,13 @@ maintainer:     Michal Konecny <mikkonecny@gmail.com>
 tested-with:    GHC==7.10.3
 license:        BSD3
 homepage:       https://github.com/michalkonecny/aern2/mixed-types-num
-synopsis:       Alternative to Prelude Num deriving types bottom-up.
+synopsis:       Alternative to Prelude.Num, deriving types bottom-up.
 category:       Math
 copyright:      (c) 2015, 2016 Michal Konecny, Pieter Collins
 license-file:   LICENSE
 Description:
+    = Main purpose
+    .
     This package provides a version of Prelude where
     unary and binary operations such as @not@, @+@, @==@
     have their result type derived from the parameter type(s),
@@ -37,6 +39,8 @@ Description:
         They will be provided in a different package soon.)
       --  They are provided, /e.g./, by aern2-real.)
    .
+    = Type classes
+    .
     Arithmetic operations are provided via multi-parameter type classes
     and the result type is given by associated
     type families. For example:
@@ -46,8 +50,16 @@ Description:
     Each such type class is accompanied by a hspec test suite,
     which can be applied to instance types.
     .
+    = Further reading
+    .
     To find out more, please read the documentation for the modules
     in the order specified in "Numeric.MixedTypes".
+    .
+    = Origin
+    .
+    The idea of having numeric expressions in Haskell with types
+    derived bottom-up was initially suggested and implemented by Pieter Collins.
+    This version is a fresh rewrite by Michal Konečný.
 
 library
   hs-source-dirs:  src
