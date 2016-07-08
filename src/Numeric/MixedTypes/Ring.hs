@@ -22,6 +22,8 @@ module Numeric.MixedTypes.Ring
     , (^), (^^)
   -- ** Tests
     , specCanPow, CanPowX
+    -- * Ring
+    , Ring
 )
 where
 
@@ -40,9 +42,9 @@ import Test.Hspec
 import qualified Test.QuickCheck as QC
 
 import Numeric.MixedTypes.Literals
--- import Numeric.MixedTypes.Bool
+import Numeric.MixedTypes.Bool
 import Numeric.MixedTypes.EqOrd
-import Numeric.MixedTypes.MinMaxAbs ()
+-- import Numeric.MixedTypes.MinMaxAbs
 import Numeric.MixedTypes.AddSub
 
 {---- Multiplication -----}
@@ -286,3 +288,12 @@ instance (CanPow a b) => CanPow (Maybe a) (Maybe b) where
   type PowType (Maybe a) (Maybe b) = Maybe (PowType a b)
   pow (Just x) (Just y) = Just (pow x y)
   pow _ _ = Nothing
+
+{----- Ring -----}
+
+class
+    (CanNegSameType t, CanAddSameType t, CanSubSameType t, CanMulSameType t,
+     CanPowBy t Integer, CanPowBy t Int,
+     HasEq t t, Convertible Integer t)
+    =>
+    Ring t
