@@ -125,6 +125,7 @@ instance (HasBools t) => HasBools (Maybe t) where
  -}
 class CanNeg t where
   type NegType t
+  type NegType t = t
   negate :: t -> NegType t
 
 {-| A synonym of 'negate'. -}
@@ -159,9 +160,7 @@ specCanNegBool (T typeName :: T t) =
         (isCertainlyFalse x) SC.==> (isCertainlyTrue (not x))
 
 
-instance CanNeg Bool where
-  type NegType Bool = Bool
-  negate b = P.not b
+instance CanNeg Bool where negate = P.not
 
 instance CanNeg t => CanNeg (Maybe t) where
   type NegType (Maybe t) = Maybe (NegType t)

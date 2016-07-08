@@ -22,3 +22,9 @@ spec = do
   specCanMinMaxNotMixed tRational
   specCanMinMax tInt tInteger tRational
   specCanMinMax tInteger tRational tInt
+  specCanNegNum tInt
+  specCanNegNum tInteger
+  specCanNegNum tRational
+  specCanAbs tInt
+  specCanAbs tInteger
+  specCanAbs tRational

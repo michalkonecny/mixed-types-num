@@ -15,6 +15,9 @@ module Numeric.MixedTypes.MinMaxAbs
     -- * Minimum and maximum
     CanMinMax(..), CanMinMaxThis, CanMinMaxSameType, minimum, maximum
     , specCanMinMax, specCanMinMaxNotMixed, CanMinMaxX, CanMinMaxXX
+    -- * Absolute value
+    , CanAbs(..), CanAbsSameType
+    , specCanNegNum, specCanAbs
 )
 where
 
@@ -22,7 +25,7 @@ import Prelude hiding
   (fromInteger,
    negate,not,(&&),(||),and,or,
    (==), (/=), (>), (<), (<=), (>=),
-   abs, min, max, minimum, maximum)
+   abs, min, max, minimum, maximum, (-))
 import qualified Prelude as P
 import Text.Printf
 
@@ -174,3 +177,89 @@ instance (CanMinMax a b) => CanMinMax (Maybe a) (Maybe b) where
   min _ _ = Nothing
   max (Just x) (Just y) = Just (max x y)
   max _ _ = Nothing
+
+{-| Compound type constraint useful for test definition. -}
+type CanNegX t =
+  (CanNeg t, Show t, QC.Arbitrary t)
+
+{----  numeric negation tests and instances -----}
+
+{-|
+  HSpec properties that each implementation of CanNegSameType should satisfy.
+ -}
+specCanNegNum ::
+  (CanNegX t, CanNegX (NegType t),
+   HasEq t (NegType (NegType t)),
+   Convertible Integer t,
+   HasEq t (NegType t),
+   CanTestPosNeg t,
+   CanTestPosNeg (NegType t)
+  )
+  =>
+  T t -> Spec
+specCanNegNum (T typeName :: T t) =
+  describe (printf "CanNeg %s" typeName) $ do
+    it "ignores double negation" $ do
+      QC.property $ \ (x :: t) -> (negate (negate x)) //== x
+    it "takes 0 to 0" $ do
+      let z = convert 0 :: t in negate z //== z
+    it "takes positive to negative" $ do
+      QC.property $ \ (x :: t) ->
+        (isCertainlyPositive x) QC.==> (isCertainlyNegative (negate x))
+    it "takes negative to positive" $ do
+      QC.property $ \ (x :: t) ->
+        (isCertainlyNegative x) QC.==> (isCertainlyPositive (negate x))
+
+instance CanNeg Int where negate = P.negate
+instance CanNeg Integer where negate = P.negate
+instance CanNeg Rational where negate = P.negate
+instance CanNeg Double where negate = P.negate
+
+{----  abs -----}
+
+{-|
+  A replacement for Prelude's `P.abs`.  If @Num t@,
+  then one can use the default implementation to mirror Prelude's @abs@.
+-}
+class CanAbs t where
+  type AbsType t
+  type AbsType t = t -- default
+  abs :: t -> AbsType t
+  default abs :: (AbsType t ~ t, P.Num t) => t -> t
+  abs = P.abs
+
+type CanAbsSameType t = (CanAbs t, AbsType t ~ t)
+
+instance CanAbs Int
+instance CanAbs Integer
+instance CanAbs Rational
+instance CanAbs Double
+
+type CanAbsX t =
+  (CanAbs t, CanTestPosNeg t,
+   CanNegSameType t,
+   CanTestPosNeg t,
+   CanTestPosNeg (AbsType t),
+   HasEq t (AbsType t),
+   Show t, QC.Arbitrary t)
+
+{-|
+  HSpec properties that each implementation of CanAbsSameType should satisfy.
+ -}
+specCanAbs ::
+  (CanAbsX t, CanAbsX (AbsType t),
+   HasEq (AbsType (AbsType t)) (AbsType t))
+  =>
+  T t -> Spec
+specCanAbs (T typeName :: T t) =
+  describe (printf "CanAbsSameType %s" typeName) $ do
+    it "is idempotent" $ do
+      QC.property $ \ (x :: t) -> (abs (abs x)) //== (abs x)
+    it "is identity on non-negative arguments" $ do
+      QC.property $ \ (x :: t) ->
+        isCertainlyNonNegative x  QC.==> x //== (abs x)
+    it "is negation on non-positive arguments" $ do
+      QC.property $ \ (x :: t) ->
+        isCertainlyNonPositive x  QC.==> (negate x) //== (abs x)
+    it "does not give negative results" $ do
+      QC.property $ \ (x :: t) -> not $ isCertainlyNegative (abs x)
