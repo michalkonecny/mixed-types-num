@@ -239,7 +239,7 @@ instance CanAbs Rational
 instance CanAbs Double
 
 type CanAbsX t =
-  (CanAbs t, CanTestPosNeg t,
+  (CanAbs t,
    CanNegSameType t,
    CanTestPosNeg t,
    CanTestPosNeg (AbsType t),
@@ -255,7 +255,7 @@ specCanAbs ::
   =>
   T t -> Spec
 specCanAbs (T typeName :: T t) =
-  describe (printf "CanAbsSameType %s" typeName) $ do
+  describe (printf "CanAbs %s" typeName) $ do
     it "is idempotent" $ do
       QC.property $ \ (x :: t) -> (abs (abs x)) ?==? (abs x)
     it "is identity on non-negative arguments" $ do

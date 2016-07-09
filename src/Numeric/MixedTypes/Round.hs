@@ -15,7 +15,7 @@ module Numeric.MixedTypes.Round
   -- * Rounding operations
   CanRound(..)
   -- ** Tests
-  -- , specCanRound
+  , specCanRound
 )
 where
 
@@ -29,7 +29,7 @@ import Prelude hiding
 import qualified Prelude as P
 import Text.Printf
 
-import qualified Data.List as List
+-- import qualified Data.List as List
 
 import Test.Hspec
 import qualified Test.QuickCheck as QC
@@ -90,31 +90,32 @@ instance CanRound Double where
   ceiling = P.ceiling
   floor = P.floor
 
--- type CanRoundX t =
---   (CanRound t, CanTestPosNeg t,
---    CanNegSameType t,
---    CanTestPosNeg t,
---    CanTestPosNeg (RoundType t),
---    HasEq t (RoundType t),
---    Show t, QC.Arbitrary t)
---
--- {-|
---   HSpec properties that each implementation of CanRoundSameType should satisfy.
---  -}
--- specCanRound ::
---   (CanRoundX t, CanRoundX (RoundType t),
---    HasEq (RoundType (RoundType t)) (RoundType t))
---   =>
---   T t -> Spec
--- specCanRound (T typeName :: T t) =
---   describe (printf "CanRoundSameType %s" typeName) $ do
---     it "is idempotent" $ do
---       QC.property $ \ (x :: t) -> (abs (abs x)) //== (abs x)
---     it "is identity on non-negative arguments" $ do
---       QC.property $ \ (x :: t) ->
---         isCertainlyNonNegative x  QC.==> x //== (abs x)
---     it "is negation on non-positive arguments" $ do
---       QC.property $ \ (x :: t) ->
---         isCertainlyNonPositive x  QC.==> (negate x) //== (abs x)
---     it "does not give negative results" $ do
---       QC.property $ \ (x :: t) -> not $ isCertainlyNegative (abs x)
+type CanRoundX t =
+  (CanRound t,
+   CanNegSameType t,
+   CanTestPosNeg t,
+   HasOrder t Integer,
+   Show t, QC.Arbitrary t)
+
+{-|
+  HSpec properties that each implementation of CanRoundSameType should satisfy.
+ -}
+specCanRound ::
+  (CanRoundX t, HasIntegers t)
+  =>
+  T t -> Spec
+specCanRound (T typeName :: T t) =
+  describe (printf "CanRound %s" typeName) $ do
+    it "holds floor x <= x <= ceiling x" $ do
+      QC.property $ \ (x :: t) ->
+        (floor x ?<=? x) && (x ?<=? ceiling x)
+    it "holds floor x <= round x <= ceiling x" $ do
+      QC.property $ \ (x :: t) ->
+        (floor x <= round x) && (round x <= ceiling x)
+    it "0 <= ceiling x - floor x <= 1" $ do
+      QC.property $ \ (x :: t) ->
+        (ceiling x - floor x) `elem` [0,1]
+    it "holds floor x = round x = ceiling x for integers" $ do
+      QC.property $ \ (xi :: Integer) ->
+        let x = convertExactly xi :: t in
+          (floor x == round x) && (round x == ceiling x)
