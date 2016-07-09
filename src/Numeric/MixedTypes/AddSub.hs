@@ -71,8 +71,8 @@ type CanAddThis t1 t2 =
 type CanAddSameType t =
   CanAddThis t t
 
-sum :: (CanAddSameType t, Convertible Integer t) => [t] -> t
-sum xs = List.foldl' add (convert 0) xs
+sum :: (CanAddSameType t, ConvertibleExactly Integer t) => [t] -> t
+sum xs = List.foldl' add (convertExactly 0) xs
 
 {-| Compound type constraint useful for test definition. -}
 type CanAddX t1 t2 =
@@ -100,7 +100,7 @@ specCanAdd ::
    CanAddXX t1 t3, CanAddXX t2 t3,
    CanAddXX t1 (AddType t2 t3),
    CanAddXX (AddType t1 t2) t3,
-   Convertible Integer t1,
+   ConvertibleExactly Integer t1,
    CanTestPosNeg t1,
    HasEq (AddType t1 (AddType t2 t3)) (AddType (AddType t1 t2) t3))
   =>
@@ -108,7 +108,7 @@ specCanAdd ::
 specCanAdd (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "CanAdd %s %s, CanAdd %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "absorbs 0" $ do
-      QC.property $ \ (x :: t1) -> let z = (convert 0 :: t1) in (x + z) //== x
+      QC.property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x + z) //== x
     it "is commutative" $ do
       QC.property $ \ (x :: t1) (y :: t2) -> (x + y) //== (y + x)
     it "is associative" $ do
@@ -128,7 +128,7 @@ specCanAdd (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
 specCanAddNotMixed ::
   (CanAddXX t t,
    CanAddXX t (AddType t t),
-   Convertible Integer t,
+   ConvertibleExactly Integer t,
    CanTestPosNeg t,
    HasEq (AddType (AddType t t) t) (AddType t (AddType t t)) )
   =>
@@ -139,7 +139,7 @@ specCanAddNotMixed t = specCanAdd t t t
   HSpec properties that each implementation of CanAddSameType should satisfy.
  -}
 specCanAddSameType ::
-  (Convertible Integer t,
+  (ConvertibleExactly Integer t,
    HasEq t t, CanAddSameType t)
    =>
    T t -> Spec
@@ -147,9 +147,9 @@ specCanAddSameType (T typeName :: T t) =
   describe (printf "CanAddSameType %s" typeName) $ do
     it "has sum working over integers" $ do
       QC.property $ \ (xsi :: [Integer]) ->
-        (sum $ (map convert xsi :: [t])) //== (convert (sum xsi) :: t)
+        (sum $ (map convertExactly xsi :: [t])) //== (convertExactly (sum xsi) :: t)
     it "has sum [] = 0" $ do
-        (sum ([] :: [t])) //== (convert 0 :: t)
+        (sum ([] :: [t])) //== (convertExactly 0 :: t)
 
 
 instance CanAddAsymmetric Int Int where
@@ -248,15 +248,15 @@ specCanSub ::
    CanNeg t2,
    CanAdd t1 (NegType t2),
    HasEq (SubType t1 t2) (AddType t1 (NegType t2)),
-   Convertible Integer t1)
+   ConvertibleExactly Integer t1)
   =>
   T t1 -> T t2 -> Spec
 specCanSub (T typeName1 :: T t1) (T typeName2 :: T t2) =
   describe (printf "CanSub %s %s" typeName1 typeName2) $ do
     it "x-0 = x" $ do
-      QC.property $ \ (x :: t1) -> let z = (convert 0 :: t1) in (x - z) //== x
+      QC.property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x - z) //== x
     it "x-x = 0" $ do
-      QC.property $ \ (x :: t1) -> let z = (convert 0 :: t1) in (x - x) //== z
+      QC.property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x - x) //== z
     it "x-y = x+(-y)" $ do
       QC.property $ \ (x :: t1) (y :: t2) ->
         (x - y) //== (x + (negate y))
@@ -271,7 +271,7 @@ specCanSubNotMixed ::
    CanNeg t,
    CanAdd t (NegType t),
    HasEq (SubType t t) (AddType t (NegType t)),
-   Convertible Integer t)
+   ConvertibleExactly Integer t)
   =>
   T t -> Spec
 specCanSubNotMixed t = specCanSub t t

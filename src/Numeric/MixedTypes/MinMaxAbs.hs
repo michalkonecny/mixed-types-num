@@ -193,7 +193,7 @@ type CanNegX t =
 specCanNegNum ::
   (CanNegX t, CanNegX (NegType t),
    HasEq t (NegType (NegType t)),
-   Convertible Integer t,
+   ConvertibleExactly Integer t,
    HasEq t (NegType t),
    CanTestPosNeg t,
    CanTestPosNeg (NegType t)
@@ -205,7 +205,7 @@ specCanNegNum (T typeName :: T t) =
     it "ignores double negation" $ do
       QC.property $ \ (x :: t) -> (negate (negate x)) //== x
     it "takes 0 to 0" $ do
-      let z = convert 0 :: t in negate z //== z
+      let z = convertExactly 0 :: t in negate z //== z
     it "takes positive to negative" $ do
       QC.property $ \ (x :: t) ->
         (isCertainlyPositive x) QC.==> (isCertainlyNegative (negate x))

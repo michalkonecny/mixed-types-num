@@ -95,7 +95,7 @@ specCanDiv ::
    CanTestZero t2,
    CanDivX t1 t1,
    CanMulX t1 (DivType t1 t2),
-   Convertible Integer t2, Convertible Integer t1)
+   ConvertibleExactly Integer t2, ConvertibleExactly Integer t1)
   =>
   T t1 -> T t2 -> Spec
 specCanDiv (T typeName1 :: T t1) (T typeName2 :: T t2) =
@@ -105,15 +105,15 @@ specCanDiv (T typeName1 :: T t1) (T typeName2 :: T t2) =
         (isNonZero x) QC.==>
           recip (recip x) //== x
     it "x/1 = x" $ do
-      QC.property $ \ (x :: t1) -> let one = (convert 1 :: t2) in (x / one) //== x
+      QC.property $ \ (x :: t1) -> let one = (convertExactly 1 :: t2) in (x / one) //== x
     it "x/x = 1" $ do
       QC.property $ \ (x :: t1) ->
         (isNonZero x) QC.==>
-          let one = (convert 1 :: t1) in (x / x) //== one
+          let one = (convertExactly 1 :: t1) in (x / x) //== one
     it "x/y = x*(1/y)" $ do
       QC.property $ \ (x :: t1) (y :: t2) ->
         (isNonZero y) QC.==>
-          let one = (convert 1 :: t1) in (x / y) //== x * (one/y)
+          let one = (convertExactly 1 :: t1) in (x / y) //== x * (one/y)
 
 {-|
   HSpec properties that each implementation of CanDiv should satisfy.
@@ -124,7 +124,7 @@ specCanDivNotMixed ::
    CanDivX t t,
    CanTestZero t,
    CanMulX t (DivType t t),
-   Convertible Integer t)
+   ConvertibleExactly Integer t)
   =>
   T t -> Spec
 specCanDivNotMixed t = specCanDiv t t

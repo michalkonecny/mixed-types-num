@@ -143,15 +143,15 @@ instance HasEqAsymmetric Rational Integer where
 
 instance (HasEqAsymmetric a b) => HasEqAsymmetric [a] [b] where
   type EqCompareType [a] [b] = EqCompareType a b
-  equalTo [] [] = convert True
+  equalTo [] [] = convertExactly True
   equalTo (x:xs) (y:ys) = (x == y) && (xs == ys)
-  equalTo _ _ = convert False
+  equalTo _ _ = convertExactly False
 
 instance (HasEqAsymmetric a b) => HasEqAsymmetric (Maybe a) (Maybe b) where
   type EqCompareType (Maybe a) (Maybe b) = EqCompareType a b
-  equalTo Nothing Nothing = convert True
+  equalTo Nothing Nothing = convertExactly True
   equalTo (Just x) (Just y) = (x == y)
-  equalTo _ _ = convert False
+  equalTo _ _ = convertExactly False
 
 class CanTestZero t where
     isCertainlyZero :: t -> Bool
@@ -165,19 +165,19 @@ class CanTestZero t where
   HSpec properties that each implementation of CanTestZero should satisfy.
  -}
 specCanTestZero ::
-  (CanTestZero t, Convertible Integer t)
+  (CanTestZero t, ConvertibleExactly Integer t)
   =>
   T t -> Spec
 specCanTestZero (T typeName :: T t) =
   describe (printf "CanTestZero %s" typeName) $ do
     it "converted non-zero Integer is not isCertainlyZero" $ do
       QC.property $ \ (x :: Integer) ->
-        x /= 0 QC.==> (not $ isCertainlyZero (convert x :: t))
+        x /= 0 QC.==> (not $ isCertainlyZero (convertExactly x :: t))
     it "converted non-zero Integer is isNonZero" $ do
       QC.property $ \ (x :: Integer) ->
-        x /= 0 QC.==> (isNonZero (convert x :: t))
+        x /= 0 QC.==> (isNonZero (convertExactly x :: t))
     it "converted 0.0 is not isNonZero" $ do
-      (isNonZero (convert 0 :: t)) `shouldBe` False
+      (isNonZero (convertExactly 0 :: t)) `shouldBe` False
 
 instance CanTestZero Int
 instance CanTestZero Integer
@@ -213,7 +213,7 @@ class CanPickNonZero t where
   HSpec properties that each implementation of CanPickNonZero should satisfy.
  -}
 specCanPickNonZero ::
-  (CanPickNonZero t, CanTestZero t, Convertible Integer t, Show t, QC.Arbitrary t)
+  (CanPickNonZero t, CanTestZero t, ConvertibleExactly Integer t, Show t, QC.Arbitrary t)
   =>
   T t -> Spec
 specCanPickNonZero (T typeName :: T t) =
@@ -223,7 +223,7 @@ specCanPickNonZero (T typeName :: T t) =
         or (map (isNonZero . fst) xs) -- if at least one is non-zero
           QC.==> (isNonZero $ fst $ pickNonZero xs)
     it "throws exception when all the elements are 0" $ do
-      (evaluate $ pickNonZero [(convert i :: t, ()) | i <- [0,0,0]])
+      (evaluate $ pickNonZero [(convertExactly i :: t, ()) | i <- [0,0,0]])
         `shouldThrow` anyException
 
 instance CanPickNonZero Int
@@ -371,8 +371,8 @@ instance CanTestPosNeg Rational
 
 {---- Auxiliary functions ----}
 
-convertFirst :: (Convertible a b) => (b -> b -> c) -> (a -> b -> c)
-convertFirst op a b = op (convert a) b
+convertFirst :: (ConvertibleExactly a b) => (b -> b -> c) -> (a -> b -> c)
+convertFirst op a b = op (convertExactly a) b
 
-convertSecond :: (Convertible b a) => (a -> a -> c) -> (a -> b -> c)
-convertSecond op a b = op a (convert b)
+convertSecond :: (ConvertibleExactly b a) => (a -> a -> c) -> (a -> b -> c)
+convertSecond op a b = op a (convertExactly b)

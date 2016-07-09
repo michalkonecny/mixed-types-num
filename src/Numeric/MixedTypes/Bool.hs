@@ -49,7 +49,7 @@ import qualified Test.SmallCheck.Series as SCS
   it does not mean that the proposition is false.  It usually means that
   we failed to prove the proposition.
 -}
-class (Convertible Bool t) => HasBools t
+class (ConvertibleExactly Bool t) => HasBools t
   where
     isCertainlyTrue :: t -> Bool
     isCertainlyFalse :: t -> Bool
@@ -89,24 +89,24 @@ specHasBools :: (HasBools t) => T t -> Spec
 specHasBools (T typeName :: T t) =
   describe (printf "HasBools %s" typeName) $ do
     it "detects True using isCertainlyTrue" $ do
-      isCertainlyTrue (convert True :: t) `shouldBe`  True
+      isCertainlyTrue (convertExactly True :: t) `shouldBe`  True
     it "does not detect False using isCertainlyTrue" $ do
-      isCertainlyTrue (convert False :: t) `shouldBe`  False
+      isCertainlyTrue (convertExactly False :: t) `shouldBe`  False
     it "detects False using isCertainlyFalse" $ do
-      isCertainlyFalse (convert False :: t) `shouldBe`  True
+      isCertainlyFalse (convertExactly False :: t) `shouldBe`  True
     it "does not detect True using isCertainlyFalse" $ do
-      isCertainlyFalse (convert True :: t) `shouldBe`  False
+      isCertainlyFalse (convertExactly True :: t) `shouldBe`  False
 
-instance Convertible Bool Bool where
-  safeConvert b = Right b
+instance ConvertibleExactly Bool Bool where
+  safeConvertExactly b = Right b
 
 instance HasBools Bool where
   isCertainlyTrue = id
   isCertainlyFalse = not
 
-instance (Convertible Bool t) => Convertible Bool (Maybe t) where
-  safeConvert b =
-    case (safeConvert b) of
+instance (ConvertibleExactly Bool t) => ConvertibleExactly Bool (Maybe t) where
+  safeConvertExactly b =
+    case (safeConvertExactly b) of
       Left _ -> Right Nothing
       Right r -> Right (Just r)
 
@@ -205,10 +205,10 @@ infixr 2  ||
 (||) = or2
 
 and :: (CanAndOrSameType t, HasBools t) => [t] -> t
-and = List.foldl' (&&) (convert True)
+and = List.foldl' (&&) (convertExactly True)
 
 or :: (CanAndOrSameType t, HasBools t) => [t] -> t
-or = List.foldl' (||) (convert False)
+or = List.foldl' (||) (convertExactly False)
 
 {-| Compound type constraint useful for test definition. -}
 type CanAndOrX t1 t2 =
@@ -285,12 +285,12 @@ instance (CanAndOrAsymmetric t1 t2, HasBools t1, HasBools t2, HasBools (AndOrTyp
   CanAndOrAsymmetric (Maybe t1) (Maybe t2)
   where
   type AndOrType (Maybe t1) (Maybe t2) = Maybe (AndOrType t1 t2)
-  and2 (Just b1) _ | isCertainlyFalse b1 = Just (convert False)
-  and2 _ (Just b2) | isCertainlyFalse b2 = Just (convert False)
+  and2 (Just b1) _ | isCertainlyFalse b1 = Just (convertExactly False)
+  and2 _ (Just b2) | isCertainlyFalse b2 = Just (convertExactly False)
   and2 (Just b1) (Just b2) = Just (b1 && b2)
   and2 _ _ = Nothing
-  or2 (Just b1) _ | isCertainlyTrue b1 = Just (convert True)
-  or2 _ (Just b2) | isCertainlyTrue b2 = Just (convert True)
+  or2 (Just b1) _ | isCertainlyTrue b1 = Just (convertExactly True)
+  or2 _ (Just b2) | isCertainlyTrue b2 = Just (convertExactly True)
   or2 (Just b1) (Just b2) = Just (b1 || b2)
   or2 _ _ = Nothing
 
@@ -298,12 +298,12 @@ instance (CanAndOrAsymmetric Bool t2, HasBools t2, HasBools (AndOrType Bool t2))
   CanAndOrAsymmetric Bool (Maybe t2)
   where
   type AndOrType Bool (Maybe t2) = Maybe (AndOrType Bool t2)
-  and2 False _ = Just (convert False)
-  and2 _ (Just b2) | isCertainlyFalse b2 = Just (convert False)
+  and2 False _ = Just (convertExactly False)
+  and2 _ (Just b2) | isCertainlyFalse b2 = Just (convertExactly False)
   and2 b1 (Just b2) = Just (b1 && b2)
   and2 _ _ = Nothing
-  or2 True _ = Just (convert True)
-  or2 _ (Just b2) | isCertainlyTrue b2 = Just (convert True)
+  or2 True _ = Just (convertExactly True)
+  or2 _ (Just b2) | isCertainlyTrue b2 = Just (convertExactly True)
   or2 b1 (Just b2) = Just (b1 || b2)
   or2 _ _ = Nothing
 
@@ -311,12 +311,12 @@ instance (CanAndOrAsymmetric t1 Bool, HasBools t1, HasBools (AndOrType t1 Bool))
   CanAndOrAsymmetric (Maybe t1) Bool
   where
   type AndOrType (Maybe t1) Bool = Maybe (AndOrType t1 Bool)
-  and2 _ False = Just (convert False)
-  and2 (Just b1) _ | isCertainlyFalse b1 = Just (convert False)
+  and2 _ False = Just (convertExactly False)
+  and2 (Just b1) _ | isCertainlyFalse b1 = Just (convertExactly False)
   and2 (Just b1) b2 = Just (b1 && b2)
   and2 _ _ = Nothing
-  or2 _ True = Just (convert True)
-  or2 (Just b1) _ | isCertainlyTrue b1 = Just (convert True)
+  or2 _ True = Just (convertExactly True)
+  or2 (Just b1) _ | isCertainlyTrue b1 = Just (convertExactly True)
   or2 (Just b1) b2 = Just (b1 || b2)
   or2 _ _ = Nothing
 

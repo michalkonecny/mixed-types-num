@@ -52,7 +52,7 @@ import Numeric.MixedTypes.AddSub
 type Ring t =
     (CanNegSameType t, CanAddSameType t, CanSubSameType t, CanMulSameType t,
      CanPowBy t Integer, CanPowBy t Int,
-     HasEq t t, Convertible Integer t)
+     HasEq t t, ConvertibleExactly Integer t)
 
 type CanAddSubMulBy t s =
   (CanAddThis t s, CanSubThis t s, CanMulBy t s)
@@ -85,8 +85,8 @@ type CanMulBy t1 t2 =
 type CanMulSameType t =
   CanMulBy t t
 
-product :: (CanMulSameType t, Convertible Integer t) => [t] -> t
-product xs = List.foldl' mul (convert 1) xs
+product :: (CanMulSameType t, ConvertibleExactly Integer t) => [t] -> t
+product xs = List.foldl' mul (convertExactly 1) xs
 
 {-| Compound type constraint useful for test definition. -}
 type CanMulX t1 t2 =
@@ -114,13 +114,13 @@ specCanMul ::
    CanMulX t1 (AddType t2 t3),
    CanAdd (MulType t1 t2) (MulType t1 t3),
    HasEq (MulType t1 (AddType t2 t3)) (AddType (MulType t1 t2) (MulType t1 t3)),
-   Convertible Integer t2)
+   ConvertibleExactly Integer t2)
   =>
   T t1 -> T t2 -> T t3 -> Spec
 specCanMul (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "CanMul %s %s, CanMul %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "absorbs 1" $ do
-      QC.property $ \ (x :: t1) -> let one = (convert 1 :: t2) in (x * one) //== x
+      QC.property $ \ (x :: t1) -> let one = (convertExactly 1 :: t2) in (x * one) //== x
     it "is commutative" $ do
       QC.property $ \ (x :: t1) (y :: t2) -> (x * y) //== (y * x)
     it "is associative" $ do
@@ -141,7 +141,7 @@ specCanMulNotMixed ::
    CanMulX t (AddType t t),
    CanAdd (MulType t t) (MulType t t),
    HasEq (MulType t (AddType t t)) (AddType (MulType t t) (MulType t t)),
-   Convertible Integer t)
+   ConvertibleExactly Integer t)
   =>
   T t -> Spec
 specCanMulNotMixed t = specCanMul t t t
@@ -150,7 +150,7 @@ specCanMulNotMixed t = specCanMul t t t
   HSpec properties that each implementation of CanMulSameType should satisfy.
  -}
 specCanMulSameType ::
-  (Convertible Integer t,
+  (ConvertibleExactly Integer t,
    HasEq t t, CanMulSameType t)
    =>
    T t -> Spec
@@ -158,9 +158,9 @@ specCanMulSameType (T typeName :: T t) =
   describe (printf "CanMulSameType %s" typeName) $ do
     it "has product working over integers" $ do
       QC.property $ \ (xsi :: [Integer]) ->
-        (product $ (map convert xsi :: [t])) //== (convert (product xsi) :: t)
+        (product $ (map convertExactly xsi :: [t])) //== (convertExactly (product xsi) :: t)
     it "has product [] = 1" $ do
-        (product ([] :: [t])) //== (convert 1 :: t)
+        (product ([] :: [t])) //== (convertExactly 1 :: t)
 
 instance CanMulAsymmetric Int Int where
   type MulType Int Int = Integer -- do not risk overflow
@@ -256,8 +256,8 @@ type CanPowX t1 t2 =
 specCanPow ::
   (CanPowX t1 t2,
    HasEq t1 (PowType t1 t2),
-   Convertible Integer t1,
-   Convertible Integer t2,
+   ConvertibleExactly Integer t1,
+   ConvertibleExactly Integer t2,
    CanTestPosNeg t2,
    CanAdd t2 Integer,
    CanMul t1 (PowType t1 t2),
@@ -269,12 +269,12 @@ specCanPow (T typeName1 :: T t1) (T typeName2 :: T t2) =
   describe (printf "CanPow %s %s" typeName1 typeName2) $ do
     it "x^0 = 1" $ do
       QC.property $ \ (x :: t1) ->
-        let one = (convert 1 :: t1) in
-        let z = (convert 0 :: t2) in
+        let one = (convertExactly 1 :: t1) in
+        let z = (convertExactly 0 :: t2) in
         (x ^ z) //== one
     it "x^1 = x" $ do
       QC.property $ \ (x :: t1) ->
-        let one = (convert 1 :: t2) in
+        let one = (convertExactly 1 :: t2) in
         (x ^ one) //== x
     it "x^(y+1) = x*x^y" $ do
       QC.property $ \ (x :: t1) (y :: t2) ->

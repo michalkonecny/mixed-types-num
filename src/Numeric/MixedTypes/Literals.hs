@@ -42,7 +42,7 @@ module Numeric.MixedTypes.Literals
     , CanBeInt, int, ints
     , CanBeRational, rational, rationals, HasRationals, fromRational_
     , CanBeDouble, double, doubles
-    , Convertible(..), convert
+    , ConvertibleExactly(..), convertExactly
     -- * Generic list index
     , (!!), specCanBeInteger
     -- * Testing support functions
@@ -55,7 +55,7 @@ import Prelude hiding (fromInteger, fromRational, (!!))
 import qualified Prelude as P
 import Text.Printf
 
-import qualified Data.Convertible as CVT
+import Data.Convertible (Convertible(..), ConvertResult)
 
 import qualified Data.List as List
 
@@ -89,15 +89,15 @@ _testIf1 = if True then "yes" else "no"
 
 {---- Numeric conversions -----}
 
-type CanBeInteger t = Convertible t Integer
+type CanBeInteger t = ConvertibleExactly t Integer
 integer :: (CanBeInteger t) => t -> Integer
-integer = convert
+integer = convertExactly
 integers :: (CanBeInteger t) => [t] -> [Integer]
-integers = map convert
+integers = map convertExactly
 
-type HasIntegers t = Convertible Integer t
+type HasIntegers t = ConvertibleExactly Integer t
 fromInteger_ :: (HasIntegers t) => Integer -> t
-fromInteger_ = convert
+fromInteger_ = convertExactly
 
 (!!) :: (CanBeInteger t) => [a] -> t -> a
 list !! ix = List.genericIndex list (integer ix)
@@ -113,61 +113,61 @@ specCanBeInteger (T typeName :: T t) =
     it (printf "works using %s index" typeName) $ do
       QC.property $ \ (x :: t) -> let xi = integer x in (xi P.>= 0) QC.==> ([0..xi] !! x) P.== xi
 
-type CanBeInt t = Convertible t Int
+type CanBeInt t = ConvertibleExactly t Int
 int :: (CanBeInt t) => t -> Int
-int = convert
+int = convertExactly
 ints :: (CanBeInt t) => [t] -> [Int]
-ints = map convert
+ints = map convertExactly
 
-type CanBeRational t = Convertible t Rational
+type CanBeRational t = ConvertibleExactly t Rational
 rational :: (CanBeRational t) => t -> Rational
-rational = convert
+rational = convertExactly
 rationals :: (CanBeRational t) => [t] -> [Rational]
-rationals = map convert
+rationals = map convertExactly
 
-type HasRationals t = Convertible Rational t
+type HasRationals t = ConvertibleExactly Rational t
 fromRational_ :: (HasRationals t) => Rational -> t
-fromRational_ = convert
+fromRational_ = convertExactly
 
-type CanBeDouble t = Convertible t Double
+type CanBeDouble t = ConvertibleExactly t Double
 double :: (CanBeDouble t) => t -> Double
-double = convert
+double = convertExactly
 doubles :: (CanBeDouble t) => [t] -> [Double]
-doubles = map convert
+doubles = map convertExactly
 
 {-|
-Define our own Convertible since convertible is too relaxed for us.
+Define our own ConvertibleExactly since convertible is too relaxed for us.
 For example, convertible allows conversion from Rational to Integer,
 rounding to nearest integer.  We prefer to allow only exact conversions.
 -}
-class Convertible t1 t2 where
-  safeConvert :: t1 -> CVT.ConvertResult t2
-  default safeConvert :: (CVT.Convertible t1 t2) => t1 -> CVT.ConvertResult t2
-  safeConvert = CVT.safeConvert
+class ConvertibleExactly t1 t2 where
+  safeConvertExactly :: t1 -> ConvertResult t2
+  default safeConvertExactly :: (Convertible t1 t2) => t1 -> ConvertResult t2
+  safeConvertExactly = safeConvert
 
-convert :: (Convertible t1 t2) => t1 -> t2
-convert a =
-  case safeConvert a of
+convertExactly :: (ConvertibleExactly t1 t2) => t1 -> t2
+convertExactly a =
+  case safeConvertExactly a of
     Right v -> v
     Left err -> error (show err)
 
-instance Convertible Integer Integer -- use CVT instance by default
-instance Convertible Int Integer
+instance ConvertibleExactly Integer Integer -- use CVT instance by default
+instance ConvertibleExactly Int Integer
 
-instance Convertible Int Int where
-  safeConvert n = Right n
-instance Convertible Rational Rational where
-  safeConvert q = Right q
+instance ConvertibleExactly Int Int where
+  safeConvertExactly n = Right n
+instance ConvertibleExactly Rational Rational where
+  safeConvertExactly q = Right q
 
-instance Convertible Integer Int
-instance Convertible Int Rational
-instance Convertible Integer Rational
+instance ConvertibleExactly Integer Int
+instance ConvertibleExactly Int Rational
+instance ConvertibleExactly Integer Rational
 
-instance Convertible Int Double
-instance Convertible Integer Double
-instance Convertible Rational Double
-instance Convertible Double Double where
-  safeConvert d = Right d
+instance ConvertibleExactly Int Double
+instance ConvertibleExactly Integer Double
+instance ConvertibleExactly Rational Double
+instance ConvertibleExactly Double Double where
+  safeConvertExactly d = Right d
 
 {-- we deliberately do not allow converions from Double to any other type --}
 
