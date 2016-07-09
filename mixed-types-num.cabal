@@ -91,7 +91,7 @@ library
     Numeric.MixedTypes.MinMaxAbs
     Numeric.MixedTypes.AddSub
     Numeric.MixedTypes.Ring
-    -- Numeric.MixedTypes.Field
+    Numeric.MixedTypes.Field
     -- Numeric.MixedTypes.Elementary
 
 test-suite spec
