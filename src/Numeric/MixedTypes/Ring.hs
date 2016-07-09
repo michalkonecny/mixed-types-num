@@ -32,7 +32,8 @@ import Prelude hiding
    negate,not,(&&),(||),and,or,
    (==), (/=), (>), (<), (<=), (>=),
    abs, min, max, minimum, maximum,
-   (-), (+), sum, (*), (^), (^^), product)
+   (-), (+), sum, (*), (^), (^^), product,
+   properFraction, round, truncate, ceiling, floor)
 import qualified Prelude as P
 import Text.Printf
 

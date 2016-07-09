@@ -24,7 +24,8 @@ module Numeric.MixedTypes
   module Numeric.MixedTypes.AddSub,
   module Numeric.MixedTypes.Round,
   module Numeric.MixedTypes.Ring,
-  module Numeric.MixedTypes.Field
+  module Numeric.MixedTypes.Field,
+  module Numeric.MixedTypes.Elementary
 )
 where
 
@@ -34,10 +35,11 @@ import Prelude hiding
     negate, not, (&&), (||), and, or,
     (==),(/=),(<),(>),(<=),(>=),
     abs, min, max, minimum, maximum,
-   (-), (+), sum,
-   (*), (^), (^^), product,
-   (/), recip,
-   properFraction, round, truncate, ceiling, floor
+     (-), (+), sum,
+     (*), (^), (^^), product,
+     (/), recip,
+     properFraction, round, truncate, ceiling, floor,
+     sqrt
   )
 
 import Numeric.MixedTypes.Literals
@@ -48,3 +50,4 @@ import Numeric.MixedTypes.AddSub
 import Numeric.MixedTypes.Round
 import Numeric.MixedTypes.Ring
 import Numeric.MixedTypes.Field
+import Numeric.MixedTypes.Elementary

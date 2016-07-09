@@ -29,7 +29,8 @@ import Prelude hiding
    abs, min, max, minimum, maximum,
    (-), (+), sum,
    (*), (^), (^^), product,
-   (/), recip)
+   (/), recip,
+   properFraction, round, truncate, ceiling, floor)
 import qualified Prelude as P
 import Text.Printf
 
