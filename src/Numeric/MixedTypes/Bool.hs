@@ -145,7 +145,7 @@ type CanNegBoolX t =
   (CanNeg t, HasBoolsX t, HasBoolsX (NegType t))
 
 {-|
-  HSpec properties that each implementation of CanNegSameType should satisfy.
+  HSpec properties that each Boolean implementation of CanNeg should satisfy.
  -}
 specCanNegBool ::
   (CanNegBoolX t, CanNegBoolX (NegType t))

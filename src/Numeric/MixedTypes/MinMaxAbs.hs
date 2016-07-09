@@ -188,7 +188,7 @@ type CanNegX t =
 {----  numeric negation tests and instances -----}
 
 {-|
-  HSpec properties that each implementation of CanNegSameType should satisfy.
+  HSpec properties that each numeric implementation of CanNeg should satisfy.
  -}
 specCanNegNum ::
   (CanNegX t, CanNegX (NegType t),
@@ -247,7 +247,7 @@ type CanAbsX t =
    Show t, QC.Arbitrary t)
 
 {-|
-  HSpec properties that each implementation of CanAbsSameType should satisfy.
+  HSpec properties that each implementation of CanAbs should satisfy.
  -}
 specCanAbs ::
   (CanAbsX t, CanAbsX (AbsType t),

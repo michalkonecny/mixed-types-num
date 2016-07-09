@@ -98,7 +98,7 @@ type CanRoundX t =
    Show t, QC.Arbitrary t)
 
 {-|
-  HSpec properties that each implementation of CanRoundSameType should satisfy.
+  HSpec properties that each implementation of CanRound should satisfy.
  -}
 specCanRound ::
   (CanRoundX t, HasIntegers t)
