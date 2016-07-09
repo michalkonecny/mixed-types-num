@@ -13,9 +13,9 @@
 module Numeric.MixedTypes.Field
 (
   -- * Field
-  Field
+  Field, CanAddSubMulDivBy
   -- * Division
-  , CanDiv(..), CanDivThis, CanDivSameType
+  , CanDiv(..), CanDivBy, CanDivSameType
   , (/), recip
   -- ** Tests
   , specCanDiv, specCanDivNotMixed, CanDivX
@@ -50,6 +50,9 @@ import Numeric.MixedTypes.Ring
 type Field t =
     (Ring t, CanDivSameType t, CanDiv Integer t)
 
+type CanAddSubMulDivBy t s =
+  (CanAddSubMulBy t s, CanDivBy t s)
+
 {---- Division -----}
 
 {-|
@@ -69,10 +72,10 @@ class CanDiv t1 t2 where
 recip :: (CanDiv Integer t) => t -> DivType Integer t
 recip = divide 1
 
-type CanDivThis t1 t2 =
+type CanDivBy t1 t2 =
   (CanDiv t1 t2, DivType t1 t2 ~ t1)
 type CanDivSameType t =
-  CanDivThis t t
+  CanDivBy t t
 
 {-| Compound type constraint useful for test definition. -}
 type CanDivX t1 t2 =
