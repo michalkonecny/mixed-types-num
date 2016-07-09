@@ -12,13 +12,13 @@
 
 module Numeric.MixedTypes.Field
 (
-    -- * Division
-    CanDiv(..), CanDivThis, CanDivSameType
-    , (/), recip
+  -- * Field
+  Field
+  -- * Division
+  , CanDiv(..), CanDivThis, CanDivSameType
+  , (/), recip
   -- ** Tests
-    , specCanDiv, specCanDivNotMixed, CanDivX
-    -- * Field
-    , Field
+  , specCanDiv, specCanDivNotMixed, CanDivX
 )
 where
 
@@ -45,11 +45,16 @@ import Numeric.MixedTypes.EqOrd
 -- import Numeric.MixedTypes.AddSub
 import Numeric.MixedTypes.Ring
 
+{----- Field -----}
+
+type Field t =
+    (Ring t, CanDivSameType t, CanDiv Integer t)
+
 {---- Division -----}
 
 {-|
-  A replacement for Prelude's binary `P.-`.  If @t1 = t2@ and @Num t1@,
-  then one can use the default implementation to mirror Prelude's @-@.
+  A replacement for Prelude's binary `P./`.  If @t1 = t2@ and @Fractional t1@,
+  then one can use the default implementation to mirror Prelude's @/@.
 -}
 class CanDiv t1 t2 where
   type DivType t1 t2
@@ -182,10 +187,3 @@ instance (CanDiv a b) => CanDiv (Maybe a) (Maybe b) where
   type DivType (Maybe a) (Maybe b) = Maybe (DivType a b)
   divide (Just x) (Just y) = Just (divide x y)
   divide _ _ = Nothing
-
-{----- Field -----}
-
-class
-    (Ring t, CanDivSameType t, CanDiv Integer t)
-    =>
-    Field t

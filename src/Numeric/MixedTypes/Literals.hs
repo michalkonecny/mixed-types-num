@@ -38,9 +38,9 @@ module Numeric.MixedTypes.Literals
     fromInteger, fromRational
     , ifThenElse
     -- * Convenient conversions
-    , CanBeInteger, integer, integers
+    , CanBeInteger, integer, integers, HasIntegers, fromInteger_
     , CanBeInt, int, ints
-    , CanBeRational, rational, rationals
+    , CanBeRational, rational, rationals, HasRationals, fromRational_
     , CanBeDouble, double, doubles
     , Convertible(..), convert
     -- * Generic list index
@@ -95,6 +95,10 @@ integer = convert
 integers :: (CanBeInteger t) => [t] -> [Integer]
 integers = map convert
 
+type HasIntegers t = Convertible Integer t
+fromInteger_ :: (HasIntegers t) => Integer -> t
+fromInteger_ = convert
+
 (!!) :: (CanBeInteger t) => [a] -> t -> a
 list !! ix = List.genericIndex list (integer ix)
 
@@ -120,6 +124,10 @@ rational :: (CanBeRational t) => t -> Rational
 rational = convert
 rationals :: (CanBeRational t) => [t] -> [Rational]
 rationals = map convert
+
+type HasRationals t = Convertible Rational t
+fromRational_ :: (HasRationals t) => Rational -> t
+fromRational_ = convert
 
 type CanBeDouble t = Convertible t Double
 double :: (CanBeDouble t) => t -> Double
