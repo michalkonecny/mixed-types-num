@@ -22,6 +22,7 @@ module Numeric.MixedTypes
   module Numeric.MixedTypes.EqOrd,
   module Numeric.MixedTypes.MinMaxAbs,
   module Numeric.MixedTypes.AddSub,
+  module Numeric.MixedTypes.Round,
   module Numeric.MixedTypes.Ring,
   module Numeric.MixedTypes.Field
 )
@@ -35,7 +36,8 @@ import Prelude hiding
     abs, min, max, minimum, maximum,
    (-), (+), sum,
    (*), (^), (^^), product,
-   (/), recip
+   (/), recip,
+   properFraction, round, truncate, ceiling, floor
   )
 
 import Numeric.MixedTypes.Literals
@@ -43,5 +45,6 @@ import Numeric.MixedTypes.Bool
 import Numeric.MixedTypes.EqOrd
 import Numeric.MixedTypes.MinMaxAbs
 import Numeric.MixedTypes.AddSub
+import Numeric.MixedTypes.Round
 import Numeric.MixedTypes.Ring
 import Numeric.MixedTypes.Field

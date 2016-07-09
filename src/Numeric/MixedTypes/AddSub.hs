@@ -108,18 +108,18 @@ specCanAdd ::
 specCanAdd (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "CanAdd %s %s, CanAdd %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "absorbs 0" $ do
-      QC.property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x + z) //== x
+      QC.property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x + z) ?==? x
     it "is commutative" $ do
-      QC.property $ \ (x :: t1) (y :: t2) -> (x + y) //== (y + x)
+      QC.property $ \ (x :: t1) (y :: t2) -> (x + y) ?==? (y + x)
     it "is associative" $ do
       QC.property $ \ (x :: t1) (y :: t2) (z :: t3) ->
-                      (x + (y + z)) //== ((x + y) + z)
+                      (x + (y + z)) ?==? ((x + y) + z)
     it "increases when positive" $ do
       QC.property $ \ (x :: t1) (y :: t2) ->
-        (isCertainlyPositive x) QC.==> (x + y) //> y
+        (isCertainlyPositive x) QC.==> (x + y) ?>? y
     it "decreases when negative" $ do
       QC.property $ \ (x :: t1) (y :: t2) ->
-        (isCertainlyNegative x) QC.==> (x + y) //< y
+        (isCertainlyNegative x) QC.==> (x + y) ?<? y
 
 --
 {-|
@@ -147,9 +147,9 @@ specCanAddSameType (T typeName :: T t) =
   describe (printf "CanAddSameType %s" typeName) $ do
     it "has sum working over integers" $ do
       QC.property $ \ (xsi :: [Integer]) ->
-        (sum $ (map convertExactly xsi :: [t])) //== (convertExactly (sum xsi) :: t)
+        (sum $ (map convertExactly xsi :: [t])) ?==? (convertExactly (sum xsi) :: t)
     it "has sum [] = 0" $ do
-        (sum ([] :: [t])) //== (convertExactly 0 :: t)
+        (sum ([] :: [t])) ?==? (convertExactly 0 :: t)
 
 
 instance CanAddAsymmetric Int Int where
@@ -254,12 +254,12 @@ specCanSub ::
 specCanSub (T typeName1 :: T t1) (T typeName2 :: T t2) =
   describe (printf "CanSub %s %s" typeName1 typeName2) $ do
     it "x-0 = x" $ do
-      QC.property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x - z) //== x
+      QC.property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x - z) ?==? x
     it "x-x = 0" $ do
-      QC.property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x - x) //== z
+      QC.property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x - x) ?==? z
     it "x-y = x+(-y)" $ do
       QC.property $ \ (x :: t1) (y :: t2) ->
-        (x - y) //== (x + (negate y))
+        (x - y) ?==? (x + (negate y))
 
 --
 {-|

@@ -120,15 +120,15 @@ specCanMul ::
 specCanMul (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "CanMul %s %s, CanMul %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "absorbs 1" $ do
-      QC.property $ \ (x :: t1) -> let one = (convertExactly 1 :: t2) in (x * one) //== x
+      QC.property $ \ (x :: t1) -> let one = (convertExactly 1 :: t2) in (x * one) ?==? x
     it "is commutative" $ do
-      QC.property $ \ (x :: t1) (y :: t2) -> (x * y) //== (y * x)
+      QC.property $ \ (x :: t1) (y :: t2) -> (x * y) ?==? (y * x)
     it "is associative" $ do
       QC.property $ \ (x :: t1) (y :: t2) (z :: t3) ->
-                      (x * (y * z)) //== ((x * y) * z)
+                      (x * (y * z)) ?==? ((x * y) * z)
     it "distributes over addition" $ do
       QC.property $ \ (x :: t1) (y :: t2) (z :: t3) ->
-                      (x * (y + z)) //== (x * y) + (x * z)
+                      (x * (y + z)) ?==? (x * y) + (x * z)
 
 {-|
   HSpec properties that each implementation of CanMul should satisfy.
@@ -158,9 +158,9 @@ specCanMulSameType (T typeName :: T t) =
   describe (printf "CanMulSameType %s" typeName) $ do
     it "has product working over integers" $ do
       QC.property $ \ (xsi :: [Integer]) ->
-        (product $ (map convertExactly xsi :: [t])) //== (convertExactly (product xsi) :: t)
+        (product $ (map convertExactly xsi :: [t])) ?==? (convertExactly (product xsi) :: t)
     it "has product [] = 1" $ do
-        (product ([] :: [t])) //== (convertExactly 1 :: t)
+        (product ([] :: [t])) ?==? (convertExactly 1 :: t)
 
 instance CanMulAsymmetric Int Int where
   type MulType Int Int = Integer -- do not risk overflow
@@ -271,15 +271,15 @@ specCanPow (T typeName1 :: T t1) (T typeName2 :: T t2) =
       QC.property $ \ (x :: t1) ->
         let one = (convertExactly 1 :: t1) in
         let z = (convertExactly 0 :: t2) in
-        (x ^ z) //== one
+        (x ^ z) ?==? one
     it "x^1 = x" $ do
       QC.property $ \ (x :: t1) ->
         let one = (convertExactly 1 :: t2) in
-        (x ^ one) //== x
+        (x ^ one) ?==? x
     it "x^(y+1) = x*x^y" $ do
       QC.property $ \ (x :: t1) (y :: t2) ->
         (isCertainlyNonNegative y) QC.==>
-          x * (x ^ y) //== (x ^ (y + 1))
+          x * (x ^ y) ?==? (x ^ (y + 1))
 
 instance CanPow Integer Int
 instance CanPow Integer Integer

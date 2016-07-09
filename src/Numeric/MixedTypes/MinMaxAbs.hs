@@ -28,7 +28,7 @@ import Prelude hiding
   (fromInteger,
    negate,not,(&&),(||),and,or,
    (==), (/=), (>), (<), (<=), (>=),
-   abs, min, max, minimum, maximum, (-))
+   abs, min, max, minimum, maximum)
 import qualified Prelude as P
 import Text.Printf
 
@@ -106,23 +106,23 @@ specCanMinMax ::
 specCanMinMax (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "CanMinMax %s %s, CanMinMax %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "`min` is not larger than its arguments" $ do
-      QC.property $ \ (x :: t1) (y :: t2) -> let m = x `min` y in (m //<= y) && (m //<= x)
+      QC.property $ \ (x :: t1) (y :: t2) -> let m = x `min` y in (m ?<=? y) && (m ?<=? x)
     it "`max` is not smaller than its arguments" $ do
-      QC.property $ \ (x :: t1) (y :: t2) -> let m = x `max` y in (m //>= y) && (m //>= x)
+      QC.property $ \ (x :: t1) (y :: t2) -> let m = x `max` y in (m ?>=? y) && (m ?>=? x)
     it "has idempotent `min`" $ do
-      QC.property $ \ (x :: t1) -> (x `min` x) //== x
+      QC.property $ \ (x :: t1) -> (x `min` x) ?==? x
     it "has idempotent `max`" $ do
-      QC.property $ \ (x :: t1) -> (x `max` x) //== x
+      QC.property $ \ (x :: t1) -> (x `max` x) ?==? x
     it "has commutative `min`" $ do
-      QC.property $ \ (x :: t1) (y :: t2) -> (x `min` y) //== (y `min` x)
+      QC.property $ \ (x :: t1) (y :: t2) -> (x `min` y) ?==? (y `min` x)
     it "has commutative `max`" $ do
-      QC.property $ \ (x :: t1) (y :: t2) -> (x `max` y) //== (y `max` x)
+      QC.property $ \ (x :: t1) (y :: t2) -> (x `max` y) ?==? (y `max` x)
     it "has associative `min`" $ do
       QC.property $ \ (x :: t1) (y :: t2) (z :: t3) ->
-                      (x `min` (y `min` z)) //== ((x `min` y) `min` z)
+                      (x `min` (y `min` z)) ?==? ((x `min` y) `min` z)
     it "has associative `max`" $ do
       QC.property $ \ (x :: t1) (y :: t2) (z :: t3) ->
-                      (x `max` (y `max` z)) //== ((x `max` y) `max` z)
+                      (x `max` (y `max` z)) ?==? ((x `max` y) `max` z)
 --
 {-|
   HSpec properties that each implementation of CanMinMax should satisfy.
@@ -203,9 +203,9 @@ specCanNegNum ::
 specCanNegNum (T typeName :: T t) =
   describe (printf "CanNeg %s" typeName) $ do
     it "ignores double negation" $ do
-      QC.property $ \ (x :: t) -> (negate (negate x)) //== x
+      QC.property $ \ (x :: t) -> (negate (negate x)) ?==? x
     it "takes 0 to 0" $ do
-      let z = convertExactly 0 :: t in negate z //== z
+      let z = convertExactly 0 :: t in negate z ?==? z
     it "takes positive to negative" $ do
       QC.property $ \ (x :: t) ->
         (isCertainlyPositive x) QC.==> (isCertainlyNegative (negate x))
@@ -257,12 +257,12 @@ specCanAbs ::
 specCanAbs (T typeName :: T t) =
   describe (printf "CanAbsSameType %s" typeName) $ do
     it "is idempotent" $ do
-      QC.property $ \ (x :: t) -> (abs (abs x)) //== (abs x)
+      QC.property $ \ (x :: t) -> (abs (abs x)) ?==? (abs x)
     it "is identity on non-negative arguments" $ do
       QC.property $ \ (x :: t) ->
-        isCertainlyNonNegative x  QC.==> x //== (abs x)
+        isCertainlyNonNegative x  QC.==> x ?==? (abs x)
     it "is negation on non-positive arguments" $ do
       QC.property $ \ (x :: t) ->
-        isCertainlyNonPositive x  QC.==> (negate x) //== (abs x)
+        isCertainlyNonPositive x  QC.==> (negate x) ?==? (abs x)
     it "does not give negative results" $ do
       QC.property $ \ (x :: t) -> not $ isCertainlyNegative (abs x)

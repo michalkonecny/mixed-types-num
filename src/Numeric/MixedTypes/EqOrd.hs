@@ -14,8 +14,8 @@ module Numeric.MixedTypes.EqOrd
 (
   -- * Equality tests
   HasEq,  HasEqAsymmetric(..), (==), (/=)
-  , certainlyEqualTo, certainlyNotEqualTo, notDifferentFrom
-  , (//==)
+  , notCertainlyDifferentFrom, certainlyEqualTo, certainlyNotEqualTo
+  , (?==?), (!==!), (!/=!)
   -- ** Tests
   , specHasEq, specHasEqNotMixed, HasEqX
   -- ** Specific tests
@@ -23,12 +23,13 @@ module Numeric.MixedTypes.EqOrd
   , CanPickNonZero(..), specCanPickNonZero
   -- * Comparisons in numeric order
   , HasOrder, HasOrderAsymmetric(..), (>), (<), (<=), (>=)
+  , (?<=?), (?<?), (?>=?), (?>?)
+  , (!<=!), (!<!), (!>=!), (!>!)
   -- ** Tests
   , specHasOrder, specHasOrderNotMixed, HasOrderX
   -- ** Specific comparisons
   , CanTestPosNeg(..)
   -- * Helper ops and functions
-  , (//<=), (//<), (//>=), (//>)
   , convertFirst, convertSecond
 )
 where
@@ -47,7 +48,9 @@ import Control.Exception (evaluate)
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
 
-infix  4  ==, /=, <, <=, >=, >, //==, //<=, //<, //>=, //>
+infix  4  ==, /=, <, <=, >=, >
+infix 4 ?==?, ?<=?, ?<?, ?>=?, ?>?
+infix 4 !==!, !/=!, !<=!, !<!, !>=!, !>!
 
 {---- Equality tests -----}
 
@@ -78,11 +81,17 @@ certainlyEqualTo :: (HasEqAsymmetric a b) => a -> b -> Bool
 certainlyEqualTo a b = isCertainlyTrue $ a == b
 certainlyNotEqualTo :: (HasEqAsymmetric a b) => a -> b -> Bool
 certainlyNotEqualTo a b = isCertainlyTrue $ a /= b
-notDifferentFrom :: (HasEqAsymmetric a b) => a -> b -> Bool
-notDifferentFrom a b = isNotFalse $ a == b
+notCertainlyDifferentFrom :: (HasEqAsymmetric a b) => a -> b -> Bool
+notCertainlyDifferentFrom a b = isNotFalse $ a == b
 
-(//==) :: (HasEqAsymmetric a b) => a -> b -> Bool
-(//==) = notDifferentFrom
+(?==?) :: (HasEqAsymmetric a b) => a -> b -> Bool
+(?==?) = notCertainlyDifferentFrom
+
+(!==!) :: (HasEqAsymmetric a b) => a -> b -> Bool
+(!==!) = certainlyEqualTo
+
+(!/=!) :: (HasEqAsymmetric a b) => a -> b -> Bool
+(!/=!) = certainlyNotEqualTo
 
 {-| Compound type constraint useful for test definition. -}
 type HasEqX t1 t2 =
@@ -268,17 +277,29 @@ class (IsBool (OrderCompareType a b)) => HasOrderAsymmetric a b where
 (<=) :: (HasOrderAsymmetric a b) => a -> b -> OrderCompareType a b
 (<=) = leq
 
-(//>) :: (HasOrderAsymmetric a b) => a -> b -> Bool
-a //> b = isNotFalse $ a > b
+(?>?) :: (HasOrderAsymmetric a b) => a -> b -> Bool
+a ?>? b = isNotFalse $ a > b
 
-(//<) :: (HasOrderAsymmetric a b) => a -> b -> Bool
-a //< b = isNotFalse $ a < b
+(?<?) :: (HasOrderAsymmetric a b) => a -> b -> Bool
+a ?<? b = isNotFalse $ a < b
 
-(//>=) :: (HasOrderAsymmetric a b) => a -> b -> Bool
-a //>= b = isNotFalse $ a >= b
+(?>=?) :: (HasOrderAsymmetric a b) => a -> b -> Bool
+a ?>=? b = isNotFalse $ a >= b
 
-(//<=) :: (HasOrderAsymmetric a b) => a -> b -> Bool
-a //<= b = isNotFalse $ a <= b
+(?<=?) :: (HasOrderAsymmetric a b) => a -> b -> Bool
+a ?<=? b = isNotFalse $ a <= b
+
+(!>!) :: (HasOrderAsymmetric a b) => a -> b -> Bool
+a !>! b = isCertainlyTrue $ a > b
+
+(!<!) :: (HasOrderAsymmetric a b) => a -> b -> Bool
+a !<! b = isCertainlyTrue $ a < b
+
+(!>=!) :: (HasOrderAsymmetric a b) => a -> b -> Bool
+a !>=! b = isCertainlyTrue $ a >= b
+
+(!<=!) :: (HasOrderAsymmetric a b) => a -> b -> Bool
+a !<=! b = isCertainlyTrue $ a <= b
 
 {-| Compound type constraint useful for test definition. -}
 type HasOrderX t1 t2 =

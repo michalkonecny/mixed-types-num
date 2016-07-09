@@ -36,7 +36,7 @@ specConversions =
     it "throws exception when converting large integer to int" $ do
       (evaluate $ int (integer (maxBound :: Int) P.+ 1)) `shouldThrow` anyException
     it "convert int to rational and back" $ do
-      QC.property $ \ (x :: Int) -> (round $ rational x) P.== x
+      QC.property $ \ (x :: Int) -> (int $ round $ rational x) P.== x
     it "convert integer to rational and back" $ do
       QC.property $ \ (x :: Integer) -> (round $ rational x) P.== x
     it "convert double to rational and back" $ do

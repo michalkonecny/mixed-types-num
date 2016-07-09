@@ -103,17 +103,17 @@ specCanDiv (T typeName1 :: T t1) (T typeName2 :: T t2) =
     it "recip(recip x) = x" $ do
       QC.property $ \ (x :: t1) ->
         (isNonZero x) QC.==>
-          recip (recip x) //== x
+          recip (recip x) ?==? x
     it "x/1 = x" $ do
-      QC.property $ \ (x :: t1) -> let one = (convertExactly 1 :: t2) in (x / one) //== x
+      QC.property $ \ (x :: t1) -> let one = (convertExactly 1 :: t2) in (x / one) ?==? x
     it "x/x = 1" $ do
       QC.property $ \ (x :: t1) ->
         (isNonZero x) QC.==>
-          let one = (convertExactly 1 :: t1) in (x / x) //== one
+          let one = (convertExactly 1 :: t1) in (x / x) ?==? one
     it "x/y = x*(1/y)" $ do
       QC.property $ \ (x :: t1) (y :: t2) ->
         (isNonZero y) QC.==>
-          let one = (convertExactly 1 :: t1) in (x / y) //== x * (one/y)
+          let one = (convertExactly 1 :: t1) in (x / y) ?==? x * (one/y)
 
 {-|
   HSpec properties that each implementation of CanDiv should satisfy.
