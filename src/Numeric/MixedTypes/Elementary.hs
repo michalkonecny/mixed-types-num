@@ -25,17 +25,7 @@ module Numeric.MixedTypes.Elementary
 )
 where
 
-import Prelude hiding
-  (fromInteger, fromRational,
-   negate,not,(&&),(||),and,or,
-   (==), (/=), (>), (<), (<=), (>=),
-   abs, min, max, minimum, maximum,
-   (-), (+), sum,
-   (*), (^), (^^), (**), product,
-   (/), recip,
-   properFraction, round, truncate, ceiling, floor,
-   sqrt, exp, log, sin, cos
-  )
+import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 import Text.Printf
 

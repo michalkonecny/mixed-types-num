@@ -24,11 +24,7 @@ module Numeric.MixedTypes.MinMaxAbs
 )
 where
 
-import Prelude hiding
-  (fromInteger,
-   negate,not,(&&),(||),and,or,
-   (==), (/=), (>), (<), (<=), (>=),
-   abs, min, max, minimum, maximum)
+import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 import Text.Printf
 

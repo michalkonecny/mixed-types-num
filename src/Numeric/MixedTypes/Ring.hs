@@ -27,13 +27,7 @@ module Numeric.MixedTypes.Ring
 )
 where
 
-import Prelude hiding
-  (fromInteger,
-   negate,not,(&&),(||),and,or,
-   (==), (/=), (>), (<), (<=), (>=),
-   abs, min, max, minimum, maximum,
-   (-), (+), sum, (*), (^), (^^), (**), product,
-   properFraction, round, truncate, ceiling, floor)
+import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 import Text.Printf
 

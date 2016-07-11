@@ -19,13 +19,7 @@ module Numeric.MixedTypes.Round
 )
 where
 
-import Prelude hiding
-  (fromInteger, fromRational,
-   negate,not,(&&),(||),and,or,
-   (==), (/=), (>), (<), (<=), (>=),
-   abs, min, max, minimum, maximum,
-   (-), (+), sum,
-   properFraction, round, truncate, ceiling, floor)
+import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 import Text.Printf
 

@@ -29,7 +29,7 @@ module Numeric.MixedTypes.Bool
 )
 where
 
-import Prelude hiding (negate,not,(&&),(||),and,or)
+import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 import Text.Printf
 

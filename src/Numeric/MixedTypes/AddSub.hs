@@ -25,12 +25,7 @@ module Numeric.MixedTypes.AddSub
 )
 where
 
-import Prelude hiding
-  (fromInteger,
-   negate,not,(&&),(||),and,or,
-   (==), (/=), (>), (<), (<=), (>=),
-   abs, min, max, minimum, maximum,
-   (-), (+), sum)
+import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 import Text.Printf
 

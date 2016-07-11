@@ -34,10 +34,7 @@ module Numeric.MixedTypes.EqOrd
 )
 where
 
-import Prelude hiding
-  (fromInteger, fromRational,
-   negate,not,(&&),(||),and,or,
-   (==), (/=), (>), (<), (<=), (>=))
+import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 import Text.Printf
 

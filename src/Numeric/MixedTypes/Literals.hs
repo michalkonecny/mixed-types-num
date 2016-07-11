@@ -51,7 +51,7 @@ module Numeric.MixedTypes.Literals
 )
 where
 
-import Prelude hiding (fromInteger, fromRational, (!!))
+import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 import Text.Printf
 

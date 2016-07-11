@@ -15,7 +15,7 @@
 module Numeric.MixedTypes
 (
   -- ** Re-exporting Prelude, hiding the operators we are changing
-  module Prelude,
+  module Numeric.MixedTypes.PreludeHiding,
   -- ** Modules with Prelude alternatives
   module Numeric.MixedTypes.Literals,
   module Numeric.MixedTypes.Bool,
@@ -29,19 +29,7 @@ module Numeric.MixedTypes
 )
 where
 
-import Prelude hiding
-  (
-    fromInteger, fromRational, (!!),
-    negate, not, (&&), (||), and, or,
-    (==),(/=),(<),(>),(<=),(>=),
-    abs, min, max, minimum, maximum,
-     (-), (+), sum,
-     (*), (^), (^^), (**), product,
-     (/), recip,
-     properFraction, round, truncate, ceiling, floor,
-     sqrt, exp, log, sin, cos
-  )
-
+import Numeric.MixedTypes.PreludeHiding
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
 import Numeric.MixedTypes.EqOrd
