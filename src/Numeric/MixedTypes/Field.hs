@@ -28,7 +28,7 @@ import Prelude hiding
    (==), (/=), (>), (<), (<=), (>=),
    abs, min, max, minimum, maximum,
    (-), (+), sum,
-   (*), (^), (^^), product,
+   (*), (^), (^^), (**), product,
    (/), recip,
    properFraction, round, truncate, ceiling, floor)
 import qualified Prelude as P

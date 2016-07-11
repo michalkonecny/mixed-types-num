@@ -15,20 +15,24 @@ module Numeric.MixedTypes.Elementary
   -- * Square root
   CanSqrt(..), CanSqrtSameType, specCanSqrtReal,
   -- * Exp
-  CanExp(..), CanExpSameType, specCanExpReal
+  CanExp(..), CanExpSameType, specCanExpReal,
+  -- * Log
+  CanLog(..), CanLogSameType, specCanLogReal,
+  powViaExpLog
 )
 where
 
 import Prelude hiding
-  (fromInteger,
+  (fromInteger, fromRational,
    negate,not,(&&),(||),and,or,
    (==), (/=), (>), (<), (<=), (>=),
    abs, min, max, minimum, maximum,
    (-), (+), sum,
-   (*), (^), (^^), product,
+   (*), (^), (^^), (**), product,
    (/), recip,
    properFraction, round, truncate, ceiling, floor,
-   sqrt, exp)
+   sqrt, exp, log
+  )
 import qualified Prelude as P
 import Text.Printf
 
@@ -143,3 +147,69 @@ specCanExpReal (T typeName :: T t) =
 -}
 
 instance CanExp Double -- not exact, will not pass the tests
+
+{----  log -----}
+
+{-|
+  A replacement for Prelude's `P.log`.  If @Floating t@,
+  then one can use the default implementation to mirror Prelude's @log@.
+-}
+class CanLog t where
+  type LogType t
+  type LogType t = t -- default
+  log :: t -> LogType t
+  default log :: (LogType t ~ t, P.Floating t) => t -> t
+  log = P.log
+
+type CanLogSameType t = (CanLog t, LogType t ~ t)
+
+type CanLogX t =
+  (CanLog t,
+   Field t,
+   Ring (LogType t),
+   CanTestPosNeg t,
+   HasEq (LogType t) (LogType t),
+   Show t, QC.Arbitrary t)
+
+{-|
+  HSpec properties that each implementation of CanLog should satisfy.
+ -}
+specCanLogReal ::
+  (CanLogX t,
+   CanExp t, CanLog (ExpType t),
+   HasEq t (LogType (ExpType t)))
+  =>
+  T t -> Spec
+specCanLogReal (T typeName :: T t) =
+  describe (printf "CanLog %s" typeName) $ do
+    it "log(1/x) == -(log x)" $ do
+      QC.property $ \ (x :: t) ->
+        isCertainlyPositive x QC.==>
+          log (1/x) ?==? -(log x)
+    it "log(x*y) = log(x)+log(y)" $ do
+      QC.property $ \ (x :: t)  (y :: t) ->
+        isCertainlyPositive x && isCertainlyPositive y  QC.==>
+          (log $ x * y) ?==? (log x) + (log y)
+    it "log(exp x) == x" $ do
+      QC.property $ \ (x :: t) ->
+          log (exp x) ?==? x
+
+{-
+  Instances for Integer, Rational etc need an algebraic real or exact real type.
+  Such type is not provided in this package. See eg aern2-real.
+-}
+
+instance CanLog Double -- not exact, will not pass the tests
+
+instance CanPow Double Double where
+  pow = powViaExpLog
+instance CanPow Double Rational where
+  pow x y = powViaExpLog x (double y)
+
+powViaExpLog ::
+  (CanMulAsymmetric (LogType t1) t2,
+   CanLog t1,
+   CanExp (MulType (LogType t1) t2))
+  =>
+  t1 -> t2 -> ExpType (MulType (LogType t1) t2)
+powViaExpLog x y = exp (log x * y)

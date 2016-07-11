@@ -21,7 +21,7 @@ module Numeric.MixedTypes.Ring
   , specCanMul, specCanMulNotMixed, specCanMulSameType, CanMulX
   -- * Exponentiation
   , CanPow(..), CanPowBy
-  , (^), (^^)
+  , (^), (^^), (**)
   -- ** Tests
   , specCanPow, CanPowX
 )
@@ -32,7 +32,7 @@ import Prelude hiding
    negate,not,(&&),(||),and,or,
    (==), (/=), (>), (<), (<=), (>=),
    abs, min, max, minimum, maximum,
-   (-), (+), sum, (*), (^), (^^), product,
+   (-), (+), sum, (*), (^), (^^), (**), product,
    properFraction, round, truncate, ceiling, floor)
 import qualified Prelude as P
 import Text.Printf
@@ -244,6 +244,10 @@ class CanPow t1 t2 where
 {-| A synonym of `^` -}
 (^^) :: (CanPow t1 t2) => t1 -> t2 -> PowType t1 t2
 (^^) = (^)
+
+{-| A synonym of `^` -}
+(**) :: (CanPow t1 t2) => t1 -> t2 -> (PowType t1 t2)
+(**) = (^)
 
 type CanPowBy t1 t2 =
   (CanPow t1 t2, PowType t1 t2 ~ t1)

@@ -39,7 +39,7 @@ import Prelude hiding
      (*), (^), (^^), product,
      (/), recip,
      properFraction, round, truncate, ceiling, floor,
-     sqrt
+     sqrt, exp, log, (**)
   )
 
 import Numeric.MixedTypes.Literals
