@@ -21,7 +21,7 @@ module Numeric.MixedTypes.Elementary
   , powViaExpLog
   -- * Sine and cosine
   , CanSinCos(..), CanSinCosSameType, specCanSinCosReal
-  , doublePi
+  , approxPi
 )
 where
 
@@ -281,5 +281,11 @@ specCanSinCosReal (T typeName :: T t) =
 
 instance CanSinCos Double -- not exact, will not pass the tests
 
-doublePi :: Double
-doublePi = P.pi
+{-|
+  Approximate pi, synonym for Prelude's `P.pi`.
+
+  We do not define (exect) @pi@ in this package as we have no type
+  that can represent it exactly.
+-}
+approxPi :: (P.Floating t) => t
+approxPi = P.pi
