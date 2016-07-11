@@ -21,6 +21,7 @@ module Numeric.MixedTypes.Elementary
   , powViaExpLog
   -- * Sine and cosine
   , CanSinCos(..), CanSinCosSameType, specCanSinCosReal
+  , doublePi
 )
 where
 
@@ -279,3 +280,6 @@ specCanSinCosReal (T typeName :: T t) =
 -}
 
 instance CanSinCos Double -- not exact, will not pass the tests
+
+doublePi :: Double
+doublePi = P.pi
