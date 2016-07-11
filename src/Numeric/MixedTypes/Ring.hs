@@ -53,7 +53,10 @@ import Numeric.MixedTypes.AddSub
 type Ring t =
     (CanNegSameType t, CanAddSameType t, CanSubSameType t, CanMulSameType t,
      CanPowBy t Integer, CanPowBy t Int,
-     HasEq t t, ConvertibleExactly Integer t)
+     HasEq t t,
+     HasEq t Integer, CanAddSubMulBy t Integer,
+     HasEq t Int, CanAddSubMulBy t Int,
+     ConvertibleExactly Integer t)
 
 type CanAddSubMulBy t s =
   (CanAddThis t s, CanSubThis t s, CanMulBy t s)

@@ -49,7 +49,11 @@ import Numeric.MixedTypes.Ring
 {----- Field -----}
 
 type Field t =
-    (Ring t, CanDivSameType t, CanDiv Integer t)
+    (Ring t, CanDivSameType t,
+     CanAddSubMulDivBy t Rational,
+     CanAddSubMulDivBy t Integer,
+     CanAddSubMulDivBy t Int,
+     CanDiv Integer t, DivType Integer t ~ t) -- to allow 1/x
 
 type CanAddSubMulDivBy t s =
   (CanAddSubMulBy t s, CanDivBy t s)
