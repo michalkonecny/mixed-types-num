@@ -13,7 +13,7 @@
 module Numeric.MixedTypes.Ring
 (
   -- * Ring
-  Ring, CanAddSubMulBy
+  Ring, CanAddSubMulBy, OrderedRing
   -- * Multiplication
   , CanMul, CanMulAsymmetric(..), CanMulBy, CanMulSameType
   , (*), product
@@ -51,15 +51,20 @@ import Numeric.MixedTypes.AddSub
 {----- Ring -----}
 
 type Ring t =
-    (CanNegSameType t, CanAddSameType t, CanSubSameType t, CanMulSameType t,
-     CanPowBy t Integer, CanPowBy t Int,
-     HasEq t t,
-     HasEq t Integer, CanAddSubMulBy t Integer,
-     HasEq t Int, CanAddSubMulBy t Int,
-     ConvertibleExactly Integer t)
+  (CanNegSameType t, CanAddSameType t, CanSubSameType t, CanMulSameType t,
+   CanPowBy t Integer, CanPowBy t Int,
+   HasEq t t,
+   HasEq t Integer, CanAddSubMulBy t Integer,
+   HasEq t Int, CanAddSubMulBy t Int,
+   ConvertibleExactly Integer t,
+   CanTestZero t)
 
 type CanAddSubMulBy t s =
   (CanAddThis t s, CanSubThis t s, CanMulBy t s)
+
+type OrderedRing t =
+  (Ring t, HasOrder t t, HasOrder t Int, HasOrder t Integer,
+  CanTestPosNeg t)
 
 {---- Multiplication -----}
 

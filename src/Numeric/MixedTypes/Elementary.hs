@@ -13,12 +13,14 @@
 module Numeric.MixedTypes.Elementary
 (
   -- * Square root
-  CanSqrt(..), CanSqrtSameType, specCanSqrtReal,
+  CanSqrt(..), CanSqrtSameType, specCanSqrtReal
   -- * Exp
-  CanExp(..), CanExpSameType, specCanExpReal,
+  , CanExp(..), CanExpSameType, specCanExpReal
   -- * Log
-  CanLog(..), CanLogSameType, specCanLogReal,
-  powViaExpLog
+  , CanLog(..), CanLogSameType, specCanLogReal
+  , powViaExpLog
+  -- * Sine and cosine
+  , CanSinCos(..), CanSinCosSameType, specCanSinCosReal
 )
 where
 
@@ -31,7 +33,7 @@ import Prelude hiding
    (*), (^), (^^), (**), product,
    (/), recip,
    properFraction, round, truncate, ceiling, floor,
-   sqrt, exp, log
+   sqrt, exp, log, sin, cos
   )
 import qualified Prelude as P
 import Text.Printf
@@ -213,3 +215,67 @@ powViaExpLog ::
   =>
   t1 -> t2 -> ExpType (MulType (LogType t1) t2)
 powViaExpLog x y = exp (log x * y)
+
+{----  sine and cosine -----}
+
+{-|
+  A replacement for Prelude's `P.cos` and `P.sin`.  If @Floating t@,
+  then one can use the default implementation to mirror Prelude's @sin@, @cos@.
+-}
+class CanSinCos t where
+  type SinCosType t
+  type SinCosType t = t -- default
+  cos :: t -> SinCosType t
+  default cos :: (SinCosType t ~ t, P.Floating t) => t -> t
+  cos = P.cos
+  sin :: t -> SinCosType t
+  default sin :: (SinCosType t ~ t, P.Floating t) => t -> t
+  sin = P.sin
+
+type CanSinCosSameType t = (CanSinCos t, SinCosType t ~ t)
+
+type CanSinCosX t =
+  (CanSinCos t,
+   OrderedField t,
+   OrderedField (SinCosType t),
+   HasOrder (SinCosType t) t,
+   Show t, QC.Arbitrary t)
+
+{-|
+  HSpec properties that each implementation of CanSinCos should satisfy.
+
+  Derived partially from
+  http://math.stackexchange.com/questions/1303044/axiomatic-definition-of-sin-and-cos
+ -}
+specCanSinCosReal ::
+  (CanSinCosX t)
+  =>
+  T t -> Spec
+specCanSinCosReal (T typeName :: T t) =
+  describe (printf "CanSinCos %s" typeName) $ do
+    it "-1 <= sin(x) <= 1" $ do
+      QC.property $ \ (x :: t) ->
+          (-1) ?<=? (sin x) && (sin x) ?<=? 1
+    it "-1 <= cos(x) <= 1" $ do
+      QC.property $ \ (x :: t) ->
+          (-1) ?<=? (cos x) && (cos x) ?<=? 1
+    it "cos(x)^2 + sin(x)^2 = 1" $ do
+      QC.property $ \ (x :: t) ->
+          (sin x)^2 + (cos x)^2 ?==? 1
+    it "sin(x-y) = sin(x)cos(y) - cos(x)sin(y)" $ do
+      QC.property $ \ (x :: t) (y :: t) ->
+          (sin $ x - y) ?==? (sin x)*(cos y) - (cos x)*(sin y)
+    it "cos(x-y) = cos(x)cos(y) + sin(x)sin(y)" $ do
+      QC.property $ \ (x :: t) (y :: t) ->
+          (cos $ x - y) ?==? (cos x)*(cos y) + (sin x)*(sin y)
+    it "sin(x) < x < tan(x) for x in [0,pi/2]" $ do
+      QC.property $ \ (x :: t) ->
+        x !>=! 0 && x !<=! 1.57 QC.==>
+          (sin x) ?<=? x && x ?<=? (sin x)/(cos x)
+
+{-
+  Instances for Integer, Rational etc need an algebraic real or exact real type.
+  Such type is not provided in this package. See eg aern2-real.
+-}
+
+instance CanSinCos Double -- not exact, will not pass the tests

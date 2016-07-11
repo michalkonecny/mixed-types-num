@@ -36,10 +36,10 @@ import Prelude hiding
     (==),(/=),(<),(>),(<=),(>=),
     abs, min, max, minimum, maximum,
      (-), (+), sum,
-     (*), (^), (^^), product,
+     (*), (^), (^^), (**), product,
      (/), recip,
      properFraction, round, truncate, ceiling, floor,
-     sqrt, exp, log, (**)
+     sqrt, exp, log, sin, cos
   )
 
 import Numeric.MixedTypes.Literals

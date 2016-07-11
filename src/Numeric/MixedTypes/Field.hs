@@ -13,7 +13,7 @@
 module Numeric.MixedTypes.Field
 (
   -- * Field
-  Field, CanAddSubMulDivBy
+  Field, CanAddSubMulDivBy, OrderedField
   -- * Division
   , CanDiv(..), CanDivBy, CanDivSameType
   , (/), recip
@@ -57,6 +57,9 @@ type Field t =
 
 type CanAddSubMulDivBy t s =
   (CanAddSubMulBy t s, CanDivBy t s)
+
+type OrderedField t =
+  (Field t, OrderedRing t, HasOrder t Rational)
 
 {---- Division -----}
 
