@@ -66,10 +66,10 @@ library
   build-depends:
     base == 4.*
     , convertible >= 1.1.1.0 && < 1.2
-    , hspec == 2.2.*
-    , hspec-smallcheck == 0.4.*
+    , hspec >= 2.1 && < 2.3
+    , hspec-smallcheck >= 0.3 && < 0.5
     , smallcheck == 1.1.*
-    , QuickCheck == 2.8.*
+    , QuickCheck >= 2.7 && < 2.9
   ghc-options:     -Wall -fno-warn-orphans
   extensions:
     RebindableSyntax,
@@ -112,6 +112,6 @@ test-suite spec
   build-depends:
     base == 4.*
     , mixed-types-num
-    , hspec == 2.2.*
-    , hspec-smallcheck == 0.4.*
-    , QuickCheck == 2.8.*
+    , hspec >= 2.1 && < 2.3
+    , hspec-smallcheck >= 0.3 && < 0.5
+    , QuickCheck >= 2.7 && < 2.9
