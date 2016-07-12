@@ -42,7 +42,7 @@ module Numeric.MixedTypes.Literals
     , CanBeInt, int, ints
     , CanBeRational, rational, rationals, HasRationals, fromRational_
     , CanBeDouble, double, doubles
-    , ConvertibleExactly(..), convertExactly
+    , ConvertibleExactly(..), convertExactly, ConvertResult, ConvertError, convError
     -- * Generic list index
     , (!!), specCanBeInteger
     -- * Testing support functions
@@ -55,7 +55,7 @@ import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 import Text.Printf
 
-import Data.Convertible (Convertible(..), ConvertResult)
+import Data.Convertible (Convertible(..), ConvertResult, ConvertError, convError)
 
 import qualified Data.List as List
 
