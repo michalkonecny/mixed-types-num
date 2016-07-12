@@ -8,6 +8,7 @@
     Stability   :  experimental
     Portability :  portable
 
+    Prelude without operations that clash with MixedTypes
 -}
 module Numeric.MixedTypes.PreludeHiding
 (

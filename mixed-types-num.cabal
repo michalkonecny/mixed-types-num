@@ -5,9 +5,9 @@ build-type:     Simple
 author:         Michal Konecny
 stability:      experimental
 maintainer:     Michal Konecny <mikkonecny@gmail.com>
-tested-with:    GHC==7.10.3
+tested-with:    GHC==7.8.4, GHC==7.10.3
 license:        BSD3
-homepage:       https://github.com/michalkonecny/aern2/mixed-types-num
+homepage:       https://github.com/michalkonecny/mixed-types-num
 synopsis:       Alternative to Prelude.Num, deriving types bottom-up.
 category:       Math
 copyright:      (c) 2015, 2016 Michal Konecny, Pieter Collins
@@ -94,7 +94,7 @@ library
     Numeric.MixedTypes.Round
     Numeric.MixedTypes.Ring
     Numeric.MixedTypes.Field
-    -- Numeric.MixedTypes.Elementary
+    Numeric.MixedTypes.Elementary
 
 test-suite spec
   type:
