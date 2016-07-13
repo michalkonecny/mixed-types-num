@@ -288,8 +288,12 @@ specCanPow (T typeName1 :: T t1) (T typeName2 :: T t2) =
         (isCertainlyNonNegative y) QC.==>
           x * (x ^ y) ?==? (x ^ (y + 1))
 
-instance CanPow Integer Int
-instance CanPow Integer Integer
+instance CanPow Integer Int where
+  type PowType Integer Int = Rational
+  pow x n = (rational x) P.^^ n
+instance CanPow Integer Integer where
+  type PowType Integer Integer = Rational
+  pow x n = (rational x) P.^^ n
 instance CanPow Rational Int where pow = (P.^^)
 instance CanPow Rational Integer where pow = (P.^^)
 instance CanPow Double Int where pow = (P.^^)
