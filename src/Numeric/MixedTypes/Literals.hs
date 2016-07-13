@@ -55,7 +55,7 @@ import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 import Text.Printf
 
-import Data.Convertible (Convertible(..), ConvertResult, ConvertError, convError)
+import Data.Convertible (Convertible(..), convert, ConvertResult, ConvertError, convError)
 
 import qualified Data.List as List
 
@@ -129,11 +129,11 @@ type HasRationals t = ConvertibleExactly Rational t
 fromRational_ :: (HasRationals t) => Rational -> t
 fromRational_ = convertExactly
 
-type CanBeDouble t = ConvertibleExactly t Double
+type CanBeDouble t = Convertible t Double
 double :: (CanBeDouble t) => t -> Double
-double = convertExactly
+double = convert
 doubles :: (CanBeDouble t) => [t] -> [Double]
-doubles = map convertExactly
+doubles = map convert
 
 {-|
 Define our own ConvertibleExactly since convertible is too relaxed for us.
