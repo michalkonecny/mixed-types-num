@@ -18,13 +18,9 @@ where
 
 import Prelude hiding
   (
-    fromInteger, fromRational, (!!),
-    negate, not, (&&), (||), and, or,
-    (==),(/=),(<),(>),(<=),(>=),
-    abs, min, max, minimum, maximum,
-     (-), (+), sum,
-     (*), (^), (^^), (**), product,
-     (/), recip,
-     properFraction, round, truncate, ceiling, floor,
-     sqrt, exp, log, sin, cos, pi
+    fromInteger, fromRational, (!!)
+    , Eq(..), Ord(..), Num(..), Fractional(..), RealFrac(..), Floating(..)
+    , not, (&&), (||), and, or
+    , (^), (^^)
+    , minimum, maximum, sum, product
   )
