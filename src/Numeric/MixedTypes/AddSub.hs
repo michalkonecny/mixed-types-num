@@ -210,15 +210,22 @@ instance (CanAddAsymmetric a b) => CanAddAsymmetric (Maybe a) (Maybe b) where
 {---- Subtraction -----}
 
 {-|
-  A replacement for Prelude's binary `P.-`.  If @t1 = t2@ and @Num t1@,
-  then one can use the default implementation to mirror Prelude's @-@.
+  A replacement for Prelude's binary `P.-`.
+
+  If @CanNeg t2@ and @CanAdd t1 (NegType t2)@,
+  then one can use the default implementation
+  via @a-b = a + (-b)@.
 -}
 class CanSub t1 t2 where
   type SubType t1 t2
-  type SubType t1 t2 = t1 -- default
+  type SubType t1 t2 = AddType t1 (NegType t2) -- default
   sub :: t1 -> t2 -> SubType t1 t2
-  default sub :: (SubType t1 t2 ~ t1, t1~t2, P.Num t1) => t1 -> t1 -> t1
-  sub = (P.-)
+  default sub ::
+    (SubType t1 t2 ~ AddType t1 (NegType t2),
+    CanNeg t2, CanAdd t1 (NegType t2))
+    =>
+    t1 -> t2 -> SubType t1 t2
+  a `sub` b = a + (negate b)
 
 (-) :: (CanSub t1 t2) => t1 -> t2 -> SubType t1 t2
 (-) = sub
