@@ -22,6 +22,7 @@ module Numeric.MixedTypes.Ring
   -- * Exponentiation
   , CanPow(..), CanPowBy
   , (^), (^^), (**)
+  , powUsingMul
   -- ** Tests
   , specCanPow, CanPowX
 )
@@ -236,6 +237,24 @@ class CanPow t1 t2 where
   pow :: t1 -> t2 -> PowType t1 t2
   default pow :: (PowType t1 t2 ~ t1, P.Num t1, P.Integral t2) => t1 -> t2 -> t1
   pow = (P.^)
+
+powUsingMul ::
+  (CanBeInteger e,
+   CanMulSameType t, ConvertibleExactly Integer t)
+   =>
+   t -> e -> t
+powUsingMul x nPre
+  | n < 0 = error $ "powUsingMul is not defined for negative exponent " ++ show n
+  | n == 0 = convertExactly 1
+  | otherwise = aux n
+  where
+    n = integer nPre
+    aux m
+      | m == 1 = x
+      | even m =
+        let s = aux (m `div` 2) in s * s
+      | otherwise =
+        let s = aux ((m-1) `div` 2) in x * s * s
 
 (^) :: (CanPow t1 t2) => t1 -> t2 -> PowType t1 t2
 (^) = pow

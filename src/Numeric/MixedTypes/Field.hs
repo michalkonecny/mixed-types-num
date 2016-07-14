@@ -15,8 +15,9 @@ module Numeric.MixedTypes.Field
   -- * Field
   Field, CanAddSubMulDivBy, OrderedField
   -- * Division
-  , CanDiv(..), CanDivBy, CanDivSameType
+  , CanDiv(..), CanDivBy, CanDivSameType, CanRecip
   , (/), recip
+  , powUsingMulRecip
   -- ** Tests
   , specCanDiv, specCanDivNotMixed, CanDivX
 )
@@ -32,7 +33,7 @@ import Test.Hspec
 import qualified Test.QuickCheck as QC
 
 import Numeric.MixedTypes.Literals
--- import Numeric.MixedTypes.Bool
+import Numeric.MixedTypes.Bool (negate)
 import Numeric.MixedTypes.EqOrd
 -- import Numeric.MixedTypes.MinMaxAbs
 -- import Numeric.MixedTypes.AddSub
@@ -41,11 +42,11 @@ import Numeric.MixedTypes.Ring
 {----- Field -----}
 
 type Field t =
-    (Ring t, CanDivSameType t,
+    (Ring t, CanDivSameType t, CanRecip t,
      CanAddSubMulDivBy t Rational,
      CanAddSubMulDivBy t Integer,
-     CanAddSubMulDivBy t Int,
-     CanDiv Integer t, DivType Integer t ~ t) -- to allow 1/x
+     CanAddSubMulDivBy t Int
+    )
 
 type CanAddSubMulDivBy t s =
   (CanAddSubMulBy t s, CanDivBy t s)
@@ -69,7 +70,10 @@ class CanDiv t1 t2 where
 (/) :: (CanDiv t1 t2) => t1 -> t2 -> DivType t1 t2
 (/) = divide
 
-recip :: (CanDiv Integer t) => t -> DivType Integer t
+type CanRecip t =
+  (CanDiv Integer t, DivType Integer t ~ t)
+
+recip :: (CanRecip t) => t -> DivType Integer t
 recip = divide 1
 
 type CanDivBy t1 t2 =
@@ -88,7 +92,7 @@ type CanDivX t1 t2 =
   HSpec properties that each implementation of CanDiv should satisfy.
  -}
 specCanDiv ::
-  (CanDivX Integer t1, CanDivX Integer (DivType Integer t1),
+  (CanRecip t1,
    HasEq t1 (DivType Integer (DivType Integer t1)),
    CanDivX t1 t2,
    CanTestZero t1,
@@ -119,7 +123,7 @@ specCanDiv (T typeName1 :: T t1) (T typeName2 :: T t2) =
   HSpec properties that each implementation of CanDiv should satisfy.
  -}
 specCanDivNotMixed ::
-  (CanDivX Integer t, CanDivX Integer (DivType Integer t),
+  (CanRecip t,
    HasEq t (DivType Integer (DivType Integer t)),
    CanDivX t t,
    CanTestZero t,
@@ -190,3 +194,14 @@ instance (CanDiv a b) => CanDiv (Maybe a) (Maybe b) where
   type DivType (Maybe a) (Maybe b) = Maybe (DivType a b)
   divide (Just x) (Just y) = Just (divide x y)
   divide _ _ = Nothing
+
+powUsingMulRecip ::
+  (CanBeInteger e,
+   CanRecip t, CanMulSameType t, ConvertibleExactly Integer t)
+   =>
+   t -> e -> t
+powUsingMulRecip x nPre
+  | n < 0 = recip $ powUsingMul x (negate n)
+  | otherwise = powUsingMul x n
+  where
+    n = integer nPre
