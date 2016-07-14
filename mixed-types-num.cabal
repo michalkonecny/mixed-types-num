@@ -30,7 +30,15 @@ Description:
       * adding an integer and a rational, giving a rational:
       .
       @(length [x])+1/3 :: Rational@
-    .
+      .
+      * taking natural, integer and fractional power using the same operator:
+      .
+      @2^2, 2^(-2) :: Rational@
+      .
+      @round (2^2) :: Integer@
+      .
+      @(double 2)^(1/2) :: Double@
+      .
       * comparing an integer with an (exact) real number, giving a Maybe Bool:
       .
       @if (isCertainlyTrue (x > 1)) then ...@
@@ -38,7 +46,7 @@ Description:
       (Exact real numbers are not provided by this package.
         They will be provided in a different package soon.)
       --  They are provided, /e.g./, by aern2-real.)
-   .
+    .
     = Type classes
     .
     Arithmetic operations are provided via multi-parameter type classes
