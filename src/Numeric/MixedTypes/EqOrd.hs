@@ -31,6 +31,7 @@ module Numeric.MixedTypes.EqOrd
   , CanTestPosNeg(..)
   -- * Helper ops and functions
   , convertFirst, convertSecond
+  , convertFirstUsing, convertSecondUsing
 )
 where
 
@@ -389,8 +390,26 @@ instance CanTestPosNeg Rational
 
 {---- Auxiliary functions ----}
 
-convertFirst :: (ConvertibleExactly a b) => (b -> b -> c) -> (a -> b -> c)
-convertFirst op a b = op (convertExactly a) b
+convertFirstUsing ::
+  (a -> b -> b) {-^ conversion function -} ->
+  (b -> b -> c) {-^ same-type operation -} ->
+  (a -> b -> c) {-^ mixed-type operation -}
+convertFirstUsing conv op a b = op (conv a b) b
 
-convertSecond :: (ConvertibleExactly b a) => (a -> a -> c) -> (a -> b -> c)
-convertSecond op a b = op a (convertExactly b)
+convertSecondUsing ::
+  (a -> b -> a) {-^ conversion function -} ->
+  (a -> a -> c) {-^ same-type operation -} ->
+  (a -> b -> c) {-^ mixed-type operation -}
+convertSecondUsing conv op a b = op a (conv a b)
+
+convertFirst ::
+  (ConvertibleExactly a b) =>
+  (b -> b -> c) {-^ same-type operation -} ->
+  (a -> b -> c) {-^ mixed-type operation -}
+convertFirst = convertFirstUsing (\ a _ -> convertExactly a)
+
+convertSecond ::
+  (ConvertibleExactly b a) =>
+  (a -> a -> c) {-^ same-type operation -} ->
+  (a -> b -> c) {-^ mixed-type operation -}
+convertSecond = convertSecondUsing (\ _ b -> convertExactly b)
