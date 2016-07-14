@@ -50,7 +50,9 @@ type Ring t =
    CanPowBy t Integer, CanPowBy t Int,
    HasEq t t,
    HasEq t Integer, CanAddSubMulBy t Integer,
+   CanSub Integer t, SubType Integer t ~ t,
    HasEq t Int, CanAddSubMulBy t Int,
+   CanSub Int t, SubType Int t ~ t,
    ConvertibleExactly Integer t,
    CanTestZero t)
 
