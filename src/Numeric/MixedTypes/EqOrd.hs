@@ -128,6 +128,10 @@ specHasEqNotMixed ::
   T t -> Spec
 specHasEqNotMixed t = specHasEq t t t
 
+instance HasEqAsymmetric () ()
+instance HasEqAsymmetric Bool Bool
+instance HasEqAsymmetric Char Char
+
 instance HasEqAsymmetric Int Int
 instance HasEqAsymmetric Integer Integer
 instance HasEqAsymmetric Rational Rational
@@ -147,6 +151,45 @@ instance HasEqAsymmetric Integer Rational where
   equalTo = convertFirst equalTo
 instance HasEqAsymmetric Rational Integer where
   equalTo = convertSecond equalTo
+
+instance
+  (HasEqAsymmetric a1 b1,
+   HasEqAsymmetric a2 b2,
+   CanAndOrAsymmetric (EqCompareType a1 b1) (EqCompareType a2 b2),
+   IsBool (AndOrType (EqCompareType a1 b1) (EqCompareType a2 b2))
+  ) =>
+  HasEqAsymmetric (a1,a2) (b1,b2) where
+  type EqCompareType (a1,a2) (b1,b2) =
+    AndOrType (EqCompareType a1 b1) (EqCompareType a2 b2)
+  equalTo (a1,a2) (b1,b2) =
+    (a1 == b1) && (a2 == b2)
+
+instance
+  (HasEqAsymmetric ((a1,a2), a3) ((b1,b2), b3))
+  =>
+  HasEqAsymmetric (a1,a2,a3) (b1,b2,b3) where
+  type EqCompareType (a1,a2,a3) (b1,b2,b3) =
+    EqCompareType ((a1,a2), a3) ((b1,b2), b3)
+  equalTo (a1,a2,a3) (b1,b2,b3) =
+    ((a1,a2), a3) == ((b1,b2), b3)
+
+instance
+  (HasEqAsymmetric ((a1,a2,a3), a4) ((b1,b2,b3), b4))
+  =>
+  HasEqAsymmetric (a1,a2,a3,a4) (b1,b2,b3,b4) where
+  type EqCompareType (a1,a2,a3,a4) (b1,b2,b3,b4) =
+    EqCompareType ((a1,a2,a3), a4) ((b1,b2,b3), b4)
+  equalTo (a1,a2,a3,a4) (b1,b2,b3,b4) =
+    ((a1,a2,a3), a4) == ((b1,b2,b3), b4)
+
+instance
+  (HasEqAsymmetric ((a1,a2,a3,a4), a5) ((b1,b2,b3,b4), b5))
+  =>
+  HasEqAsymmetric (a1,a2,a3,a4,a5) (b1,b2,b3,b4,b5) where
+  type EqCompareType (a1,a2,a3,a4,a5) (b1,b2,b3,b4,b5) =
+    EqCompareType ((a1,a2,a3,a4), a5) ((b1,b2,b3,b4), b5)
+  equalTo (a1,a2,a3,a4,a5) (b1,b2,b3,b4,b5) =
+    ((a1,a2,a3,a4), a5) == ((b1,b2,b3,b4), b5)
 
 instance (HasEqAsymmetric a b) => HasEqAsymmetric [a] [b] where
   type EqCompareType [a] [b] = EqCompareType a b
