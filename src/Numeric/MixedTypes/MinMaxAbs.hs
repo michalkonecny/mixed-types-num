@@ -75,6 +75,8 @@ type CanMinMaxX t1 t2 =
   (CanMinMax t1 t2,
    Show t1, QC.Arbitrary t1,
    Show t2, QC.Arbitrary t2,
+   HasEq t1 t1,
+   HasEq t2 t2,
    HasEq t1 (MinMaxType t1 t2),
    HasEq t2 (MinMaxType t1 t2),
    HasEq (MinMaxType t1 t2) (MinMaxType t1 t2),
@@ -102,23 +104,37 @@ specCanMinMax ::
 specCanMinMax (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "CanMinMax %s %s, CanMinMax %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "`min` is not larger than its arguments" $ do
-      QC.property $ \ (x :: t1) (y :: t2) -> let m = x `min` y in (m ?<=? y) && (m ?<=? x)
+      QC.property $ \ (x :: t1) (y :: t2) ->
+        (x ?==? x) && (y ?==? y) QC.==> -- avoid NaN
+          let m = x `min` y in (m ?<=? y) && (m ?<=? x)
     it "`max` is not smaller than its arguments" $ do
-      QC.property $ \ (x :: t1) (y :: t2) -> let m = x `max` y in (m ?>=? y) && (m ?>=? x)
+      QC.property $ \ (x :: t1) (y :: t2) ->
+        (x ?==? x) && (y ?==? y) QC.==> -- avoid NaN
+          let m = x `max` y in (m ?>=? y) && (m ?>=? x)
     it "has idempotent `min`" $ do
-      QC.property $ \ (x :: t1) -> (x `min` x) ?==? x
+      QC.property $ \ (x :: t1) ->
+        (x ?==? x) QC.==> -- avoid NaN
+          (x `min` x) ?==? x
     it "has idempotent `max`" $ do
-      QC.property $ \ (x :: t1) -> (x `max` x) ?==? x
+      QC.property $ \ (x :: t1) ->
+        (x ?==? x) QC.==> -- avoid NaN
+          (x `max` x) ?==? x
     it "has commutative `min`" $ do
-      QC.property $ \ (x :: t1) (y :: t2) -> (x `min` y) ?==? (y `min` x)
+      QC.property $ \ (x :: t1) (y :: t2) ->
+        (x ?==? x) && (y ?==? y) QC.==> -- avoid NaN
+          (x `min` y) ?==? (y `min` x)
     it "has commutative `max`" $ do
-      QC.property $ \ (x :: t1) (y :: t2) -> (x `max` y) ?==? (y `max` x)
+      QC.property $ \ (x :: t1) (y :: t2) ->
+        (x ?==? x) && (y ?==? y) QC.==> -- avoid NaN
+          (x `max` y) ?==? (y `max` x)
     it "has associative `min`" $ do
       QC.property $ \ (x :: t1) (y :: t2) (z :: t3) ->
-                      (x `min` (y `min` z)) ?==? ((x `min` y) `min` z)
+        (x ?==? x) && (y ?==? y) && (z ?==? z) QC.==> -- avoid NaN
+            (x `min` (y `min` z)) ?==? ((x `min` y) `min` z)
     it "has associative `max`" $ do
       QC.property $ \ (x :: t1) (y :: t2) (z :: t3) ->
-                      (x `max` (y `max` z)) ?==? ((x `max` y) `max` z)
+        (x ?==? x) && (y ?==? y) && (z ?==? z) QC.==> -- avoid NaN
+            (x `max` (y `max` z)) ?==? ((x `max` y) `max` z)
 --
 {-|
   HSpec properties that each implementation of CanMinMax should satisfy.
