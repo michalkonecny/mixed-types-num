@@ -190,6 +190,7 @@ specCanNegNum ::
   (CanNegX t, CanNegX (NegType t),
    HasEq t (NegType (NegType t)),
    ConvertibleExactly Integer t,
+   HasEq t t,
    HasEq t (NegType t),
    CanTestPosNeg t,
    CanTestPosNeg (NegType t)
@@ -199,7 +200,9 @@ specCanNegNum ::
 specCanNegNum (T typeName :: T t) =
   describe (printf "CanNeg %s" typeName) $ do
     it "ignores double negation" $ do
-      QC.property $ \ (x :: t) -> (negate (negate x)) ?==? x
+      QC.property $ \ (x :: t) ->
+        (x ?==? x) QC.==> -- avoid NaN
+          (negate (negate x)) ?==? x
     it "takes 0 to 0" $ do
       let z = convertExactly 0 :: t in negate z ?==? z
     it "takes positive to negative" $ do
@@ -239,6 +242,7 @@ type CanAbsX t =
    CanNegSameType t,
    CanTestPosNeg t,
    CanTestPosNeg (AbsType t),
+   HasEq t t,
    HasEq t (AbsType t),
    Show t, QC.Arbitrary t)
 
@@ -253,7 +257,9 @@ specCanAbs ::
 specCanAbs (T typeName :: T t) =
   describe (printf "CanAbs %s" typeName) $ do
     it "is idempotent" $ do
-      QC.property $ \ (x :: t) -> (abs (abs x)) ?==? (abs x)
+      QC.property $ \ (x :: t) ->
+        (x ?==? x) QC.==> -- avoid NaN
+          (abs (abs x)) ?==? (abs x)
     it "is identity on non-negative arguments" $ do
       QC.property $ \ (x :: t) ->
         isCertainlyNonNegative x  QC.==> x ?==? (abs x)
