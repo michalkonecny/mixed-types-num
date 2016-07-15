@@ -33,18 +33,20 @@ Description:
       .
       * taking natural, integer and fractional power using the same operator:
       .
-      @2^2, 2^(-2) :: Rational@
+      @2^2 :: Integer@
       .
-      @round (2^2) :: Integer@
+      @2.0^(-2) :: Rational@
       .
       @(double 2)^(1/2) :: Double@
       .
+      @2^(1/2) :: Real@
+      .
       * comparing an integer with an (exact) real number, giving a Maybe Bool:
       .
-      @if (isCertainlyTrue (x > 1)) then ...@
+      @... x :: Real ... if (isCertainlyTrue (x > 1)) then ...@
       .
-      (Exact real numbers are not provided by this package.
-        They will be provided in a different package soon.)
+      (@Real@ not provided by this package.
+        It will be provided in a different package soon.)
       --  They are provided, /e.g./, by aern2-real.)
     .
     = Type classes
