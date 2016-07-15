@@ -15,7 +15,7 @@ module Numeric.MixedTypes.Field
   -- * Field
   Field, CanAddSubMulDivBy, OrderedField
   -- * Division
-  , CanDiv(..), CanDivBy, CanDivSameType, CanRecip
+  , CanDiv(..), CanDivBy, CanDivSameType, CanRecip, CanRecipSameType
   , (/), recip
   , powUsingMulRecip
   -- ** Tests
@@ -42,7 +42,7 @@ import Numeric.MixedTypes.Ring
 {----- Field -----}
 
 type Field t =
-    (Ring t, CanDivSameType t, CanRecip t,
+    (Ring t, CanDivSameType t, CanRecipSameType t,
      CanAddSubMulDivBy t Rational,
      CanAddSubMulDivBy t Integer,
      CanAddSubMulDivBy t Int
@@ -71,6 +71,9 @@ class CanDiv t1 t2 where
 (/) = divide
 
 type CanRecip t =
+  (CanDiv Integer t)
+
+type CanRecipSameType t =
   (CanDiv Integer t, DivType Integer t ~ t)
 
 recip :: (CanRecip t) => t -> DivType Integer t
@@ -92,7 +95,7 @@ type CanDivX t1 t2 =
   HSpec properties that each implementation of CanDiv should satisfy.
  -}
 specCanDiv ::
-  (CanRecip t1,
+  (CanRecip t1, CanRecip (DivType Integer t1),
    HasEq t1 (DivType Integer (DivType Integer t1)),
    CanDivX t1 t2,
    CanTestZero t1,
@@ -123,7 +126,7 @@ specCanDiv (T typeName1 :: T t1) (T typeName2 :: T t2) =
   HSpec properties that each implementation of CanDiv should satisfy.
  -}
 specCanDivNotMixed ::
-  (CanRecip t,
+  (CanRecip t, CanRecip (DivType Integer t),
    HasEq t (DivType Integer (DivType Integer t)),
    CanDivX t t,
    CanTestZero t,
@@ -197,7 +200,7 @@ instance (CanDiv a b) => CanDiv (Maybe a) (Maybe b) where
 
 powUsingMulRecip ::
   (CanBeInteger e,
-   CanRecip t, CanMulSameType t, ConvertibleExactly Integer t)
+   CanRecipSameType t, CanMulSameType t, ConvertibleExactly Integer t)
    =>
    t -> e -> t
 powUsingMulRecip x nPre

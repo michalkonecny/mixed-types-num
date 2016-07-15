@@ -18,6 +18,7 @@ module Numeric.MixedTypes.EqOrd
   , (?==?), (!==!), (!/=!)
   -- ** Tests
   , specHasEq, specHasEqNotMixed, HasEqX
+  , specConversion
   -- ** Specific tests
   , CanTestZero(..), specCanTestZero
   , CanPickNonZero(..), specCanPickNonZero
@@ -127,6 +128,25 @@ specHasEqNotMixed ::
   =>
   T t -> Spec
 specHasEqNotMixed t = specHasEq t t t
+
+{-|
+  HSpec property of there-and-back conversion.
+-}
+specConversion :: -- this definition cannot be in Literals because it needs HasEq
+  (QC.Arbitrary t1, Show t1, HasEq t1 t1) =>
+  T t1 -> T t2 -> (t1 -> t2) -> (t2 -> t1) ->  Spec
+specConversion (T typeName1 :: T t1) (T typeName2 :: T t2) conv12 conv21 =
+  describe "conversion" $ do
+    it (printf "%s -> %s -> %s" typeName1 typeName2 typeName1) $ do
+      QC.property $ \ (x1 :: t1) ->
+        x1 ?==? (conv21 $ conv12 x1)
+        -- case (safeConvertExactly x1 :: ConvertResult t2) of
+        --   Right x12 ->
+        --     case (safeConvertExactly x12 :: ConvertResult t1) of
+        --       Right x121 -> x121 P.== x1
+        --       _ -> error (printf "failed to convert %s back to %s" (show x12) (show x1))
+        --   _ -> True
+
 
 instance HasEqAsymmetric () ()
 instance HasEqAsymmetric Bool Bool
