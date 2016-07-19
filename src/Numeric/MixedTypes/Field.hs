@@ -33,7 +33,7 @@ import Test.Hspec
 import qualified Test.QuickCheck as QC
 
 import Numeric.MixedTypes.Literals
-import Numeric.MixedTypes.Bool (negate)
+import Numeric.MixedTypes.Bool
 import Numeric.MixedTypes.EqOrd
 -- import Numeric.MixedTypes.MinMaxAbs
 -- import Numeric.MixedTypes.AddSub
@@ -97,6 +97,7 @@ type CanDivX t1 t2 =
 specCanDiv ::
   (CanRecip t1, CanRecip (DivType Integer t1),
    HasEq t1 (DivType Integer (DivType Integer t1)),
+   CanTestZero (DivType Integer t1),
    CanDivX t1 t2,
    CanTestZero t1,
    CanTestZero t2,
@@ -109,7 +110,7 @@ specCanDiv (T typeName1 :: T t1) (T typeName2 :: T t2) =
   describe (printf "CanDiv %s %s" typeName1 typeName2) $ do
     it "recip(recip x) = x" $ do
       QC.property $ \ (x :: t1) ->
-        (isNonZero x) QC.==>
+        (isNonZero x && isNonZero (recip x)) QC.==>
           recip (recip x) ?==? x
     it "x/1 = x" $ do
       QC.property $ \ (x :: t1) -> let one = (convertExactly 1 :: t2) in (x / one) ?==? x
@@ -128,6 +129,7 @@ specCanDiv (T typeName1 :: T t1) (T typeName2 :: T t2) =
 specCanDivNotMixed ::
   (CanRecip t, CanRecip (DivType Integer t),
    HasEq t (DivType Integer (DivType Integer t)),
+   CanTestZero (DivType Integer t),
    CanDivX t t,
    CanTestZero t,
    CanMulX t (DivType t t),
