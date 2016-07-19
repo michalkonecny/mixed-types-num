@@ -60,8 +60,8 @@ type CanSqrtSameType t = (CanSqrt t, SqrtType t ~ t)
 type CanSqrtX t =
   (CanSqrt t,
    CanTestPosNeg t,
-   CanTestPosNeg (SqrtType t),
    HasEq t (SqrtType t),
+   HasOrder Integer (SqrtType t),
    Show t, QC.Arbitrary t)
 
 {-|
@@ -78,7 +78,7 @@ specCanSqrtReal (T typeName :: T t) =
     it "sqrt(x) >= 0" $ do
       QC.property $ \ (x :: t) ->
         isCertainlyNonNegative x QC.==>
-          isCertainlyNonNegative (sqrt x)
+          (sqrt x) ?>=? 0
     it "sqrt(x)^2 = x" $ do
       QC.property $ \ (x :: t) ->
         isCertainlyNonNegative x QC.==>
@@ -113,6 +113,8 @@ type CanExpX t =
    CanTestPosNeg t,
    CanTestPosNeg (ExpType t),
    HasEq (ExpType t) (ExpType t),
+   HasOrder Integer t,
+   HasOrder Integer (ExpType t),
    Show t, QC.Arbitrary t)
 
 {-|
@@ -126,13 +128,16 @@ specCanExpReal (T typeName :: T t) =
   describe (printf "CanExp %s" typeName) $ do
     it "exp(x) >= 0" $ do
       QC.property $ \ (x :: t) ->
-        not $ isCertainlyNegative (exp x)
+        ((-100000) !<! x && x !<! 100000) QC.==>
+          exp x ?>=? 0
     it "exp(-x) == 1/(exp x)" $ do
       QC.property $ \ (x :: t) ->
-        exp (-x) ?==? 1/(exp x)
+        (exp x !>! 0) QC.==>
+          exp (-x) ?==? 1/(exp x)
     it "exp(x+y) = exp(x)*exp(y)" $ do
       QC.property $ \ (x :: t)  (y :: t) ->
-        (exp $ x + y) ?==? (exp x) * (exp y)
+        ((-100000) !<! x && x !<! 100000 && (-100000) !<! y && y !<! 100000) QC.==>
+          (exp $ x + y) ?==? (exp x) * (exp y)
 
 {-
   Instances for Integer, Rational etc need an algebraic real or exact real type.
@@ -160,7 +165,7 @@ type CanLogX t =
   (CanLog t,
    Field t,
    Ring (LogType t),
-   CanTestPosNeg t,
+   HasOrder t Integer,
    HasEq (LogType t) (LogType t),
    Show t, QC.Arbitrary t)
 
@@ -169,6 +174,7 @@ type CanLogX t =
  -}
 specCanLogReal ::
   (CanLogX t,
+   CanLogX (DivType Integer t),
    CanExp t, CanLog (ExpType t),
    HasEq t (LogType (ExpType t)))
   =>
@@ -177,14 +183,15 @@ specCanLogReal (T typeName :: T t) =
   describe (printf "CanLog %s" typeName) $ do
     it "log(1/x) == -(log x)" $ do
       QC.property $ \ (x :: t) ->
-        isCertainlyPositive x QC.==>
+        x !>! 0 && (1/x) !>! 0  QC.==>
           log (1/x) ?==? -(log x)
     it "log(x*y) = log(x)+log(y)" $ do
       QC.property $ \ (x :: t)  (y :: t) ->
-        isCertainlyPositive x && isCertainlyPositive y  QC.==>
+        x !>! 0 && y !>! 0 && x*y !>! 0  QC.==>
           (log $ x * y) ?==? (log x) + (log y)
     it "log(exp x) == x" $ do
       QC.property $ \ (x :: t) ->
+        ((-100000) !<! x && x !<! 100000) QC.==>
           log (exp x) ?==? x
 
 {-
@@ -261,7 +268,7 @@ specCanSinCosReal (T typeName :: T t) =
           (cos $ x - y) ?==? (cos x)*(cos y) + (sin x)*(sin y)
     it "sin(x) < x < tan(x) for x in [0,pi/2]" $ do
       QC.property $ \ (x :: t) ->
-        x !>=! 0 && x !<=! 1.57 QC.==>
+        x !>=! 0 && x !<=! 1.57 && (cos x) !>! 0 QC.==>
           (sin x) ?<=? x && x ?<=? (sin x)/(cos x)
 
 {-
