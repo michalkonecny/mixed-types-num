@@ -23,6 +23,7 @@ spec = do
   specHasEqNotMixed tDouble
   specHasEq tInt tInteger tRational
   specHasEq tInteger tRational tInt
+  specHasEq tInteger tDouble tInt
   specCanTestZero tInt
   specCanTestZero tInteger
   specCanTestZero tRational
@@ -35,3 +36,4 @@ spec = do
   specHasOrderNotMixed tDouble
   specHasOrder tInt tInteger tRational
   specHasOrder tInteger tRational tInt
+  specHasOrder tInteger tDouble tInt

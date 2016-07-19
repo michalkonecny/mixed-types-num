@@ -23,4 +23,5 @@ import Prelude hiding
     , not, (&&), (||), and, or
     , (^), (^^)
     , minimum, maximum, sum, product
+    , isInfinite, isNaN
   )

@@ -89,6 +89,7 @@ type CanRoundX t =
    CanNegSameType t,
    CanTestPosNeg t,
    HasOrder t Integer,
+   CanTestFinite t,
    Show t, QC.Arbitrary t)
 
 {-|
@@ -102,13 +103,16 @@ specCanRound (T typeName :: T t) =
   describe (printf "CanRound %s" typeName) $ do
     it "holds floor x <= x <= ceiling x" $ do
       QC.property $ \ (x :: t) ->
-        (floor x ?<=? x) && (x ?<=? ceiling x)
+        isFinite x QC.==>
+          (floor x ?<=? x) && (x ?<=? ceiling x)
     it "holds floor x <= round x <= ceiling x" $ do
       QC.property $ \ (x :: t) ->
-        (floor x <= round x) && (round x <= ceiling x)
+        isFinite x QC.==>
+          (floor x <= round x) && (round x <= ceiling x)
     it "0 <= ceiling x - floor x <= 1" $ do
       QC.property $ \ (x :: t) ->
-        (ceiling x - floor x) `elem` [0,1]
+        isFinite x QC.==>
+          (ceiling x - floor x) `elem` [0,1]
     it "holds floor x = round x = ceiling x for integers" $ do
       QC.property $ \ (xi :: Integer) ->
         let x = convertExactly xi :: t in

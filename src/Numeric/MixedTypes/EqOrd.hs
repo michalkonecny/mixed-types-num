@@ -20,6 +20,7 @@ module Numeric.MixedTypes.EqOrd
   , specHasEq, specHasEqNotMixed, HasEqX
   , specConversion
   -- ** Specific tests
+  , CanTestFinite(..)
   , CanTestZero(..), specCanTestZero
   , CanPickNonZero(..), specCanPickNonZero
   -- * Comparisons in numeric order
@@ -172,6 +173,16 @@ instance HasEqAsymmetric Integer Rational where
 instance HasEqAsymmetric Rational Integer where
   equalTo = convertSecond equalTo
 
+instance HasEqAsymmetric Integer Double where
+  equalTo n d = ((P.floor d :: Integer) == n) && (n == (P.ceiling d :: Integer))
+instance HasEqAsymmetric Double Integer where
+  equalTo d n = ((P.floor d :: Integer) == n) && (n == (P.ceiling d :: Integer))
+
+instance HasEqAsymmetric Int Double where
+  equalTo n d = equalTo (integer n) d
+instance HasEqAsymmetric Double Int where
+  equalTo d n = equalTo (integer n) d
+
 instance
   (HasEqAsymmetric a1 b1,
    HasEqAsymmetric a2 b2,
@@ -223,13 +234,28 @@ instance (HasEqAsymmetric a b) => HasEqAsymmetric (Maybe a) (Maybe b) where
   equalTo (Just x) (Just y) = (x == y)
   equalTo _ _ = convertExactly False
 
+class CanTestFinite t where
+  isNaN :: t -> Bool
+  default isNaN :: (P.RealFloat t) => t -> Bool
+  isNaN = P.isNaN
+  isInfinite :: t -> Bool
+  default isInfinite :: (P.RealFloat t) => t -> Bool
+  isInfinite = P.isInfinite
+  isFinite :: t -> Bool
+  isFinite x = (not $ isNaN x) && (not $ isInfinite x)
+
+instance CanTestFinite Double
+instance CanTestFinite Rational where
+  isNaN = const False
+  isInfinite = const False
+
 class CanTestZero t where
-    isCertainlyZero :: t -> Bool
-    isNonZero :: t -> Bool
-    default isCertainlyZero :: (HasEq t Integer) => t -> Bool
-    isCertainlyZero a = isCertainlyTrue (a == 0)
-    default isNonZero :: (HasEq t Integer) => t -> Bool
-    isNonZero a = isCertainlyTrue (a /= 0)
+  isCertainlyZero :: t -> Bool
+  isNonZero :: t -> Bool
+  default isCertainlyZero :: (HasEq t Integer) => t -> Bool
+  isCertainlyZero a = isCertainlyTrue (a == 0)
+  default isNonZero :: (HasEq t Integer) => t -> Bool
+  isNonZero a = isCertainlyTrue (a /= 0)
 
 {-|
   HSpec properties that each implementation of CanTestZero should satisfy.
@@ -252,6 +278,7 @@ specCanTestZero (T typeName :: T t) =
 instance CanTestZero Int
 instance CanTestZero Integer
 instance CanTestZero Rational
+instance CanTestZero Double
 
 class CanPickNonZero t where
   {-|
@@ -433,6 +460,21 @@ instance HasOrderAsymmetric Rational Integer where
   lessThan = convertSecond lessThan
   leq = convertSecond leq
 
+instance HasOrderAsymmetric Integer Double where
+  lessThan n d = (n <= (P.floor d :: Integer)) && (n < (P.ceiling d :: Integer))
+  leq n d = (n <= (P.floor d :: Integer))
+instance HasOrderAsymmetric Double Integer where
+  lessThan d n = ((P.floor d :: Integer) < n) && ((P.ceiling d :: Integer) <= n)
+  leq d n = ((P.ceiling d :: Integer) <= n)
+
+instance HasOrderAsymmetric Int Double where
+  lessThan n d = lessThan (integer n) d
+  leq n d = leq (integer n) d
+instance HasOrderAsymmetric Double Int where
+  lessThan d n = lessThan d (integer n)
+  leq d n = leq d (integer n)
+
+
 class CanTestPosNeg t where
     isCertainlyPositive :: t -> Bool
     isCertainlyNonNegative :: t -> Bool
@@ -450,6 +492,7 @@ class CanTestPosNeg t where
 instance CanTestPosNeg Int
 instance CanTestPosNeg Integer
 instance CanTestPosNeg Rational
+instance CanTestPosNeg Double
 
 {---- Auxiliary functions ----}
 
