@@ -8,7 +8,7 @@ maintainer:     Michal Konecny <mikkonecny@gmail.com>
 tested-with:    GHC==7.8.4, GHC==7.10.3, GHC==8.0.1
 license:        BSD3
 homepage:       https://github.com/michalkonecny/mixed-types-num
-synopsis:       Alternative to Prelude.Num, deriving types bottom-up.
+synopsis:       Alternative Prelude with numerical and logical expressions typed bottom-up
 category:       Math
 copyright:      (c) 2015, 2016 Michal Konecny, Pieter Collins
 license-file:   LICENSE
@@ -98,7 +98,8 @@ library
     Numeric.MixedTypes.PreludeHiding
     Numeric.MixedTypes.Literals
     Numeric.MixedTypes.Bool
-    Numeric.MixedTypes.EqOrd
+    Numeric.MixedTypes.Eq
+    Numeric.MixedTypes.Ord
     Numeric.MixedTypes.MinMaxAbs
     Numeric.MixedTypes.AddSub
     Numeric.MixedTypes.Round

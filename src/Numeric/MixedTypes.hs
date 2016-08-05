@@ -19,7 +19,8 @@ module Numeric.MixedTypes
   -- ** Modules with Prelude alternatives
   module Numeric.MixedTypes.Literals,
   module Numeric.MixedTypes.Bool,
-  module Numeric.MixedTypes.EqOrd,
+  module Numeric.MixedTypes.Eq,
+  module Numeric.MixedTypes.Ord,
   module Numeric.MixedTypes.MinMaxAbs,
   module Numeric.MixedTypes.AddSub,
   module Numeric.MixedTypes.Round,
@@ -32,7 +33,8 @@ where
 import Numeric.MixedTypes.PreludeHiding
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
-import Numeric.MixedTypes.EqOrd
+import Numeric.MixedTypes.Eq
+import Numeric.MixedTypes.Ord
 import Numeric.MixedTypes.MinMaxAbs
 import Numeric.MixedTypes.AddSub
 import Numeric.MixedTypes.Round

@@ -34,20 +34,23 @@
 
 module Numeric.MixedTypes.Literals
 (
-    -- * Fixed-type literals
-    fromInteger, fromRational
-    , ifThenElse
-    -- * Convenient conversions
-    , CanBeInteger, integer, integers, HasIntegers, fromInteger_
-    , CanBeInt, int, ints
-    , CanBeRational, rational, rationals, HasRationals, fromRational_
-    , CanBeDouble, double, doubles
-    , ConvertibleExactly(..), convertExactly, ConvertResult, ConvertError, convError
-    -- * Generic list index
-    , (!!), specCanBeInteger
-    -- * Testing support functions
-    , T(..), tInt, tInteger, tRational, tDouble
-    , tBool, tMaybeBool, tMaybeMaybeBool
+  -- * Fixed-type literals
+  fromInteger, fromRational
+  , ifThenElse
+  -- * Convenient conversions
+  , CanBeInteger, integer, integers, HasIntegers, fromInteger_
+  , CanBeInt, int, ints
+  , CanBeRational, rational, rationals, HasRationals, fromRational_
+  , CanBeDouble, double, doubles
+  , ConvertibleExactly(..), convertExactly, ConvertResult, ConvertError, convError
+  -- * Generic list index
+  , (!!), specCanBeInteger
+  -- * Testing support functions
+  , T(..), tInt, tInteger, tRational, tDouble
+  , tBool, tMaybeBool, tMaybeMaybeBool
+  -- * Helper functions
+  , convertFirst, convertSecond
+  , convertFirstUsing, convertSecondUsing
 )
 where
 
@@ -199,3 +202,29 @@ tMaybeBool = T "(Maybe Bool)"
 
 tMaybeMaybeBool :: T (Maybe (Maybe Bool))
 tMaybeMaybeBool = T "(Maybe (Maybe Bool))"
+
+{---- Auxiliary functions ----}
+
+convertFirstUsing ::
+  (a -> b -> b) {-^ conversion function -} ->
+  (b -> b -> c) {-^ same-type operation -} ->
+  (a -> b -> c) {-^ mixed-type operation -}
+convertFirstUsing conv op a b = op (conv a b) b
+
+convertSecondUsing ::
+  (a -> b -> a) {-^ conversion function -} ->
+  (a -> a -> c) {-^ same-type operation -} ->
+  (a -> b -> c) {-^ mixed-type operation -}
+convertSecondUsing conv op a b = op a (conv a b)
+
+convertFirst ::
+  (ConvertibleExactly a b) =>
+  (b -> b -> c) {-^ same-type operation -} ->
+  (a -> b -> c) {-^ mixed-type operation -}
+convertFirst = convertFirstUsing (\ a _ -> convertExactly a)
+
+convertSecond ::
+  (ConvertibleExactly b a) =>
+  (a -> a -> c) {-^ same-type operation -} ->
+  (a -> b -> c) {-^ mixed-type operation -}
+convertSecond = convertSecondUsing (\ _ b -> convertExactly b)

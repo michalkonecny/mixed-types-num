@@ -36,7 +36,8 @@ import qualified Test.QuickCheck as QC
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool (CanNeg(..))
-import Numeric.MixedTypes.EqOrd
+import Numeric.MixedTypes.Eq
+import Numeric.MixedTypes.Ord
 import Numeric.MixedTypes.MinMaxAbs ()
 
 {---- Addition -----}
