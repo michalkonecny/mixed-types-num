@@ -203,17 +203,35 @@ specCanLogReal (T typeName :: T t) =
 instance CanLog Double -- not exact, will not pass the tests
 
 instance CanPow Double Double where
-  pow = powViaExpLog
+  pow = (P.**)
+  -- pow = powViaExpLog
 instance CanPow Double Rational where
-  pow x y = powViaExpLog x (double y)
+  pow x y = x ^ (double y)
 
 powViaExpLog ::
-  (CanMulAsymmetric (LogType t1) t2,
+  (CanTestPosNeg t1,
+   CanMulSameType t1,
+   HasIntegers t1,
+   CanTestZero t1,
+   CanRecipSameType t1,
+   CanTestInteger t2,
+   CanTestPosNeg t2,
+   CanMulAsymmetric (LogType t1) t2,
    CanLog t1,
-   CanExp (MulType (LogType t1) t2))
+   CanExp (MulType (LogType t1) t2),
+   ExpType (MulType (LogType t1) t2) ~ t1)
   =>
   t1 -> t2 -> ExpType (MulType (LogType t1) t2)
-powViaExpLog x y = exp (log x * y)
+powViaExpLog x y
+  | isCertainlyPositive x = exp ((log x) * y)
+  | otherwise =
+    case certainlyIntegerGetIt y of
+      Just n ->
+        powUsingMulRecip x n
+      Nothing ->
+        if isCertainlyZero x && isCertainlyPositive y then convertExactly 0
+          else
+            error $ "powViaExpLog: potential illegal power a^b with negative a and non-integer b"
 
 {----  sine and cosine -----}
 
