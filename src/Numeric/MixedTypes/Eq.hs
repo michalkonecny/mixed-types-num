@@ -260,6 +260,17 @@ instance CanTestInteger Rational where
     | denominator q == 1 = Just (numerator q)
     | otherwise = Nothing
 
+instance CanTestInteger Double where
+  certainlyNotInteger d =
+    isInfinite d || isNaN d ||
+      (P.floor d :: Integer) P.< P.ceiling d
+  certainlyIntegerGetIt d
+    | isFinite d && (dF P.== dC) = Just dF
+    | otherwise = Nothing
+    where
+      dF = P.floor d
+      dC = P.ceiling d
+
 {---- Checking whether it is zero -----}
 
 class CanTestZero t where
