@@ -206,7 +206,17 @@ instance CanPow Double Double where
   pow = (P.**)
   -- pow = powViaExpLog
 instance CanPow Double Rational where
+  type PowType Double Rational = Double
   pow x y = x ^ (double y)
+instance CanPow Rational Double where
+  type PowType Rational Double = Double
+  pow x y = (double x) ^ y
+instance CanPow Integer Double where
+  type PowType Integer Double = Double
+  pow x y = (double x) ^ y
+instance CanPow Int Double where
+  type PowType Int Double = Double
+  pow x y = (double x) ^ y
 
 powViaExpLog ::
   (CanTestPosNeg t1,
