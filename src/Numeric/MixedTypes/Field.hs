@@ -30,7 +30,7 @@ import Text.Printf
 -- import qualified Data.List as List
 
 import Test.Hspec
-import qualified Test.QuickCheck as QC
+import Test.QuickCheck
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -88,8 +88,9 @@ type CanDivSameType t =
 {-| Compound type constraint useful for test definition. -}
 type CanDivX t1 t2 =
   (CanDiv t1 t2,
-   Show t1, QC.Arbitrary t1,
-   Show t2, QC.Arbitrary t2,
+   Show t1, Arbitrary t1,
+   Show t2, Arbitrary t2,
+   Show (DivType t1 t2),
    HasEq t1 (DivType t1 t2))
 
 {-|
@@ -97,6 +98,7 @@ type CanDivX t1 t2 =
  -}
 specCanDiv ::
   (CanRecip t1, CanRecip (DivType Integer t1),
+   Show (DivType Integer (DivType Integer t1)),
    HasEq t1 (DivType Integer (DivType Integer t1)),
    CanTestZero (DivType Integer t1),
    CanDivX t1 t2,
@@ -110,25 +112,30 @@ specCanDiv ::
 specCanDiv (T typeName1 :: T t1) (T typeName2 :: T t2) =
   describe (printf "CanDiv %s %s" typeName1 typeName2) $ do
     it "recip(recip x) = x" $ do
-      QC.property $ \ (x :: t1) ->
-        (isNonZero x && isNonZero (recip x)) QC.==>
-          recip (recip x) ?==? x
+      property $ \ (x :: t1) ->
+        (isNonZero x && isNonZero (recip x)) ==>
+          recip (recip x) ?==?$ x
     it "x/1 = x" $ do
-      QC.property $ \ (x :: t1) -> let one = (convertExactly 1 :: t2) in (x / one) ?==? x
+      property $ \ (x :: t1) -> let one = (convertExactly 1 :: t2) in (x / one) ?==?$ x
     it "x/x = 1" $ do
-      QC.property $ \ (x :: t1) ->
-        (isNonZero x) QC.==>
-          let one = (convertExactly 1 :: t1) in (x / x) ?==? one
+      property $ \ (x :: t1) ->
+        (isNonZero x) ==>
+          let one = (convertExactly 1 :: t1) in (x / x) ?==?$ one
     it "x/y = x*(1/y)" $ do
-      QC.property $ \ (x :: t1) (y :: t2) ->
-        (isNonZero y) QC.==>
-          let one = (convertExactly 1 :: t1) in (x / y) ?==? x * (one/y)
+      property $ \ (x :: t1) (y :: t2) ->
+        (isNonZero y) ==>
+          let one = (convertExactly 1 :: t1) in (x / y) ?==?$ x * (one/y)
+  where
+  infix 4 ?==?$
+  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 {-|
   HSpec properties that each implementation of CanDiv should satisfy.
  -}
 specCanDivNotMixed ::
   (CanRecip t, CanRecip (DivType Integer t),
+   Show (DivType Integer (DivType Integer t)),
    HasEq t (DivType Integer (DivType Integer t)),
    CanTestZero (DivType Integer t),
    CanDivX t t,

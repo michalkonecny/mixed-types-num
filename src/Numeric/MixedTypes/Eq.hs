@@ -33,7 +33,7 @@ import Text.Printf
 import Data.Ratio
 
 import Test.Hspec
-import qualified Test.QuickCheck as QC
+import Test.QuickCheck as QC
 import Control.Exception (evaluate)
 
 import Numeric.MixedTypes.Literals
@@ -86,7 +86,7 @@ notCertainlyDifferentFrom a b = isNotFalse $ a == b
 
 {-| Compound type constraint useful for test definition. -}
 type HasEqX t1 t2 =
-  (HasEq t1 t2, Show t1, QC.Arbitrary t1, Show t2, QC.Arbitrary t2)
+  (HasEq t1 t2, Show t1, Arbitrary t1, Show t2, Arbitrary t2)
 
 {-|
   HSpec properties that each implementation of HasEq should satisfy.
@@ -101,15 +101,15 @@ specHasEq ::
 specHasEq (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "HasEq %s %s, HasEq %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "has reflexive ==" $ do
-      QC.property $ \ (x :: t1) -> not $ isCertainlyFalse (x == x)
+      property $ \ (x :: t1) -> not $ isCertainlyFalse (x == x)
     it "has anti-reflexive /=" $ do
-      QC.property $ \ (x :: t1) -> not $ isCertainlyTrue (x /= x)
+      property $ \ (x :: t1) -> not $ isCertainlyTrue (x /= x)
     it "has stronly commutative ==" $ do
-      QC.property $ \ (x :: t1) (y :: t2) -> (x == y) `stronglyEquivalentTo` (y == x)
+      property $ \ (x :: t1) (y :: t2) -> (x == y) `stronglyEquivalentTo` (y == x)
     it "has stronly commutative /=" $ do
-      QC.property $ \ (x :: t1) (y :: t2) -> (x /= y) `stronglyEquivalentTo` (y /= x)
+      property $ \ (x :: t1) (y :: t2) -> (x /= y) `stronglyEquivalentTo` (y /= x)
     it "has stronly transitive ==" $ do
-      QC.property $ \ (x :: t1) (y :: t2) (z :: t3) -> ((x == y) && (y == z)) `stronglyImplies` (y == z)
+      property $ \ (x :: t1) (y :: t2) (z :: t3) -> ((x == y) && (y == z)) `stronglyImplies` (y == z)
 
 {-|
   HSpec properties that each implementation of HasEq should satisfy.
@@ -125,12 +125,12 @@ specHasEqNotMixed t = specHasEq t t t
   HSpec property of there-and-back conversion.
 -}
 specConversion :: -- this definition cannot be in Literals because it needs HasEq
-  (QC.Arbitrary t1, Show t1, HasEq t1 t1) =>
+  (Arbitrary t1, Show t1, HasEq t1 t1) =>
   T t1 -> T t2 -> (t1 -> t2) -> (t2 -> t1) ->  Spec
 specConversion (T typeName1 :: T t1) (T typeName2 :: T t2) conv12 conv21 =
   describe "conversion" $ do
     it (printf "%s -> %s -> %s" typeName1 typeName2 typeName1) $ do
-      QC.property $ \ (x1 :: t1) ->
+      property $ \ (x1 :: t1) ->
         x1 ?==? (conv21 $ conv12 x1)
 
 instance HasEqAsymmetric () ()
@@ -291,11 +291,11 @@ specCanTestZero ::
 specCanTestZero (T typeName :: T t) =
   describe (printf "CanTestZero %s" typeName) $ do
     it "converted non-zero Integer is not isCertainlyZero" $ do
-      QC.property $ \ (x :: Integer) ->
-        x /= 0 QC.==> (not $ isCertainlyZero (convertExactly x :: t))
+      property $ \ (x :: Integer) ->
+        x /= 0 ==> (not $ isCertainlyZero (convertExactly x :: t))
     it "converted non-zero Integer is isNonZero" $ do
-      QC.property $ \ (x :: Integer) ->
-        x /= 0 QC.==> (isNonZero (convertExactly x :: t))
+      property $ \ (x :: Integer) ->
+        x /= 0 ==> (isNonZero (convertExactly x :: t))
     it "converted 0.0 is not isNonZero" $ do
       (isNonZero (convertExactly 0 :: t)) `shouldBe` False
 
@@ -334,15 +334,15 @@ class CanPickNonZero t where
   HSpec properties that each implementation of CanPickNonZero should satisfy.
  -}
 specCanPickNonZero ::
-  (CanPickNonZero t, CanTestZero t, ConvertibleExactly Integer t, Show t, QC.Arbitrary t)
+  (CanPickNonZero t, CanTestZero t, ConvertibleExactly Integer t, Show t, Arbitrary t)
   =>
   T t -> Spec
 specCanPickNonZero (T typeName :: T t) =
   describe (printf "CanPickNonZero %s" typeName) $ do
     it "picks a non-zero element if there is one" $ do
-      QC.property $ \ (xs :: [(t, ())]) ->
+      property $ \ (xs :: [(t, ())]) ->
         or (map (isNonZero . fst) xs) -- if at least one is non-zero
-          QC.==> (isNonZero $ fst $ pickNonZero xs)
+          ==> (isNonZero $ fst $ pickNonZero xs)
     it "throws exception when all the elements are 0" $ do
       (evaluate $ pickNonZero [(convertExactly i :: t, ()) | i <- [0,0,0]])
         `shouldThrow` anyException

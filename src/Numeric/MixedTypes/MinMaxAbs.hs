@@ -31,7 +31,7 @@ import Text.Printf
 import qualified Data.List as List
 
 import Test.Hspec
-import qualified Test.QuickCheck as QC
+import Test.QuickCheck
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -74,8 +74,9 @@ minimum [] = error $ "minimum: empty list"
 {-| Compound type constraint useful for test definition. -}
 type CanMinMaxX t1 t2 =
   (CanMinMax t1 t2,
-   Show t1, QC.Arbitrary t1,
-   Show t2, QC.Arbitrary t2,
+   Show t1, Arbitrary t1,
+   Show t2, Arbitrary t2,
+   Show (MinMaxType t1 t2),
    HasEq t1 t1,
    HasEq t2 t2,
    HasEq t1 (MinMaxType t1 t2),
@@ -105,37 +106,44 @@ specCanMinMax ::
 specCanMinMax (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "CanMinMax %s %s, CanMinMax %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "`min` is not larger than its arguments" $ do
-      QC.property $ \ (x :: t1) (y :: t2) ->
-        (x ?==? x) && (y ?==? y) QC.==> -- avoid NaN
-          let m = x `min` y in (m ?<=? y) && (m ?<=? x)
+      property $ \ (x :: t1) (y :: t2) ->
+        (x ?==? x) && (y ?==? y) ==> -- avoid NaN
+          let m = x `min` y in (m ?<=?$ y) .&&. (m ?<=?$ x)
     it "`max` is not smaller than its arguments" $ do
-      QC.property $ \ (x :: t1) (y :: t2) ->
-        (x ?==? x) && (y ?==? y) QC.==> -- avoid NaN
-          let m = x `max` y in (m ?>=? y) && (m ?>=? x)
+      property $ \ (x :: t1) (y :: t2) ->
+        (x ?==? x) && (y ?==? y) ==> -- avoid NaN
+          let m = x `max` y in (m ?>=?$ y) .&&. (m ?>=?$ x)
     it "has idempotent `min`" $ do
-      QC.property $ \ (x :: t1) ->
-        (x ?==? x) QC.==> -- avoid NaN
-          (x `min` x) ?==? x
+      property $ \ (x :: t1) ->
+        (x ?==? x) ==> -- avoid NaN
+          (x `min` x) ?==?$ x
     it "has idempotent `max`" $ do
-      QC.property $ \ (x :: t1) ->
-        (x ?==? x) QC.==> -- avoid NaN
-          (x `max` x) ?==? x
+      property $ \ (x :: t1) ->
+        (x ?==? x) ==> -- avoid NaN
+          (x `max` x) ?==?$ x
     it "has commutative `min`" $ do
-      QC.property $ \ (x :: t1) (y :: t2) ->
-        (x ?==? x) && (y ?==? y) QC.==> -- avoid NaN
-          (x `min` y) ?==? (y `min` x)
+      property $ \ (x :: t1) (y :: t2) ->
+        (x ?==? x) && (y ?==? y) ==> -- avoid NaN
+          (x `min` y) ?==?$ (y `min` x)
     it "has commutative `max`" $ do
-      QC.property $ \ (x :: t1) (y :: t2) ->
-        (x ?==? x) && (y ?==? y) QC.==> -- avoid NaN
-          (x `max` y) ?==? (y `max` x)
+      property $ \ (x :: t1) (y :: t2) ->
+        (x ?==? x) && (y ?==? y) ==> -- avoid NaN
+          (x `max` y) ?==?$ (y `max` x)
     it "has associative `min`" $ do
-      QC.property $ \ (x :: t1) (y :: t2) (z :: t3) ->
-        (x ?==? x) && (y ?==? y) && (z ?==? z) QC.==> -- avoid NaN
-            (x `min` (y `min` z)) ?==? ((x `min` y) `min` z)
+      property $ \ (x :: t1) (y :: t2) (z :: t3) ->
+        (x ?==? x) && (y ?==? y) && (z ?==? z) ==> -- avoid NaN
+            (x `min` (y `min` z)) ?==?$ ((x `min` y) `min` z)
     it "has associative `max`" $ do
-      QC.property $ \ (x :: t1) (y :: t2) (z :: t3) ->
-        (x ?==? x) && (y ?==? y) && (z ?==? z) QC.==> -- avoid NaN
-            (x `max` (y `max` z)) ?==? ((x `max` y) `max` z)
+      property $ \ (x :: t1) (y :: t2) (z :: t3) ->
+        (x ?==? x) && (y ?==? y) && (z ?==? z) ==> -- avoid NaN
+            (x `max` (y `max` z)) ?==?$ ((x `max` y) `max` z)
+  where
+  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) = printArgsIfFails2 "?==?" (?==?)
+  (?>=?$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?>=?$) = printArgsIfFails2 "?>=?" (?>=?)
+  (?<=?$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?<=?$) = printArgsIfFails2 "?<=?" (?<=?)
 --
 {-|
   HSpec properties that each implementation of CanMinMax should satisfy.
@@ -196,7 +204,7 @@ instance (CanMinMaxAsymmetric a b) => CanMinMaxAsymmetric (Maybe a) (Maybe b) wh
 
 {-| Compound type constraint useful for test definition. -}
 type CanNegX t =
-  (CanNeg t, Show t, QC.Arbitrary t)
+  (CanNeg t, Show t, Arbitrary t, Show (NegType t))
 
 {----  numeric negation tests and instances -----}
 
@@ -217,17 +225,20 @@ specCanNegNum ::
 specCanNegNum (T typeName :: T t) =
   describe (printf "CanNeg %s" typeName) $ do
     it "ignores double negation" $ do
-      QC.property $ \ (x :: t) ->
-        (x ?==? x) QC.==> -- avoid NaN
-          (negate (negate x)) ?==? x
+      property $ \ (x :: t) ->
+        (x ?==? x) ==> -- avoid NaN
+          (negate (negate x)) ?==?$ x
     it "takes 0 to 0" $ do
       let z = convertExactly 0 :: t in negate z ?==? z
     it "takes positive to negative" $ do
-      QC.property $ \ (x :: t) ->
-        (isCertainlyPositive x) QC.==> (isCertainlyNegative (negate x))
+      property $ \ (x :: t) ->
+        (isCertainlyPositive x) ==> (isCertainlyNegative (negate x))
     it "takes negative to positive" $ do
-      QC.property $ \ (x :: t) ->
-        (isCertainlyNegative x) QC.==> (isCertainlyPositive (negate x))
+      property $ \ (x :: t) ->
+        (isCertainlyNegative x) ==> (isCertainlyPositive (negate x))
+  where
+  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 instance CanNeg Int where negate = P.negate
 instance CanNeg Integer where negate = P.negate
@@ -261,7 +272,7 @@ type CanAbsX t =
    CanTestPosNeg (AbsType t),
    HasEq t t,
    HasEq t (AbsType t),
-   Show t, QC.Arbitrary t)
+   Show t, Arbitrary t, Show (AbsType t))
 
 {-|
   HSpec properties that each implementation of CanAbs should satisfy.
@@ -274,14 +285,17 @@ specCanAbs ::
 specCanAbs (T typeName :: T t) =
   describe (printf "CanAbs %s" typeName) $ do
     it "is idempotent" $ do
-      QC.property $ \ (x :: t) ->
-        (x ?==? x) QC.==> -- avoid NaN
-          (abs (abs x)) ?==? (abs x)
+      property $ \ (x :: t) ->
+        (x ?==? x) ==> -- avoid NaN
+          (abs (abs x)) ?==?$ (abs x)
     it "is identity on non-negative arguments" $ do
-      QC.property $ \ (x :: t) ->
-        isCertainlyNonNegative x  QC.==> x ?==? (abs x)
+      property $ \ (x :: t) ->
+        isCertainlyNonNegative x  ==> x ?==?$ (abs x)
     it "is negation on non-positive arguments" $ do
-      QC.property $ \ (x :: t) ->
-        isCertainlyNonPositive x  QC.==> (negate x) ?==? (abs x)
+      property $ \ (x :: t) ->
+        isCertainlyNonPositive x  ==> (negate x) ?==?$ (abs x)
     it "does not give negative results" $ do
-      QC.property $ \ (x :: t) -> not $ isCertainlyNegative (abs x)
+      property $ \ (x :: t) -> not $ isCertainlyNegative (abs x)
+  where
+  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) = printArgsIfFails2 "?==?" (?==?)

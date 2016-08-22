@@ -32,7 +32,7 @@ import Text.Printf
 import qualified Data.List as List
 
 import Test.Hspec
-import qualified Test.QuickCheck as QC
+import Test.QuickCheck
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool (CanNeg(..))
@@ -73,8 +73,9 @@ sum xs = List.foldl' add (convertExactly 0) xs
 {-| Compound type constraint useful for test definition. -}
 type CanAddX t1 t2 =
   (CanAdd t1 t2,
-   Show t1, QC.Arbitrary t1,
-   Show t2, QC.Arbitrary t2,
+   Show t1, Arbitrary t1,
+   Show t2, Arbitrary t2,
+   Show (AddType t1 t2),
    HasEq t1 (AddType t1 t2),
    HasEq t2 (AddType t1 t2),
    HasEq (AddType t1 t2) (AddType t1 t2),
@@ -104,18 +105,25 @@ specCanAdd ::
 specCanAdd (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "CanAdd %s %s, CanAdd %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "absorbs 0" $ do
-      QC.property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x + z) ?==? x
+      property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x + z) ?==?$ x
     it "is commutative" $ do
-      QC.property $ \ (x :: t1) (y :: t2) -> (x + y) ?==? (y + x)
+      property $ \ (x :: t1) (y :: t2) -> (x + y) ?==?$ (y + x)
     it "is associative" $ do
-      QC.property $ \ (x :: t1) (y :: t2) (z :: t3) ->
-                      (x + (y + z)) ?==? ((x + y) + z)
+      property $ \ (x :: t1) (y :: t2) (z :: t3) ->
+                      (x + (y + z)) ?==?$ ((x + y) + z)
     it "increases when positive" $ do
-      QC.property $ \ (x :: t1) (y :: t2) ->
-        (isCertainlyPositive x) QC.==> (x + y) ?>? y
+      property $ \ (x :: t1) (y :: t2) ->
+        (isCertainlyPositive x) ==> (x + y) ?>?$ y
     it "decreases when negative" $ do
-      QC.property $ \ (x :: t1) (y :: t2) ->
-        (isCertainlyNegative x) QC.==> (x + y) ?<? y
+      property $ \ (x :: t1) (y :: t2) ->
+        (isCertainlyNegative x) ==> (x + y) ?<?$ y
+  where
+  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) = printArgsIfFails2 "?==?" (?==?)
+  (?>?$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?>?$) = printArgsIfFails2 "?>?" (?>?)
+  (?<?$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?<?$) = printArgsIfFails2 "?<?" (?<?)
 
 --
 {-|
@@ -135,18 +143,20 @@ specCanAddNotMixed t = specCanAdd t t t
   HSpec properties that each implementation of CanAddSameType should satisfy.
  -}
 specCanAddSameType ::
-  (ConvertibleExactly Integer t,
+  (ConvertibleExactly Integer t, Show t,
    HasEq t t, CanAddSameType t)
    =>
    T t -> Spec
 specCanAddSameType (T typeName :: T t) =
   describe (printf "CanAddSameType %s" typeName) $ do
     it "has sum working over integers" $ do
-      QC.property $ \ (xsi :: [Integer]) ->
-        (sum $ (map convertExactly xsi :: [t])) ?==? (convertExactly (sum xsi) :: t)
+      property $ \ (xsi :: [Integer]) ->
+        (sum $ (map convertExactly xsi :: [t])) ?==?$ (convertExactly (sum xsi) :: t)
     it "has sum [] = 0" $ do
-        (sum ([] :: [t])) ?==? (convertExactly 0 :: t)
-
+        (sum ([] :: [t])) ?==?$ (convertExactly 0 :: t)
+  where
+  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 instance CanAddAsymmetric Int Int where
   type AddType Int Int = Integer -- do not risk overflow
@@ -240,7 +250,8 @@ type CanSubSameType t =
 type CanSubX t1 t2 =
   (CanSub t1 t2,
    HasEq t1 (SubType t1 t2),
-   CanAddXX t1 t2)
+   CanAddXX t1 t2,
+   Show (SubType t1 t2))
 
 {-|
   HSpec properties that each implementation of CanSub should satisfy.
@@ -251,18 +262,22 @@ specCanSub ::
    CanNeg t2,
    CanAdd t1 (NegType t2),
    HasEq (SubType t1 t2) (AddType t1 (NegType t2)),
+   Show (AddType t1 (NegType t2)),
    ConvertibleExactly Integer t1)
   =>
   T t1 -> T t2 -> Spec
 specCanSub (T typeName1 :: T t1) (T typeName2 :: T t2) =
   describe (printf "CanSub %s %s" typeName1 typeName2) $ do
     it "x-0 = x" $ do
-      QC.property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x - z) ?==? x
+      property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x - z) ?==?$ x
     it "x-x = 0" $ do
-      QC.property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x - x) ?==? z
+      property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x - x) ?==?$ z
     it "x-y = x+(-y)" $ do
-      QC.property $ \ (x :: t1) (y :: t2) ->
-        (x - y) ?==? (x + (negate y))
+      property $ \ (x :: t1) (y :: t2) ->
+        (x - y) ?==?$ (x + (negate y))
+  where
+  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 --
 {-|
@@ -273,6 +288,7 @@ specCanSubNotMixed ::
    CanSubX t (SubType t t),
    CanNeg t,
    CanAdd t (NegType t),
+   Show (AddType t (NegType t)),
    HasEq (SubType t t) (AddType t (NegType t)),
    ConvertibleExactly Integer t)
   =>

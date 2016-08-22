@@ -26,7 +26,7 @@ import Text.Printf
 -- import qualified Data.List as List
 
 import Test.Hspec
-import qualified Test.QuickCheck as QC
+import Test.QuickCheck as QC
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -91,7 +91,7 @@ type CanRoundX t =
    CanTestPosNeg t,
    HasOrder t Integer,
    CanTestFinite t,
-   Show t, QC.Arbitrary t)
+   Show t, Arbitrary t)
 
 {-|
   HSpec properties that each implementation of CanRound should satisfy.
@@ -103,18 +103,26 @@ specCanRound ::
 specCanRound (T typeName :: T t) =
   describe (printf "CanRound %s" typeName) $ do
     it "holds floor x <= x <= ceiling x" $ do
-      QC.property $ \ (x :: t) ->
-        isFinite x QC.==>
-          (floor x ?<=? x) && (x ?<=? ceiling x)
+      property $ \ (x :: t) ->
+        isFinite x ==>
+          (floor x ?<=?$ x) .&&. (x ?<=?$ ceiling x)
     it "holds floor x <= round x <= ceiling x" $ do
-      QC.property $ \ (x :: t) ->
-        isFinite x QC.==>
-          (floor x <= round x) && (round x <= ceiling x)
+      property $ \ (x :: t) ->
+        isFinite x ==>
+          (floor x !<=!$ round x) .&&. (round x !<=!$ ceiling x)
     it "0 <= ceiling x - floor x <= 1" $ do
-      QC.property $ \ (x :: t) ->
-        isFinite x QC.==>
-          (ceiling x - floor x) `elem` [0,1]
+      property $ \ (x :: t) ->
+        isFinite x ==>
+          (ceiling x - floor x) `elem_PF` [0,1]
     it "holds floor x = round x = ceiling x for integers" $ do
-      QC.property $ \ (xi :: Integer) ->
+      property $ \ (xi :: Integer) ->
         let x = convertExactly xi :: t in
-          (floor x == round x) && (round x == ceiling x)
+          (floor x !==!$ round x) .&&. (round x !==!$ ceiling x)
+  where
+  (?<=?$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?<=?$) = printArgsIfFails2 "?<=?" (?<=?)
+  (!<=!$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (!<=!$) = printArgsIfFails2 "!<=!" (!<=!)
+  (!==!$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (!==!$) = printArgsIfFails2 "!==!" (!==!)
+  elem_PF = printArgsIfFails2 "elem" elem

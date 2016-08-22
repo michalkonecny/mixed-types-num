@@ -44,7 +44,7 @@ module Numeric.MixedTypes.Literals
   , CanBeDouble, double, doubles
   , ConvertibleExactly(..), convertExactly, ConvertResult, ConvertError, convError
   -- * Generic list index
-  , (!!), specCanBeInteger
+  , (!!), specCanBeInteger, printArgsIfFails2
   -- * Testing support functions
   , T(..), tInt, tInteger, tRational, tDouble
   , tBool, tMaybeBool, tMaybeMaybeBool
@@ -63,7 +63,7 @@ import Data.Convertible (Convertible(..), convert, ConvertResult, ConvertError, 
 import qualified Data.List as List
 
 import Test.Hspec
-import qualified Test.QuickCheck as QC
+import Test.QuickCheck
 -- import Control.Exception (evaluate)
 
 {-| Replacement for 'Prelude.fromInteger' using the RebindableSyntax extension.
@@ -104,17 +104,29 @@ fromInteger_ = convertExactly
 
 (!!) :: (CanBeInteger t) => [a] -> t -> a
 list !! ix = List.genericIndex list (integer ix)
+-- list !! ix = List.genericIndex list (P.max 0 ((integer ix) P.- 1)) -- deliberately wrong - test the test!
 
 {-|
   HSpec properties that each implementation of CanBeInteger should satisfy.
  -}
 specCanBeInteger ::
-  (CanBeInteger t, Show t, QC.Arbitrary t) =>
+  (CanBeInteger t, Show t, Arbitrary t) =>
   T t -> Spec
 specCanBeInteger (T typeName :: T t) =
   describe "generic list index (!!)" $ do
     it (printf "works using %s index" typeName) $ do
-      QC.property $ \ (x :: t) -> let xi = integer x in (xi P.>= 0) QC.==> ([0..xi] !! x) P.== xi
+      property $ \ (x :: t) -> let xi = integer x in (xi P.>= 0) ==> ([0..xi] !! x) ==$ xi
+  where
+  (==$) = printArgsIfFails2 "==" (P.==)
+
+printArgsIfFails2 ::
+  (Testable prop, Show a, Show b) =>
+  String -> (a -> b -> prop) -> (a -> b -> Property)
+printArgsIfFails2 relName rel a b =
+  counterexample argsReport $ a `rel` b
+  where
+  argsReport =
+    "FAILED REL: (" ++ show a ++ ") " ++ relName ++ " (" ++ show b ++ ")"
 
 type CanBeInt t = ConvertibleExactly t Int
 int :: (CanBeInt t) => t -> Int

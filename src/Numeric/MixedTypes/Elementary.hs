@@ -18,7 +18,7 @@ module Numeric.MixedTypes.Elementary
   , CanExp(..), CanExpSameType, specCanExpReal
   -- * Log
   , CanLog(..), CanLogSameType, specCanLogReal
-  , powViaExpLog
+  , powUsingExpLog
   -- * Sine and cosine
   , CanSinCos(..), CanSinCosSameType, specCanSinCosReal
   , approxPi
@@ -32,7 +32,7 @@ import Text.Printf
 -- import qualified Data.List as List
 
 import Test.Hspec
-import qualified Test.QuickCheck as QC
+import Test.QuickCheck
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -63,27 +63,34 @@ type CanSqrtX t =
    CanTestPosNeg t,
    HasEq t (SqrtType t),
    HasOrder Integer (SqrtType t),
-   Show t, QC.Arbitrary t)
+   Show t, Arbitrary t, Show (SqrtType t))
 
 {-|
   HSpec properties that each implementation of CanSqrt should satisfy.
  -}
 specCanSqrtReal ::
   (CanSqrtX t,
-   CanPow (SqrtType t) Integer,
+   CanPowX (SqrtType t) Integer,
    HasEq t (PowType (SqrtType t) Integer))
   =>
   T t -> Spec
 specCanSqrtReal (T typeName :: T t) =
   describe (printf "CanSqrt %s" typeName) $ do
     it "sqrt(x) >= 0" $ do
-      QC.property $ \ (x :: t) ->
-        isCertainlyNonNegative x QC.==>
-          (sqrt x) ?>=? 0
+      property $ \ (x :: t) ->
+        isCertainlyNonNegative x ==>
+          (sqrt x) ?>=?$ 0
     it "sqrt(x)^2 = x" $ do
-      QC.property $ \ (x :: t) ->
-        isCertainlyNonNegative x QC.==>
-          (sqrt x)^2 ?==? x
+      property $ \ (x :: t) ->
+        isCertainlyNonNegative x ==>
+          (sqrt x)^2 ?==?$ x
+  where
+  infix 4 ?==?$
+  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) = printArgsIfFails2 "?==?" (?==?)
+  infix 4 ?>=?$
+  (?>=?$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?>=?$) = printArgsIfFails2 "?>=?" (?>=?)
 
 {-
   Instances for Integer, Rational etc need an algebraic real or exact real type.
@@ -116,7 +123,7 @@ type CanExpX t =
    HasEq (ExpType t) (ExpType t),
    HasOrder Integer t,
    HasOrder Integer (ExpType t),
-   Show t, QC.Arbitrary t)
+   Show t, Arbitrary t, Show (ExpType t))
 
 {-|
   HSpec properties that each implementation of CanExp should satisfy.
@@ -128,18 +135,25 @@ specCanExpReal ::
 specCanExpReal (T typeName :: T t) =
   describe (printf "CanExp %s" typeName) $ do
     it "exp(x) >= 0" $ do
-      QC.property $ \ (x :: t) ->
-        ((-100000) !<! x && x !<! 100000) QC.==>
-          exp x ?>=? 0
+      property $ \ (x :: t) ->
+        ((-100000) !<! x && x !<! 100000) ==>
+          exp x ?>=?$ 0
     it "exp(-x) == 1/(exp x)" $ do
-      QC.property $ \ (x :: t) ->
-        ((-100000) !<! x && x !<! 100000) QC.==>
-          (exp x !>! 0) QC.==>
-            exp (-x) ?==? 1/(exp x)
+      property $ \ (x :: t) ->
+        ((-100000) !<! x && x !<! 100000) ==>
+          (exp x !>! 0) ==>
+            exp (-x) ?==?$ 1/(exp x)
     it "exp(x+y) = exp(x)*exp(y)" $ do
-      QC.property $ \ (x :: t)  (y :: t) ->
-        ((-100000) !<! x && x !<! 100000 && (-100000) !<! y && y !<! 100000) QC.==>
-          (exp $ x + y) ?==? (exp x) * (exp y)
+      property $ \ (x :: t)  (y :: t) ->
+        ((-100000) !<! x && x !<! 100000 && (-100000) !<! y && y !<! 100000) ==>
+          (exp $ x + y) ?==?$ (exp x) * (exp y)
+  where
+  infix 4 ?==?$
+  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) = printArgsIfFails2 "?==?" (?==?)
+  infix 4 ?>=?$
+  (?>=?$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?>=?$) = printArgsIfFails2 "?>=?" (?>=?)
 
 {-
   Instances for Integer, Rational etc need an algebraic real or exact real type.
@@ -169,7 +183,7 @@ type CanLogX t =
    Ring (LogType t),
    HasOrder t Integer,
    HasEq (LogType t) (LogType t),
-   Show t, QC.Arbitrary t)
+   Show t, Arbitrary t, Show (LogType t))
 
 {-|
   HSpec properties that each implementation of CanLog should satisfy.
@@ -177,24 +191,28 @@ type CanLogX t =
 specCanLogReal ::
   (CanLogX t,
    CanLogX (DivType Integer t),
-   CanExp t, CanLog (ExpType t),
+   CanExp t, CanLogX (ExpType t),
    HasEq t (LogType (ExpType t)))
   =>
   T t -> Spec
 specCanLogReal (T typeName :: T t) =
   describe (printf "CanLog %s" typeName) $ do
     it "log(1/x) == -(log x)" $ do
-      QC.property $ \ (x :: t) ->
-        x !>! 0 && (1/x) !>! 0  QC.==>
-          log (1/x) ?==? -(log x)
+      property $ \ (x :: t) ->
+        x !>! 0 && (1/x) !>! 0  ==>
+          log (1/x) ?==?$ -(log x)
     it "log(x*y) = log(x)+log(y)" $ do
-      QC.property $ \ (x :: t)  (y :: t) ->
-        x !>! 0 && y !>! 0 && x*y !>! 0  QC.==>
-          (log $ x * y) ?==? (log x) + (log y)
+      property $ \ (x :: t)  (y :: t) ->
+        x !>! 0 && y !>! 0 && x*y !>! 0  ==>
+          (log $ x * y) ?==?$ (log x) + (log y)
     it "log(exp x) == x" $ do
-      QC.property $ \ (x :: t) ->
-        ((-100000) !<! x && x !<! 100000) QC.==>
-          log (exp x) ?==? x
+      property $ \ (x :: t) ->
+        ((-100000) !<! x && x !<! 100000) ==>
+          log (exp x) ?==?$ x
+  where
+  infix 4 ?==?$
+  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 {-
   Instances for Integer, Rational etc need an algebraic real or exact real type.
@@ -205,7 +223,7 @@ instance CanLog Double -- not exact, will not pass the tests
 
 instance CanPow Double Double where
   pow = (P.**)
-  -- pow = powViaExpLog
+  -- pow = powUsingExpLog
 instance CanPow Double Rational where
   type PowType Double Rational = Double
   pow x y = x ^ (double y)
@@ -219,7 +237,7 @@ instance CanPow Int Double where
   type PowType Int Double = Double
   pow x y = (double x) ^ y
 
-powViaExpLog ::
+powUsingExpLog ::
   (CanTestPosNeg t1,
    CanMulSameType t1,
    HasIntegers t1,
@@ -233,7 +251,7 @@ powViaExpLog ::
    ExpType (MulType (LogType t1) t2) ~ t1)
   =>
   t1 -> t2 -> ExpType (MulType (LogType t1) t2)
-powViaExpLog x y
+powUsingExpLog x y
   | isCertainlyPositive x = exp ((log x) * y)
   | otherwise =
     case certainlyIntegerGetIt y of
@@ -242,7 +260,7 @@ powViaExpLog x y
       Nothing ->
         if isCertainlyZero x && isCertainlyPositive y then convertExactly 0
           else
-            error $ "powViaExpLog: potential illegal power a^b with negative a and non-integer b"
+            error $ "powUsingExpLog: potential illegal power a^b with negative a and non-integer b"
 
 {----  sine and cosine -----}
 
@@ -267,7 +285,7 @@ type CanSinCosX t =
    OrderedField t,
    OrderedField (SinCosType t),
    HasOrder (SinCosType t) t,
-   Show t, QC.Arbitrary t)
+   Show t, Arbitrary t, Show (SinCosType t))
 
 {-|
   HSpec properties that each implementation of CanSinCos should satisfy.
@@ -282,24 +300,31 @@ specCanSinCosReal ::
 specCanSinCosReal (T typeName :: T t) =
   describe (printf "CanSinCos %s" typeName) $ do
     it "-1 <= sin(x) <= 1" $ do
-      QC.property $ \ (x :: t) ->
-          (-1) ?<=? (sin x) && (sin x) ?<=? 1
+      property $ \ (x :: t) ->
+          (-1) ?<=?$ (sin x) .&&. (sin x) ?<=?$ 1
     it "-1 <= cos(x) <= 1" $ do
-      QC.property $ \ (x :: t) ->
-          (-1) ?<=? (cos x) && (cos x) ?<=? 1
+      property $ \ (x :: t) ->
+          (-1) ?<=?$ (cos x) .&&. (cos x) ?<=?$ 1
     it "cos(x)^2 + sin(x)^2 = 1" $ do
-      QC.property $ \ (x :: t) ->
-          (sin x)^2 + (cos x)^2 ?==? 1
+      property $ \ (x :: t) ->
+          (sin x)^2 + (cos x)^2 ?==?$ 1
     it "sin(x-y) = sin(x)cos(y) - cos(x)sin(y)" $ do
-      QC.property $ \ (x :: t) (y :: t) ->
-          (sin $ x - y) ?==? (sin x)*(cos y) - (cos x)*(sin y)
+      property $ \ (x :: t) (y :: t) ->
+          (sin $ x - y) ?==?$ (sin x)*(cos y) - (cos x)*(sin y)
     it "cos(x-y) = cos(x)cos(y) + sin(x)sin(y)" $ do
-      QC.property $ \ (x :: t) (y :: t) ->
-          (cos $ x - y) ?==? (cos x)*(cos y) + (sin x)*(sin y)
+      property $ \ (x :: t) (y :: t) ->
+          (cos $ x - y) ?==?$ (cos x)*(cos y) + (sin x)*(sin y)
     it "sin(x) < x < tan(x) for x in [0,pi/2]" $ do
-      QC.property $ \ (x :: t) ->
-        x !>=! 0 && x !<=! 1.57 && (cos x) !>! 0 QC.==>
-          (sin x) ?<=? x && x ?<=? (sin x)/(cos x)
+      property $ \ (x :: t) ->
+        x !>=! 0 && x !<=! 1.57 && (cos x) !>! 0 ==>
+          (sin x) ?<=?$ x .&&. x ?<=?$ (sin x)/(cos x)
+  where
+  infix 4 ?==?$
+  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) = printArgsIfFails2 "?==?" (?==?)
+  infix 4 ?<=?$
+  (?<=?$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?<=?$) = printArgsIfFails2 "?<=?" (?<=?)
 
 {-
   Instances for Integer, Rational etc need an algebraic real or exact real type.

@@ -35,7 +35,7 @@ import Text.Printf
 import qualified Data.List as List
 
 import Test.Hspec
-import qualified Test.QuickCheck as QC
+import Test.QuickCheck
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -98,8 +98,9 @@ product xs = List.foldl' mul (convertExactly 1) xs
 {-| Compound type constraint useful for test definition. -}
 type CanMulX t1 t2 =
   (CanMul t1 t2,
-   Show t1, QC.Arbitrary t1,
-   Show t2, QC.Arbitrary t2,
+   Show t1, Arbitrary t1,
+   Show t2, Arbitrary t2,
+   Show (MulType t1 t2),
    HasEq t1 (MulType t1 t2),
    HasEq t2 (MulType t1 t2),
    HasEq (MulType t1 t2) (MulType t1 t2),
@@ -119,7 +120,7 @@ specCanMul ::
    HasEq (MulType t1 (MulType t2 t3)) (MulType (MulType t1 t2) t3),
    CanAdd t2 t3,
    CanMulX t1 (AddType t2 t3),
-   CanAdd (MulType t1 t2) (MulType t1 t3),
+   CanAddX (MulType t1 t2) (MulType t1 t3),
    HasEq (MulType t1 (AddType t2 t3)) (AddType (MulType t1 t2) (MulType t1 t3)),
    ConvertibleExactly Integer t2)
   =>
@@ -127,15 +128,19 @@ specCanMul ::
 specCanMul (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "CanMul %s %s, CanMul %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "absorbs 1" $ do
-      QC.property $ \ (x :: t1) -> let one = (convertExactly 1 :: t2) in (x * one) ?==? x
+      property $ \ (x :: t1) -> let one = (convertExactly 1 :: t2) in (x * one) ?==?$ x
     it "is commutative" $ do
-      QC.property $ \ (x :: t1) (y :: t2) -> (x * y) ?==? (y * x)
+      property $ \ (x :: t1) (y :: t2) -> (x * y) ?==?$ (y * x)
     it "is associative" $ do
-      QC.property $ \ (x :: t1) (y :: t2) (z :: t3) ->
-                      (x * (y * z)) ?==? ((x * y) * z)
+      property $ \ (x :: t1) (y :: t2) (z :: t3) ->
+                      (x * (y * z)) ?==?$ ((x * y) * z)
     it "distributes over addition" $ do
-      QC.property $ \ (x :: t1) (y :: t2) (z :: t3) ->
-                      (x * (y + z)) ?==? (x * y) + (x * z)
+      property $ \ (x :: t1) (y :: t2) (z :: t3) ->
+                      (x * (y + z)) ?==?$ (x * y) + (x * z)
+  where
+  infix 4 ?==?$
+  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 {-|
   HSpec properties that each implementation of CanMul should satisfy.
@@ -146,7 +151,7 @@ specCanMulNotMixed ::
    HasEq (MulType (MulType t t) t) (MulType t (MulType t t)),
    CanAdd t t,
    CanMulX t (AddType t t),
-   CanAdd (MulType t t) (MulType t t),
+   CanAddX (MulType t t) (MulType t t),
    HasEq (MulType t (AddType t t)) (AddType (MulType t t) (MulType t t)),
    ConvertibleExactly Integer t)
   =>
@@ -157,17 +162,21 @@ specCanMulNotMixed t = specCanMul t t t
   HSpec properties that each implementation of CanMulSameType should satisfy.
  -}
 specCanMulSameType ::
-  (ConvertibleExactly Integer t,
+  (ConvertibleExactly Integer t, Show t,
    HasEq t t, CanMulSameType t)
    =>
    T t -> Spec
 specCanMulSameType (T typeName :: T t) =
   describe (printf "CanMulSameType %s" typeName) $ do
     it "has product working over integers" $ do
-      QC.property $ \ (xsi :: [Integer]) ->
-        (product $ (map convertExactly xsi :: [t])) ?==? (convertExactly (product xsi) :: t)
+      property $ \ (xsi :: [Integer]) ->
+        (product $ (map convertExactly xsi :: [t])) ?==?$ (convertExactly (product xsi) :: t)
     it "has product [] = 1" $ do
-        (product ([] :: [t])) ?==? (convertExactly 1 :: t)
+        (product ([] :: [t])) ?==?$ (convertExactly 1 :: t)
+  where
+  infix 4 ?==?$
+  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 instance CanMulAsymmetric Int Int where
   type MulType Int Int = Integer -- do not risk overflow
@@ -276,8 +285,9 @@ type CanPowBy t1 t2 =
 {-| Compound type constraint useful for test definition. -}
 type CanPowX t1 t2 =
   (CanPow t1 t2,
-   Show t1, QC.Arbitrary t1,
-   Show t2, QC.Arbitrary t2)
+   Show t1, Arbitrary t1,
+   Show t2, Arbitrary t2,
+   Show (PowType t1 t2))
 
 {-|
   HSpec properties that each implementation of CanPow should satisfy.
@@ -289,26 +299,30 @@ specCanPow ::
    ConvertibleExactly Integer t2,
    CanTestPosNeg t2,
    CanAdd t2 Integer,
-   CanMul t1 (PowType t1 t2),
-   CanPow t1 (AddType t2 Integer),
+   CanMulX t1 (PowType t1 t2),
+   CanPowX t1 (AddType t2 Integer),
    HasEq (MulType t1 (PowType t1 t2)) (PowType t1 (AddType t2 Integer)))
   =>
   T t1 -> T t2 -> Spec
 specCanPow (T typeName1 :: T t1) (T typeName2 :: T t2) =
   describe (printf "CanPow %s %s" typeName1 typeName2) $ do
     it "x^0 = 1" $ do
-      QC.property $ \ (x :: t1) ->
+      property $ \ (x :: t1) ->
         let one = (convertExactly 1 :: t1) in
         let z = (convertExactly 0 :: t2) in
-        (x ^ z) ?==? one
+        (x ^ z) ?==?$ one
     it "x^1 = x" $ do
-      QC.property $ \ (x :: t1) ->
+      property $ \ (x :: t1) ->
         let one = (convertExactly 1 :: t2) in
-        (x ^ one) ?==? x
+        (x ^ one) ?==?$ x
     it "x^(y+1) = x*x^y" $ do
-      QC.property $ \ (x :: t1) (y :: t2) ->
-        (isCertainlyNonNegative y) QC.==>
-          x * (x ^ y) ?==? (x ^ (y + 1))
+      property $ \ (x :: t1) (y :: t2) ->
+        (isCertainlyNonNegative y) ==>
+          x * (x ^ y) ?==?$ (x ^ (y + 1))
+  where
+  infix 4 ?==?$
+  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 instance CanPow Integer Integer
 instance CanPow Integer Int
