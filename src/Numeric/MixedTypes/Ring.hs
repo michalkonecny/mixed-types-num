@@ -54,8 +54,7 @@ type Ring t =
    CanSub Integer t, SubType Integer t ~ t,
    HasEq t Int, CanAddSubMulBy t Int,
    CanSub Int t, SubType Int t ~ t,
-   ConvertibleExactly Integer t,
-   CanTestZero t)
+   ConvertibleExactly Integer t)
 
 type CanAddSubMulBy t s =
   (CanAddThis t s, CanSubThis t s, CanMulBy t s)
