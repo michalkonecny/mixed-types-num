@@ -133,8 +133,9 @@ specCanExpReal (T typeName :: T t) =
           exp x ?>=? 0
     it "exp(-x) == 1/(exp x)" $ do
       QC.property $ \ (x :: t) ->
-        (exp x !>! 0) QC.==>
-          exp (-x) ?==? 1/(exp x)
+        ((-100000) !<! x && x !<! 100000) QC.==>
+          (exp x !>! 0) QC.==>
+            exp (-x) ?==? 1/(exp x)
     it "exp(x+y) = exp(x)*exp(y)" $ do
       QC.property $ \ (x :: t)  (y :: t) ->
         ((-100000) !<! x && x !<! 100000 && (-100000) !<! y && y !<! 100000) QC.==>
