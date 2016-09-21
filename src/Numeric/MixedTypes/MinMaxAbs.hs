@@ -77,19 +77,19 @@ type CanMinMaxX t1 t2 =
    Show t1, Arbitrary t1,
    Show t2, Arbitrary t2,
    Show (MinMaxType t1 t2),
-   HasEq t1 t1,
-   HasEq t2 t2,
-   HasEq t1 (MinMaxType t1 t2),
-   HasEq t2 (MinMaxType t1 t2),
-   HasEq (MinMaxType t1 t2) (MinMaxType t1 t2),
-   HasOrder t1 (MinMaxType t1 t2),
-   HasOrder t2 (MinMaxType t1 t2),
-   HasOrder (MinMaxType t1 t2) (MinMaxType t1 t2))
+   HasEqCertainly t1 t1,
+   HasEqCertainly t2 t2,
+   HasEqCertainly t1 (MinMaxType t1 t2),
+   HasEqCertainly t2 (MinMaxType t1 t2),
+   HasEqCertainly (MinMaxType t1 t2) (MinMaxType t1 t2),
+   HasOrderCertainly t1 (MinMaxType t1 t2),
+   HasOrderCertainly t2 (MinMaxType t1 t2),
+   HasOrderCertainly (MinMaxType t1 t2) (MinMaxType t1 t2))
 
 {-| Compound type constraint useful for test definition. -}
 type CanMinMaxXX t1 t2 =
   (CanMinMaxX t1 t2,
-   HasEq (MinMaxType t1 t2) (MinMaxType t2 t1))
+   HasEqCertainly (MinMaxType t1 t2) (MinMaxType t2 t1))
 
 {-|
   HSpec properties that each implementation of CanMinMax should satisfy.
@@ -100,7 +100,7 @@ specCanMinMax ::
    CanMinMaxXX t1 t3, CanMinMaxXX t2 t3,
    CanMinMaxXX t1 (MinMaxType t2 t3),
    CanMinMaxXX (MinMaxType t1 t2) t3,
-   HasEq (MinMaxType t1 (MinMaxType t2 t3)) (MinMaxType (MinMaxType t1 t2) t3))
+   HasEqCertainly (MinMaxType t1 (MinMaxType t2 t3)) (MinMaxType (MinMaxType t1 t2) t3))
   =>
   T t1 -> T t2 -> T t3 -> Spec
 specCanMinMax (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
@@ -138,11 +138,11 @@ specCanMinMax (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) 
         (x ?==? x) && (y ?==? y) && (z ?==? z) ==> -- avoid NaN
             (x `max` (y `max` z)) ?==?$ ((x `max` y) `max` z)
   where
-  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
-  (?>=?$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?>=?$) :: (HasOrderCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?>=?$) = printArgsIfFails2 "?>=?" (?>=?)
-  (?<=?$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?<=?$) :: (HasOrderCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?<=?$) = printArgsIfFails2 "?<=?" (?<=?)
 --
 {-|
@@ -213,10 +213,10 @@ type CanNegX t =
  -}
 specCanNegNum ::
   (CanNegX t, CanNegX (NegType t),
-   HasEq t (NegType (NegType t)),
+   HasEqCertainly t (NegType (NegType t)),
    ConvertibleExactly Integer t,
-   HasEq t t,
-   HasEq t (NegType t),
+   HasEqCertainly t t,
+   HasEqCertainly t (NegType t),
    CanTestPosNeg t,
    CanTestPosNeg (NegType t)
   )
@@ -237,7 +237,7 @@ specCanNegNum (T typeName :: T t) =
       property $ \ (x :: t) ->
         (isCertainlyNegative x) ==> (isCertainlyPositive (negate x))
   where
-  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 instance CanNeg Int where negate = P.negate
@@ -270,16 +270,15 @@ type CanAbsX t =
    CanNegSameType t,
    CanTestPosNeg t,
    CanTestPosNeg (AbsType t),
-   HasEq t t,
-   HasEq t (AbsType t),
+   HasEqCertainly t t,
+   HasEqCertainly t (AbsType t),
    Show t, Arbitrary t, Show (AbsType t))
 
 {-|
   HSpec properties that each implementation of CanAbs should satisfy.
  -}
 specCanAbs ::
-  (CanAbsX t, CanAbsX (AbsType t),
-   HasEq (AbsType (AbsType t)) (AbsType t))
+  (CanAbsX t, CanAbsX (AbsType t))
   =>
   T t -> Spec
 specCanAbs (T typeName :: T t) =
@@ -297,5 +296,5 @@ specCanAbs (T typeName :: T t) =
     it "does not give negative results" $ do
       property $ \ (x :: t) -> not $ isCertainlyNegative (abs x)
   where
-  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?==?$) = printArgsIfFails2 "?==?" (?==?)

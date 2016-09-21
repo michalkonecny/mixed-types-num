@@ -76,17 +76,17 @@ type CanAddX t1 t2 =
    Show t1, Arbitrary t1,
    Show t2, Arbitrary t2,
    Show (AddType t1 t2),
-   HasEq t1 (AddType t1 t2),
-   HasEq t2 (AddType t1 t2),
-   HasEq (AddType t1 t2) (AddType t1 t2),
-   HasOrder t1 (AddType t1 t2),
-   HasOrder t2 (AddType t1 t2),
-   HasOrder (AddType t1 t2) (AddType t1 t2))
+   HasEqCertainly t1 (AddType t1 t2),
+   HasEqCertainly t2 (AddType t1 t2),
+   HasEqCertainly (AddType t1 t2) (AddType t1 t2),
+   HasOrderCertainly t1 (AddType t1 t2),
+   HasOrderCertainly t2 (AddType t1 t2),
+   HasOrderCertainly (AddType t1 t2) (AddType t1 t2))
 
 {-| Compound type constraint useful for test definition. -}
 type CanAddXX t1 t2 =
   (CanAddX t1 t2,
-   HasEq (AddType t1 t2) (AddType t2 t1))
+   HasEqCertainly (AddType t1 t2) (AddType t2 t1))
 
 {-|
   HSpec properties that each implementation of CanAdd should satisfy.
@@ -99,7 +99,7 @@ specCanAdd ::
    CanAddXX (AddType t1 t2) t3,
    ConvertibleExactly Integer t1,
    CanTestPosNeg t1,
-   HasEq (AddType t1 (AddType t2 t3)) (AddType (AddType t1 t2) t3))
+   HasEqCertainly (AddType t1 (AddType t2 t3)) (AddType (AddType t1 t2) t3))
   =>
   T t1 -> T t2 -> T t3 -> Spec
 specCanAdd (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
@@ -118,11 +118,11 @@ specCanAdd (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
       property $ \ (x :: t1) (y :: t2) ->
         (isCertainlyNegative x) ==> (x + y) ?<?$ y
   where
-  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
-  (?>?$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?>?$) :: (HasOrderCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?>?$) = printArgsIfFails2 "?>?" (?>?)
-  (?<?$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?<?$) :: (HasOrderCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?<?$) = printArgsIfFails2 "?<?" (?<?)
 
 --
@@ -133,8 +133,7 @@ specCanAddNotMixed ::
   (CanAddXX t t,
    CanAddXX t (AddType t t),
    ConvertibleExactly Integer t,
-   CanTestPosNeg t,
-   HasEq (AddType (AddType t t) t) (AddType t (AddType t t)) )
+   CanTestPosNeg t)
   =>
   T t -> Spec
 specCanAddNotMixed t = specCanAdd t t t
@@ -144,7 +143,7 @@ specCanAddNotMixed t = specCanAdd t t t
  -}
 specCanAddSameType ::
   (ConvertibleExactly Integer t, Show t,
-   HasEq t t, CanAddSameType t)
+   HasEqCertainly t t, CanAddSameType t)
    =>
    T t -> Spec
 specCanAddSameType (T typeName :: T t) =
@@ -155,7 +154,7 @@ specCanAddSameType (T typeName :: T t) =
     it "has sum [] = 0" $ do
         (sum ([] :: [t])) ?==?$ (convertExactly 0 :: t)
   where
-  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 instance CanAddAsymmetric Int Int where
@@ -249,7 +248,7 @@ type CanSubSameType t =
 {-| Compound type constraint useful for test definition. -}
 type CanSubX t1 t2 =
   (CanSub t1 t2,
-   HasEq t1 (SubType t1 t2),
+   HasEqCertainly t1 (SubType t1 t2),
    CanAddXX t1 t2,
    Show (SubType t1 t2))
 
@@ -261,7 +260,7 @@ specCanSub ::
    CanSubX t1 t2,
    CanNeg t2,
    CanAdd t1 (NegType t2),
-   HasEq (SubType t1 t2) (AddType t1 (NegType t2)),
+   HasEqCertainly (SubType t1 t2) (AddType t1 (NegType t2)),
    Show (AddType t1 (NegType t2)),
    ConvertibleExactly Integer t1)
   =>
@@ -276,7 +275,7 @@ specCanSub (T typeName1 :: T t1) (T typeName2 :: T t2) =
       property $ \ (x :: t1) (y :: t2) ->
         (x - y) ?==?$ (x + (negate y))
   where
-  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 --
@@ -289,7 +288,7 @@ specCanSubNotMixed ::
    CanNeg t,
    CanAdd t (NegType t),
    Show (AddType t (NegType t)),
-   HasEq (SubType t t) (AddType t (NegType t)),
+   HasEqCertainly (SubType t t) (AddType t (NegType t)),
    ConvertibleExactly Integer t)
   =>
   T t -> Spec

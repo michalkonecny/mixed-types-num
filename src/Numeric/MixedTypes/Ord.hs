@@ -14,6 +14,7 @@ module Numeric.MixedTypes.Ord
 (
   -- * Comparisons in numeric order
   HasOrder, HasOrderAsymmetric(..), (>), (<), (<=), (>=)
+  , HasOrderCertainlyAsymmetric, HasOrderCertainly
   , (?<=?), (?<?), (?>=?), (?>?)
   , (!<=!), (!<!), (!>=!), (!>!)
   -- ** Tests
@@ -43,6 +44,12 @@ infix 4 !<=!, !<!, !>=!, !>!
 type HasOrder t1 t2 =
   (HasOrderAsymmetric t1 t2, HasOrderAsymmetric t2 t1,
    OrderCompareType t1 t2 ~ OrderCompareType t2 t1)
+
+type HasOrderCertainly t1 t2 =
+  (HasOrder t1 t2, CanTestCertainly (OrderCompareType t1 t2))
+
+type HasOrderCertainlyAsymmetric t1 t2 =
+  (HasOrderAsymmetric t1 t2, CanTestCertainly (OrderCompareType t1 t2))
 
 class (IsBool (OrderCompareType a b)) => HasOrderAsymmetric a b where
     type OrderCompareType a b
@@ -76,33 +83,33 @@ class (IsBool (OrderCompareType a b)) => HasOrderAsymmetric a b where
 (<=) :: (HasOrderAsymmetric a b) => a -> b -> OrderCompareType a b
 (<=) = leq
 
-(?>?) :: (HasOrderAsymmetric a b) => a -> b -> Bool
+(?>?) :: (HasOrderCertainlyAsymmetric a b) => a -> b -> Bool
 a ?>? b = isNotFalse $ a > b
 
-(?<?) :: (HasOrderAsymmetric a b) => a -> b -> Bool
+(?<?) :: (HasOrderCertainlyAsymmetric a b) => a -> b -> Bool
 a ?<? b = isNotFalse $ a < b
 
-(?>=?) :: (HasOrderAsymmetric a b) => a -> b -> Bool
+(?>=?) :: (HasOrderCertainlyAsymmetric a b) => a -> b -> Bool
 a ?>=? b = isNotFalse $ a >= b
 
-(?<=?) :: (HasOrderAsymmetric a b) => a -> b -> Bool
+(?<=?) :: (HasOrderCertainlyAsymmetric a b) => a -> b -> Bool
 a ?<=? b = isNotFalse $ a <= b
 
-(!>!) :: (HasOrderAsymmetric a b) => a -> b -> Bool
+(!>!) :: (HasOrderCertainlyAsymmetric a b) => a -> b -> Bool
 a !>! b = isCertainlyTrue $ a > b
 
-(!<!) :: (HasOrderAsymmetric a b) => a -> b -> Bool
+(!<!) :: (HasOrderCertainlyAsymmetric a b) => a -> b -> Bool
 a !<! b = isCertainlyTrue $ a < b
 
-(!>=!) :: (HasOrderAsymmetric a b) => a -> b -> Bool
+(!>=!) :: (HasOrderCertainlyAsymmetric a b) => a -> b -> Bool
 a !>=! b = isCertainlyTrue $ a >= b
 
-(!<=!) :: (HasOrderAsymmetric a b) => a -> b -> Bool
+(!<=!) :: (HasOrderCertainlyAsymmetric a b) => a -> b -> Bool
 a !<=! b = isCertainlyTrue $ a <= b
 
 {-| Compound type constraint useful for test definition. -}
 type HasOrderX t1 t2 =
-  (HasOrder t1 t2, Show t1, QC.Arbitrary t1, Show t2, QC.Arbitrary t2)
+  (HasOrderCertainly t1 t2, Show t1, QC.Arbitrary t1, Show t2, QC.Arbitrary t2)
 
 {-|
   HSpec properties that each implementation of 'HasOrder' should satisfy.
@@ -191,13 +198,13 @@ class CanTestPosNeg t where
     isCertainlyNonNegative :: t -> Bool
     isCertainlyNegative :: t -> Bool
     isCertainlyNonPositive :: t -> Bool
-    default isCertainlyPositive :: (HasOrder t Integer) => t -> Bool
+    default isCertainlyPositive :: (HasOrderCertainly t Integer) => t -> Bool
     isCertainlyPositive a = isCertainlyTrue $ a > 0
-    default isCertainlyNonNegative :: (HasOrder t Integer) => t -> Bool
+    default isCertainlyNonNegative :: (HasOrderCertainly t Integer) => t -> Bool
     isCertainlyNonNegative a = isCertainlyTrue $ a >= 0
-    default isCertainlyNegative :: (HasOrder t Integer) => t -> Bool
+    default isCertainlyNegative :: (HasOrderCertainly t Integer) => t -> Bool
     isCertainlyNegative a = isCertainlyTrue $ a < 0
-    default isCertainlyNonPositive :: (HasOrder t Integer) => t -> Bool
+    default isCertainlyNonPositive :: (HasOrderCertainly t Integer) => t -> Bool
     isCertainlyNonPositive a = isCertainlyTrue $ a <= 0
 
 instance CanTestPosNeg Int

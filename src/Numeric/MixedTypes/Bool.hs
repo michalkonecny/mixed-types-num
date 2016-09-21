@@ -14,7 +14,7 @@ module Numeric.MixedTypes.Bool
 (
   IsBool, specIsBool
   -- * Conversion to/from Bool
-  , HasBools(..), specHasBools, HasBoolsX
+  , HasBools, CanTestCertainly(..), specCanTestCertainly, CanTestCertainlyX
   , isNotTrue, isNotFalse
   , stronglyImplies, stronglyEquivalentTo
   , weaklyImplies, weaklyEquivalentTo
@@ -44,50 +44,52 @@ import qualified Test.SmallCheck as SC
 import qualified Test.SmallCheck.Series as SCS
 -- import Control.Exception (evaluate)
 
+type HasBools t = ConvertibleExactly Bool t
+
 {-|
   Tests for truth or falsity.  Beware, when @isCertainlyTrue@ returns @False@,
   it does not mean that the proposition is false.  It usually means that
   we failed to prove the proposition.
 -}
-class (ConvertibleExactly Bool t) => HasBools t
+class (HasBools t) => CanTestCertainly t
   where
     isCertainlyTrue :: t -> Bool
     isCertainlyFalse :: t -> Bool
 
-isNotFalse :: (HasBools t) => t -> Bool
+isNotFalse :: (CanTestCertainly t) => t -> Bool
 isNotFalse = P.not . isCertainlyFalse
 
-isNotTrue :: (HasBools t) => t -> Bool
+isNotTrue :: (CanTestCertainly t) => t -> Bool
 isNotTrue = P.not . isCertainlyTrue
 
 {-|
   If l is certainly True, then r is also certainly True.
 -}
-stronglyImplies :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
+stronglyImplies :: (CanTestCertainly t1, CanTestCertainly t2) => t1 -> t2 -> Bool
 stronglyImplies l r =
   (P.not (isCertainlyTrue l) P.|| isCertainlyTrue r)
 
 {-|
   If l is certainly True, then r is not certainly False.
 -}
-weaklyImplies :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
+weaklyImplies :: (CanTestCertainly t1, CanTestCertainly t2) => t1 -> t2 -> Bool
 weaklyImplies l r =
   (P.not $ isCertainlyTrue l) P.|| (P.not $ isCertainlyFalse r)
 
-stronglyEquivalentTo :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
+stronglyEquivalentTo :: (CanTestCertainly t1, CanTestCertainly t2) => t1 -> t2 -> Bool
 stronglyEquivalentTo l r =
   stronglyImplies l r P.&& stronglyImplies r l
 
-weaklyEquivalentTo :: (HasBools t1, HasBools t2) => t1 -> t2 -> Bool
+weaklyEquivalentTo :: (CanTestCertainly t1, CanTestCertainly t2) => t1 -> t2 -> Bool
 weaklyEquivalentTo l r =
   weaklyImplies l r P.&& weaklyImplies r l
 
 {-|
-  HSpec properties that each implementation of HasBools should satisfy.
+  HSpec properties that each implementation of CanTestCertainly should satisfy.
  -}
-specHasBools :: (HasBools t) => T t -> Spec
-specHasBools (T typeName :: T t) =
-  describe (printf "HasBools %s" typeName) $ do
+specCanTestCertainly :: (CanTestCertainly t) => T t -> Spec
+specCanTestCertainly (T typeName :: T t) =
+  describe (printf "CanTestCertainly %s" typeName) $ do
     it "detects True using isCertainlyTrue" $ do
       isCertainlyTrue (convertExactly True :: t) `shouldBe`  True
     it "does not detect False using isCertainlyTrue" $ do
@@ -100,7 +102,7 @@ specHasBools (T typeName :: T t) =
 instance ConvertibleExactly Bool Bool where
   safeConvertExactly b = Right b
 
-instance HasBools Bool where
+instance CanTestCertainly Bool where
   isCertainlyTrue = id
   isCertainlyFalse = not
 
@@ -110,7 +112,7 @@ instance (ConvertibleExactly Bool t) => ConvertibleExactly Bool (Maybe t) where
       Left _ -> Right Nothing
       Right r -> Right (Just r)
 
-instance (HasBools t) => HasBools (Maybe t) where
+instance (CanTestCertainly t) => CanTestCertainly (Maybe t) where
   isCertainlyTrue (Just b) = isCertainlyTrue b
   isCertainlyTrue _ = False
   isCertainlyFalse (Just b) = isCertainlyFalse b
@@ -138,11 +140,11 @@ not = negate
 type CanNegSameType t = (CanNeg t, NegType t ~ t)
 
 {-| Compound type constraint useful for test definition. -}
-type HasBoolsX t = (HasBools t, Show t, SCS.Serial IO t)
+type CanTestCertainlyX t = (CanTestCertainly t, Show t, SCS.Serial IO t)
 
 {-| Compound type constraint useful for test definition. -}
 type CanNegBoolX t =
-  (CanNeg t, HasBoolsX t, HasBoolsX (NegType t))
+  (CanNeg t, CanTestCertainlyX t, CanTestCertainlyX (NegType t))
 
 {-|
   HSpec properties that each Boolean implementation of CanNeg should satisfy.
@@ -204,10 +206,10 @@ infixr 2  ||
 (||) :: (CanAndOrAsymmetric a b) => a -> b -> AndOrType a b
 (||) = or2
 
-and :: (CanAndOrSameType t, HasBools t) => [t] -> t
+and :: (CanAndOrSameType t, CanTestCertainly t) => [t] -> t
 and = List.foldl' (&&) (convertExactly True)
 
-or :: (CanAndOrSameType t, HasBools t) => [t] -> t
+or :: (CanAndOrSameType t, CanTestCertainly t) => [t] -> t
 or = List.foldl' (||) (convertExactly False)
 
 {-| Compound type constraint useful for test definition. -}
@@ -218,13 +220,13 @@ type CanAndOrX t1 t2 =
    CanAndOr (NegType t1) t2,
    CanAndOr t1 (NegType t2),
    CanAndOr (NegType t1) (NegType t2),
-   HasBoolsX t1,
-   HasBoolsX t2,
-   HasBoolsX (AndOrType t1 t2),
-   HasBoolsX (NegType (AndOrType t1 t2)),
-   HasBoolsX (AndOrType (NegType t1) t2),
-   HasBoolsX (AndOrType t1 (NegType t2)),
-   HasBoolsX (AndOrType (NegType t1) (NegType t2))
+   CanTestCertainlyX t1,
+   CanTestCertainlyX t2,
+   CanTestCertainlyX (AndOrType t1 t2),
+   CanTestCertainlyX (NegType (AndOrType t1 t2)),
+   CanTestCertainlyX (AndOrType (NegType t1) t2),
+   CanTestCertainlyX (AndOrType t1 (NegType t2)),
+   CanTestCertainlyX (AndOrType (NegType t1) (NegType t2))
    )
 
 {-|
@@ -281,7 +283,7 @@ instance CanAndOrAsymmetric Bool Bool where
   and2 = (P.&&)
   or2 = (P.||)
 
-instance (CanAndOrAsymmetric t1 t2, HasBools t1, HasBools t2, HasBools (AndOrType t1 t2)) =>
+instance (CanAndOrAsymmetric t1 t2, CanTestCertainly t1, CanTestCertainly t2, CanTestCertainly (AndOrType t1 t2)) =>
   CanAndOrAsymmetric (Maybe t1) (Maybe t2)
   where
   type AndOrType (Maybe t1) (Maybe t2) = Maybe (AndOrType t1 t2)
@@ -294,7 +296,7 @@ instance (CanAndOrAsymmetric t1 t2, HasBools t1, HasBools t2, HasBools (AndOrTyp
   or2 (Just b1) (Just b2) = Just (b1 || b2)
   or2 _ _ = Nothing
 
-instance (CanAndOrAsymmetric Bool t2, HasBools t2, HasBools (AndOrType Bool t2)) =>
+instance (CanAndOrAsymmetric Bool t2, CanTestCertainly t2, CanTestCertainly (AndOrType Bool t2)) =>
   CanAndOrAsymmetric Bool (Maybe t2)
   where
   type AndOrType Bool (Maybe t2) = Maybe (AndOrType Bool t2)
@@ -307,7 +309,7 @@ instance (CanAndOrAsymmetric Bool t2, HasBools t2, HasBools (AndOrType Bool t2))
   or2 b1 (Just b2) = Just (b1 || b2)
   or2 _ _ = Nothing
 
-instance (CanAndOrAsymmetric t1 Bool, HasBools t1, HasBools (AndOrType t1 Bool)) =>
+instance (CanAndOrAsymmetric t1 Bool, CanTestCertainly t1, CanTestCertainly (AndOrType t1 Bool)) =>
   CanAndOrAsymmetric (Maybe t1) Bool
   where
   type AndOrType (Maybe t1) Bool = Maybe (AndOrType t1 Bool)
@@ -341,15 +343,15 @@ type IsBool t = (HasBools t, CanNegSameType t, CanAndOrSameType t)
 {-|
   HSpec properties that each implementation of IsBool should satisfy.
  -}
-specIsBool :: (IsBool t, Show t, SCS.Serial IO t) => T t -> Spec
+specIsBool :: (IsBool t, CanTestCertainly t, Show t, SCS.Serial IO t) => T t -> Spec
 specIsBool t@(T typeName :: T t) =
   describe (printf "IsBool %s" typeName) $ do
-    specHasBools t
+    specCanTestCertainly t
     specCanNegBool t
     specCanAndOrNotMixed t
 
 scEquals ::
-  (Show t1, HasBools t1, Show t2, HasBools t2) =>
+  (Show t1, CanTestCertainly t1, Show t2, CanTestCertainly t2) =>
   t1 -> t2 -> Either String String
 scEquals l r
   | l `stronglyEquivalentTo` r = Right "OK"

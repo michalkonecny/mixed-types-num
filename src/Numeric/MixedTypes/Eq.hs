@@ -14,6 +14,7 @@ module Numeric.MixedTypes.Eq
 (
   -- * Equality checks
   HasEq,  HasEqAsymmetric(..), (==), (/=)
+  , HasEqCertainly, HasEqCertainlyAsymmetric
   , notCertainlyDifferentFrom, certainlyEqualTo, certainlyNotEqualTo
   , (?==?), (!==!), (!/=!)
   -- ** Tests
@@ -49,6 +50,12 @@ type HasEq t1 t2 =
     (HasEqAsymmetric t1 t2,  HasEqAsymmetric t2 t1,
      EqCompareType t1 t2 ~ EqCompareType t2 t1)
 
+type HasEqCertainlyAsymmetric t1 t2 =
+    (HasEqAsymmetric t1 t2, CanTestCertainly (EqCompareType t1 t2))
+
+type HasEqCertainly t1 t2 =
+  (HasEq t1 t2, CanTestCertainly (EqCompareType t1 t2))
+
 class (IsBool (EqCompareType a b)) => HasEqAsymmetric a b where
     type EqCompareType a b
     type EqCompareType a b = Bool -- default
@@ -68,25 +75,25 @@ class (IsBool (EqCompareType a b)) => HasEqAsymmetric a b where
 (/=) :: (HasEqAsymmetric a b) => a -> b -> EqCompareType a b
 (/=) = notEqualTo
 
-certainlyEqualTo :: (HasEqAsymmetric a b) => a -> b -> Bool
+certainlyEqualTo :: (HasEqCertainlyAsymmetric a b) => a -> b -> Bool
 certainlyEqualTo a b = isCertainlyTrue $ a == b
-certainlyNotEqualTo :: (HasEqAsymmetric a b) => a -> b -> Bool
+certainlyNotEqualTo :: (HasEqCertainlyAsymmetric a b) => a -> b -> Bool
 certainlyNotEqualTo a b = isCertainlyTrue $ a /= b
-notCertainlyDifferentFrom :: (HasEqAsymmetric a b) => a -> b -> Bool
+notCertainlyDifferentFrom :: (HasEqCertainlyAsymmetric a b) => a -> b -> Bool
 notCertainlyDifferentFrom a b = isNotFalse $ a == b
 
-(?==?) :: (HasEqAsymmetric a b) => a -> b -> Bool
+(?==?) :: (HasEqCertainlyAsymmetric a b) => a -> b -> Bool
 (?==?) = notCertainlyDifferentFrom
 
-(!==!) :: (HasEqAsymmetric a b) => a -> b -> Bool
+(!==!) :: (HasEqCertainlyAsymmetric a b) => a -> b -> Bool
 (!==!) = certainlyEqualTo
 
-(!/=!) :: (HasEqAsymmetric a b) => a -> b -> Bool
+(!/=!) :: (HasEqCertainlyAsymmetric a b) => a -> b -> Bool
 (!/=!) = certainlyNotEqualTo
 
 {-| Compound type constraint useful for test definition. -}
 type HasEqX t1 t2 =
-  (HasEq t1 t2, Show t1, Arbitrary t1, Show t2, Arbitrary t2)
+  (HasEqCertainly t1 t2, Show t1, Arbitrary t1, Show t2, Arbitrary t2)
 
 {-|
   HSpec properties that each implementation of HasEq should satisfy.
@@ -125,7 +132,7 @@ specHasEqNotMixed t = specHasEq t t t
   HSpec property of there-and-back conversion.
 -}
 specConversion :: -- this definition cannot be in Literals because it needs HasEq
-  (Arbitrary t1, Show t1, HasEq t1 t1) =>
+  (Arbitrary t1, Show t1, HasEqCertainly t1 t1) =>
   T t1 -> T t2 -> (t1 -> t2) -> (t2 -> t1) ->  Spec
 specConversion (T typeName1 :: T t1) (T typeName2 :: T t2) conv12 conv21 =
   describe "conversion" $ do
@@ -276,9 +283,9 @@ instance CanTestInteger Double where
 class CanTestZero t where
   isCertainlyZero :: t -> Bool
   isNonZero :: t -> Bool
-  default isCertainlyZero :: (HasEq t Integer) => t -> Bool
+  default isCertainlyZero :: (HasEqCertainly t Integer) => t -> Bool
   isCertainlyZero a = isCertainlyTrue (a == 0)
-  default isNonZero :: (HasEq t Integer) => t -> Bool
+  default isNonZero :: (HasEqCertainly t Integer) => t -> Bool
   isNonZero a = isCertainlyTrue (a /= 0)
 
 {-|

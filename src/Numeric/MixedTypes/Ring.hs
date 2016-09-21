@@ -13,7 +13,7 @@
 module Numeric.MixedTypes.Ring
 (
   -- * Ring
-  Ring, CanAddSubMulBy, OrderedRing
+  CanAddSubMulBy, Ring, CertainlyEqRing, OrderedRing, OrderedCertainlyRing
   -- * Multiplication
   , CanMul, CanMulAsymmetric(..), CanMulBy, CanMulSameType
   , (*), product
@@ -46,6 +46,9 @@ import Numeric.MixedTypes.AddSub
 
 {----- Ring -----}
 
+type CanAddSubMulBy t s =
+  (CanAddThis t s, CanSubThis t s, CanMulBy t s)
+
 type Ring t =
   (CanNegSameType t, CanAddSameType t, CanSubSameType t, CanMulSameType t,
    CanPowBy t Integer, CanPowBy t Int,
@@ -56,11 +59,14 @@ type Ring t =
    CanSub Int t, SubType Int t ~ t,
    ConvertibleExactly Integer t)
 
-type CanAddSubMulBy t s =
-  (CanAddThis t s, CanSubThis t s, CanMulBy t s)
+type CertainlyEqRing t =
+  (Ring t, HasEqCertainly t t, HasEqCertainly t Int, HasEqCertainly t Integer)
 
 type OrderedRing t =
-  (Ring t, HasOrder t t, HasOrder t Int, HasOrder t Integer,
+  (Ring t, HasOrder t t, HasOrder t Int, HasOrder t Integer)
+
+type OrderedCertainlyRing t =
+  (CertainlyEqRing t, HasOrderCertainly t t, HasOrderCertainly t Int, HasOrderCertainly t Integer,
   CanTestPosNeg t)
 
 {---- Multiplication -----}
@@ -100,12 +106,12 @@ type CanMulX t1 t2 =
    Show t1, Arbitrary t1,
    Show t2, Arbitrary t2,
    Show (MulType t1 t2),
-   HasEq t1 (MulType t1 t2),
-   HasEq t2 (MulType t1 t2),
-   HasEq (MulType t1 t2) (MulType t1 t2),
-   HasOrder t1 (MulType t1 t2),
-   HasOrder t2 (MulType t1 t2),
-   HasOrder (MulType t1 t2) (MulType t1 t2))
+   HasEqCertainly t1 (MulType t1 t2),
+   HasEqCertainly t2 (MulType t1 t2),
+   HasEqCertainly (MulType t1 t2) (MulType t1 t2),
+   HasOrderCertainly t1 (MulType t1 t2),
+   HasOrderCertainly t2 (MulType t1 t2),
+   HasOrderCertainly (MulType t1 t2) (MulType t1 t2))
 
 {-|
   HSpec properties that each implementation of CanMul should satisfy.
@@ -116,11 +122,11 @@ specCanMul ::
    CanMulX t2 t3,
    CanMulX t1 (MulType t2 t3),
    CanMulX (MulType t1 t2) t3,
-   HasEq (MulType t1 (MulType t2 t3)) (MulType (MulType t1 t2) t3),
+   HasEqCertainly (MulType t1 (MulType t2 t3)) (MulType (MulType t1 t2) t3),
    CanAdd t2 t3,
    CanMulX t1 (AddType t2 t3),
    CanAddX (MulType t1 t2) (MulType t1 t3),
-   HasEq (MulType t1 (AddType t2 t3)) (AddType (MulType t1 t2) (MulType t1 t3)),
+   HasEqCertainly (MulType t1 (AddType t2 t3)) (AddType (MulType t1 t2) (MulType t1 t3)),
    ConvertibleExactly Integer t2)
   =>
   T t1 -> T t2 -> T t3 -> Spec
@@ -138,7 +144,7 @@ specCanMul (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
                       (x * (y + z)) ?==?$ (x * y) + (x * z)
   where
   infix 4 ?==?$
-  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 {-|
@@ -147,11 +153,11 @@ specCanMul (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
 specCanMulNotMixed ::
   (CanMulX t t,
    CanMulX t (MulType t t),
-   HasEq (MulType (MulType t t) t) (MulType t (MulType t t)),
+   HasEqCertainly (MulType (MulType t t) t) (MulType t (MulType t t)),
    CanAdd t t,
    CanMulX t (AddType t t),
    CanAddX (MulType t t) (MulType t t),
-   HasEq (MulType t (AddType t t)) (AddType (MulType t t) (MulType t t)),
+   HasEqCertainly (MulType t (AddType t t)) (AddType (MulType t t) (MulType t t)),
    ConvertibleExactly Integer t)
   =>
   T t -> Spec
@@ -162,7 +168,7 @@ specCanMulNotMixed t = specCanMul t t t
  -}
 specCanMulSameType ::
   (ConvertibleExactly Integer t, Show t,
-   HasEq t t, CanMulSameType t)
+   HasEqCertainly t t, CanMulSameType t)
    =>
    T t -> Spec
 specCanMulSameType (T typeName :: T t) =
@@ -174,7 +180,7 @@ specCanMulSameType (T typeName :: T t) =
         (product ([] :: [t])) ?==?$ (convertExactly 1 :: t)
   where
   infix 4 ?==?$
-  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 instance CanMulAsymmetric Int Int where
@@ -293,14 +299,14 @@ type CanPowX t1 t2 =
  -}
 specCanPow ::
   (CanPowX t1 t2,
-   HasEq t1 (PowType t1 t2),
+   HasEqCertainly t1 (PowType t1 t2),
    ConvertibleExactly Integer t1,
    ConvertibleExactly Integer t2,
    CanTestPosNeg t2,
    CanAdd t2 Integer,
    CanMulX t1 (PowType t1 t2),
    CanPowX t1 (AddType t2 Integer),
-   HasEq (MulType t1 (PowType t1 t2)) (PowType t1 (AddType t2 Integer)))
+   HasEqCertainly (MulType t1 (PowType t1 t2)) (PowType t1 (AddType t2 Integer)))
   =>
   T t1 -> T t2 -> Spec
 specCanPow (T typeName1 :: T t1) (T typeName2 :: T t2) =
@@ -320,7 +326,7 @@ specCanPow (T typeName1 :: T t1) (T typeName2 :: T t2) =
           x * (x ^ y) ?==?$ (x ^ (y + 1))
   where
   infix 4 ?==?$
-  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 instance CanPow Integer Integer

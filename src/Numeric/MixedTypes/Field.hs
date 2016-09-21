@@ -13,7 +13,7 @@
 module Numeric.MixedTypes.Field
 (
   -- * Field
-  Field, CanAddSubMulDivBy, OrderedField
+  CanAddSubMulDivBy, Field, CertainlyEqField, OrderedField, OrderedCertainlyField
   -- * Division
   , CanDiv(..), CanDivBy, CanDivSameType, CanRecip, CanRecipSameType
   , (/), recip
@@ -42,6 +42,9 @@ import Numeric.MixedTypes.Ring
 
 {----- Field -----}
 
+type CanAddSubMulDivBy t s =
+  (CanAddSubMulBy t s, CanDivBy t s)
+
 type Field t =
     (Ring t, CanDivSameType t, CanRecipSameType t,
      CanAddSubMulDivBy t Rational,
@@ -49,11 +52,13 @@ type Field t =
      CanAddSubMulDivBy t Int
     )
 
-type CanAddSubMulDivBy t s =
-  (CanAddSubMulBy t s, CanDivBy t s)
+type CertainlyEqField t = (Field t, CertainlyEqRing t)
 
 type OrderedField t =
   (Field t, OrderedRing t, HasOrder t Rational)
+
+type OrderedCertainlyField t =
+  (CertainlyEqField t, OrderedCertainlyRing t, HasOrderCertainly t Rational)
 
 {---- Division -----}
 
@@ -91,7 +96,7 @@ type CanDivX t1 t2 =
    Show t1, Arbitrary t1,
    Show t2, Arbitrary t2,
    Show (DivType t1 t2),
-   HasEq t1 (DivType t1 t2))
+   HasEqCertainly t1 (DivType t1 t2))
 
 {-|
   HSpec properties that each implementation of CanDiv should satisfy.
@@ -99,7 +104,7 @@ type CanDivX t1 t2 =
 specCanDiv ::
   (CanRecip t1, CanRecip (DivType Integer t1),
    Show (DivType Integer (DivType Integer t1)),
-   HasEq t1 (DivType Integer (DivType Integer t1)),
+   HasEqCertainly t1 (DivType Integer (DivType Integer t1)),
    CanTestZero (DivType Integer t1),
    CanDivX t1 t2,
    CanTestZero t1,
@@ -127,7 +132,7 @@ specCanDiv (T typeName1 :: T t1) (T typeName2 :: T t2) =
           let one = (convertExactly 1 :: t1) in (x / y) ?==?$ x * (one/y)
   where
   infix 4 ?==?$
-  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 {-|
@@ -136,7 +141,7 @@ specCanDiv (T typeName1 :: T t1) (T typeName2 :: T t2) =
 specCanDivNotMixed ::
   (CanRecip t, CanRecip (DivType Integer t),
    Show (DivType Integer (DivType Integer t)),
-   HasEq t (DivType Integer (DivType Integer t)),
+   HasEqCertainly t (DivType Integer (DivType Integer t)),
    CanTestZero (DivType Integer t),
    CanDivX t t,
    CanTestZero t,

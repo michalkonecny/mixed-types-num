@@ -53,7 +53,7 @@ class CanRound t where
   truncate :: t -> Integer
   truncate = fst . properFraction
   round :: t -> Integer
-  default round :: (HasOrder t Rational) => t -> Integer
+  default round :: (HasOrderCertainly t Rational) => t -> Integer
   round x
     | -0.5 !<! r && r !<! 0.5 = n
     | r !<! -0.5 = n - 1
@@ -89,7 +89,7 @@ type CanRoundX t =
   (CanRound t,
    CanNegSameType t,
    CanTestPosNeg t,
-   HasOrder t Integer,
+   HasOrderCertainly t Integer,
    CanTestFinite t,
    Show t, Arbitrary t)
 
@@ -119,10 +119,10 @@ specCanRound (T typeName :: T t) =
         let x = convertExactly xi :: t in
           (floor x !==!$ round x) .&&. (round x !==!$ ceiling x)
   where
-  (?<=?$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?<=?$) :: (HasOrderCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?<=?$) = printArgsIfFails2 "?<=?" (?<=?)
-  (!<=!$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (!<=!$) :: (HasOrderCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (!<=!$) = printArgsIfFails2 "!<=!" (!<=!)
-  (!==!$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (!==!$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (!==!$) = printArgsIfFails2 "!==!" (!==!)
   elem_PF = printArgsIfFails2 "elem" elem

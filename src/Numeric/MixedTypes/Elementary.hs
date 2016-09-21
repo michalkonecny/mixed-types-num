@@ -61,8 +61,8 @@ type CanSqrtSameType t = (CanSqrt t, SqrtType t ~ t)
 type CanSqrtX t =
   (CanSqrt t,
    CanTestPosNeg t,
-   HasEq t (SqrtType t),
-   HasOrder Integer (SqrtType t),
+   HasEqCertainly t (SqrtType t),
+   HasOrderCertainly Integer (SqrtType t),
    Show t, Arbitrary t, Show (SqrtType t))
 
 {-|
@@ -71,7 +71,7 @@ type CanSqrtX t =
 specCanSqrtReal ::
   (CanSqrtX t,
    CanPowX (SqrtType t) Integer,
-   HasEq t (PowType (SqrtType t) Integer))
+   HasEqCertainly t (PowType (SqrtType t) Integer))
   =>
   T t -> Spec
 specCanSqrtReal (T typeName :: T t) =
@@ -86,10 +86,10 @@ specCanSqrtReal (T typeName :: T t) =
           (sqrt x)^2 ?==?$ x
   where
   infix 4 ?==?$
-  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
   infix 4 ?>=?$
-  (?>=?$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?>=?$) :: (HasOrderCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?>=?$) = printArgsIfFails2 "?>=?" (?>=?)
 
 {-
@@ -120,9 +120,9 @@ type CanExpX t =
    Field (ExpType t),
    CanTestPosNeg t,
    CanTestPosNeg (ExpType t),
-   HasEq (ExpType t) (ExpType t),
-   HasOrder Integer t,
-   HasOrder Integer (ExpType t),
+   HasEqCertainly (ExpType t) (ExpType t),
+   HasOrderCertainly Integer t,
+   HasOrderCertainly Integer (ExpType t),
    Show t, Arbitrary t, Show (ExpType t))
 
 {-|
@@ -149,10 +149,10 @@ specCanExpReal (T typeName :: T t) =
           (exp $ x + y) ?==?$ (exp x) * (exp y)
   where
   infix 4 ?==?$
-  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
   infix 4 ?>=?$
-  (?>=?$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?>=?$) :: (HasOrderCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?>=?$) = printArgsIfFails2 "?>=?" (?>=?)
 
 {-
@@ -181,8 +181,8 @@ type CanLogX t =
   (CanLog t,
    Field t,
    Ring (LogType t),
-   HasOrder t Integer,
-   HasEq (LogType t) (LogType t),
+   HasOrderCertainly t Integer,
+   HasEqCertainly (LogType t) (LogType t),
    Show t, Arbitrary t, Show (LogType t))
 
 {-|
@@ -192,7 +192,7 @@ specCanLogReal ::
   (CanLogX t,
    CanLogX (DivType Integer t),
    CanExp t, CanLogX (ExpType t),
-   HasEq t (LogType (ExpType t)))
+   HasEqCertainly t (LogType (ExpType t)))
   =>
   T t -> Spec
 specCanLogReal (T typeName :: T t) =
@@ -211,7 +211,7 @@ specCanLogReal (T typeName :: T t) =
           log (exp x) ?==?$ x
   where
   infix 4 ?==?$
-  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 {-
@@ -282,9 +282,9 @@ type CanSinCosSameType t = (CanSinCos t, SinCosType t ~ t)
 
 type CanSinCosX t =
   (CanSinCos t,
-   OrderedField t,
-   OrderedField (SinCosType t),
-   HasOrder (SinCosType t) t,
+   OrderedCertainlyField t,
+   OrderedCertainlyField (SinCosType t),
+   HasOrderCertainly (SinCosType t) t,
    Show t, Arbitrary t, Show (SinCosType t))
 
 {-|
@@ -320,10 +320,10 @@ specCanSinCosReal (T typeName :: T t) =
           (sin x) ?<=?$ x .&&. x ?<=?$ (sin x)/(cos x)
   where
   infix 4 ?==?$
-  (?==?$) :: (HasEqAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
   infix 4 ?<=?$
-  (?<=?$) :: (HasOrderAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?<=?$) :: (HasOrderCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?<=?$) = printArgsIfFails2 "?<=?" (?<=?)
 
 {-
