@@ -13,9 +13,9 @@
 module Numeric.MixedTypes.Round
 (
   -- * Rounding operations
-  CanRound(..)
+  CanRound(..), HasIntegerBounds(..)
   -- ** Tests
-  , specCanRound
+  , specCanRound, specHasIntegerBounds
 )
 where
 
@@ -126,3 +126,39 @@ specCanRound (T typeName :: T t) =
   (!==!$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (!==!$) = printArgsIfFails2 "!==!" (!==!)
   elem_PF = printArgsIfFails2 "elem" elem
+
+
+class HasIntegerBounds t where
+  integerBounds :: t -> (Integer, Integer)
+  default integerBounds :: (CanRound t) => t -> (Integer, Integer)
+  integerBounds x = (floor x, ceiling x)
+
+instance HasIntegerBounds Rational
+instance HasIntegerBounds Double
+
+type HasIntegerBoundsX t =
+  (HasIntegerBounds t,
+  --  CanNegSameType t,
+  --  CanTestPosNeg t,
+   HasOrderCertainly t Integer,
+   CanTestFinite t,
+   Show t, Arbitrary t)
+
+
+{-|
+  HSpec properties that each implementation of CanRound should satisfy.
+ -}
+specHasIntegerBounds ::
+  (HasIntegerBoundsX t)
+  =>
+  T t -> Spec
+specHasIntegerBounds (T typeName :: T t) =
+  describe (printf "HasIntegerBounds %s" typeName) $ do
+    it "holds l <= x <= r" $ do
+      property $ \ (x :: t) ->
+        isFinite x ==>
+          let (l,r) = integerBounds x in
+          (l ?<=?$ x) .&&. (x ?<=?$ r)
+  where
+  (?<=?$) :: (HasOrderCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?<=?$) = printArgsIfFails2 "?<=?" (?<=?)
