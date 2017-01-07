@@ -1,17 +1,17 @@
 name:           mixed-types-num
-version:        0.1
+version:        0.1.0.0
 cabal-version:  >= 1.9.2
 build-type:     Simple
-author:         Michal Konecny
-stability:      experimental
-maintainer:     Michal Konecny <mikkonecny@gmail.com>
-tested-with:    GHC==7.8.4, GHC==7.10.3, GHC==8.0.1
-license:        BSD3
 homepage:       https://github.com/michalkonecny/mixed-types-num
-synopsis:       Alternative Prelude with numerical and logical expressions typed bottom-up
-category:       Math
-copyright:      (c) 2015, 2016 Michal Konecny, Pieter Collins
+author:         Michal Konecny
+maintainer:     Michal Konecny <mikkonecny@gmail.com>
+copyright:      (c) 2015-2017 Michal Konecny
+license:        BSD3
 license-file:   LICENSE
+stability:      experimental
+tested-with:    GHC==7.8.4, GHC==7.10.3, GHC==8.0.1
+category:       Math
+synopsis:       Alternative Prelude with numeric and logic expressions typed bottom-up
 Description:
     = Main purpose
     .
@@ -39,15 +39,13 @@ Description:
       .
       @(double 2)^(1/2) :: Double@
       .
-      @2^(1/2) :: Real@
+      @2^(1/2) :: CauchyReal@
       .
-      * comparing an integer with an (exact) real number, giving a Maybe Bool:
+      * comparing an integer with an (exact) real number, giving a @Maybe Bool@:
       .
-      @... x :: Real ... if (isCertainlyTrue (x > 1)) then ...@
+      @... x :: CauchyReal ... if (isCertainlyTrue (x > 1)) then ...@
       .
-      (@Real@ not provided by this package.
-        It will be provided in a different package soon.)
-      --  They are provided, /e.g./, by aern2-real.)
+      (@CauchyReal@ is defined in <https://github.com/michalkonecny/aern2/aern2-real aern2-real> .)
     .
     = Type classes
     .
