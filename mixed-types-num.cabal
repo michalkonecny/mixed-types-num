@@ -69,6 +69,10 @@ Description:
     derived bottom-up was initially suggested and implemented by Pieter Collins.
     This version is a fresh rewrite by Michal Konečný.
 
+source-repository head
+  type:     git
+  location: https://github.com/mikkonecny/mixed-types-num
+
 library
   hs-source-dirs:  src
   build-depends:
