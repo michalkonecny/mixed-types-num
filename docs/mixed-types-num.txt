@@ -4,139 +4,13 @@
 
 -- | Alternative Prelude with numeric and logic expressions typed bottom-up
 --   
---   <h1>Main purpose</h1>
---   
 --   This package provides a version of Prelude where unary and binary
 --   operations such as <tt>not</tt>, <tt>+</tt>, <tt>==</tt> have their
---   result type derived from the parameter type(s), allowing, <i>e.g.</i>:
+--   result type derived from the parameter type(s).
 --   
---   <ul>
---   <li>dividing an integer by an integer, giving a rational:</li>
---   </ul>
---   
---   <pre>
---   let n = 1 :: Integer in n/(n+1) :: Rational
---   </pre>
---   
---   <pre>
---   1/2 :: Rational
---   </pre>
---   
---   (The type Rational would be derived automatically because integer
---   literals are always of type <tt>Integer</tt>, not <tt>Num t =&gt;
---   t</tt>.)
---   
---   <ul>
---   <li>adding an integer and a rational, giving a rational:</li>
---   </ul>
---   
---   <pre>
---   (length [x])+1/3 :: Rational
---   </pre>
---   
---   <ul>
---   <li>taking natural, integer and fractional power using the same
---   operator:</li>
---   </ul>
---   
---   <pre>
---   2^2 :: Integer
---   </pre>
---   
---   <pre>
---   2.0^(-2) :: Rational
---   </pre>
---   
---   <pre>
---   (double 2)^(1/2) :: Double
---   </pre>
---   
---   The following examples require package <a>aern2-real</a>:
---   
---   <pre>
---   2^(1/2) :: CauchyReal
---   </pre>
---   
---   <pre>
---   pi :: CauchyReal
---   </pre>
---   
---   <pre>
---   sqrt 2 :: CauchyReal
---   </pre>
---   
---   <ul>
---   <li>comparing an integer with an (exact) real number, giving a
---   <tt>Maybe Bool</tt>:</li>
---   </ul>
---   
---   <pre>
---   ... x :: CauchyReal ... if (isCertainlyTrue (x &gt; 1)) then ...
---   </pre>
---   
---   <h1>Type classes</h1>
---   
---   Arithmetic operations are provided via multi-parameter type classes
---   and the result type is given by associated type families. For example:
---   
---   <pre>
---   (+) :: (CanAddAsymmetric t1 t2) =&gt; t1 -&gt; t2 -&gt; AddType t1 t2
---   </pre>
---   
---   The type constraint <tt>CanAdd t1 t2</tt> implies both
---   <tt>CanAddAsymmetric t1 t2</tt> and <tt>CanAddAsymmetric t2 t1</tt>.
---   
---   For convenience there are other aggregate type constraints such as
---   <tt>CanAddThis t1 t2</tt>, which implies that the result is of type
---   <tt>t1</tt>, and <tt>CanAddSameType t</tt>, which is a shortcut for
---   <tt>CanAddThis t t</tt>.
---   
---   <h2>Testable specification</h2>
---   
---   The arithmetic type classes are accompanied by generic hspec test
---   suites, which are specialised to concrete instance types for their
---   testing. These test suites include the expected algebraic properties
---   of operations, such as commutativity and associativity of addition.
---   
---   <h1>Limitations</h1>
---   
---   <ul>
---   <li>Not all numerical operations are supported yet. Eg <tt>tan</tt>,
---   <tt>atan</tt> are missing at the moment.</li>
---   <li>Inferred types can be very large. Eg for <tt>f a b c = sqrt (a + b
---   * c + 1)</tt> the inferred type is:</li>
---   </ul>
---   
---   <pre>
---   f: (CanMulAsymmetric t1 t2, CanAddAsymmetric t4 (MulType t1 t2),
---   CanAddAsymmetric (AddType t4 (MulType t1 t2)) Integer,
---   CanSqrt (AddType (AddType t4 (MulType t1 t2)) Integer)) =&gt;
---   t4
---   -&gt; t1
---   -&gt; t2
---   -&gt; SqrtType (AddType (AddType t4 (MulType t1 t2)) Integer)
---   </pre>
---   
---   <ul>
---   <li>Due to limitations of some versions of ghc, type inferrence
---   sometimes fails. Eg <tt>add1 = (+ 1)</tt> fails (eg with ghc 8.0.2)
---   unless we explicitly declare the type <tt>add1 :: (CanAdd Integer t)
---   =&gt; t -&gt; AddType t Integer</tt> or use an explicit parameter, eg
---   <tt>add1 x = x + 1</tt>.</li>
---   </ul>
---   
---   <h1>Further reading</h1>
---   
---   To find out more, please read the documentation for the modules in the
---   order specified in <a>Numeric.MixedTypes</a>.
---   
---   <h1>Origin</h1>
---   
---   The idea of having numeric expressions in Haskell with types derived
---   bottom-up was initially suggested and implemented by Pieter Collins.
---   This version is a fresh rewrite by Michal Konečný.
+--   See module <a>Numeric.MixedTypes</a> for further documentation.
 @package mixed-types-num
-@version 0.1.0.0
+@version 0.1.0.1
 
 
 -- | Prelude without operations that clash with MixedTypes
@@ -979,6 +853,139 @@ instance Numeric.MixedTypes.Round.HasIntegerBounds GHC.Real.Rational
 instance Numeric.MixedTypes.Round.HasIntegerBounds GHC.Types.Double
 
 
--- | A single-import module for the package mixed-types-num. Please see the
---   package description (under Contents).
+-- | <h1>Main purpose</h1>
+--   
+--   This package provides a version of Prelude where unary and binary
+--   operations such as <tt>not</tt>, <tt>+</tt>, <tt>==</tt> have their
+--   result type derived from the parameter type(s), allowing, <i>e.g.</i>:
+--   
+--   <ul>
+--   <li>dividing an integer by an integer, giving a rational:</li>
+--   </ul>
+--   
+--   <pre>
+--   let n = 1 :: Integer in n/(n+1) :: Rational
+--   </pre>
+--   
+--   <pre>
+--   1/2 :: Rational
+--   </pre>
+--   
+--   (The type Rational would be derived automatically because integer
+--   literals are always of type <tt>Integer</tt>, not <tt>Num t =&gt;
+--   t</tt>.)
+--   
+--   <ul>
+--   <li>adding an integer and a rational, giving a rational:</li>
+--   </ul>
+--   
+--   <pre>
+--   (length [x])+1/3 :: Rational
+--   </pre>
+--   
+--   <ul>
+--   <li>taking natural, integer and fractional power using the same
+--   operator:</li>
+--   </ul>
+--   
+--   <pre>
+--   2^2 :: Integer
+--   </pre>
+--   
+--   <pre>
+--   2.0^(-2) :: Rational
+--   </pre>
+--   
+--   <pre>
+--   (double 2)^(1/2) :: Double
+--   </pre>
+--   
+--   The following examples require package <a>aern2-real</a>:
+--   
+--   <pre>
+--   2^(1/2) :: CauchyReal
+--   </pre>
+--   
+--   <pre>
+--   pi :: CauchyReal
+--   </pre>
+--   
+--   <pre>
+--   sqrt 2 :: CauchyReal
+--   </pre>
+--   
+--   <ul>
+--   <li>comparing an integer with an (exact) real number, giving a
+--   <tt>Maybe Bool</tt>:</li>
+--   </ul>
+--   
+--   <pre>
+--   ... x :: CauchyReal ... if (isCertainlyTrue (x &gt; 1)) then ...
+--   </pre>
+--   
+--   <h1>Type classes</h1>
+--   
+--   Arithmetic operations are provided via multi-parameter type classes
+--   and the result type is given by associated type families. For example:
+--   
+--   <pre>
+--   (+) :: (CanAddAsymmetric t1 t2) =&gt; t1 -&gt; t2 -&gt; AddType t1 t2
+--   </pre>
+--   
+--   The type constraint <tt>CanAdd t1 t2</tt> implies both
+--   <tt>CanAddAsymmetric t1 t2</tt> and <tt>CanAddAsymmetric t2 t1</tt>.
+--   
+--   For convenience there are other aggregate type constraints such as
+--   <tt>CanAddThis t1 t2</tt>, which implies that the result is of type
+--   <tt>t1</tt>, and <tt>CanAddSameType t</tt>, which is a shortcut for
+--   <tt>CanAddThis t t</tt>.
+--   
+--   <h2>Testable specification</h2>
+--   
+--   The arithmetic type classes are accompanied by generic hspec test
+--   suites, which are specialised to concrete instance types for their
+--   testing. These test suites include the expected algebraic properties
+--   of operations, such as commutativity and associativity of addition.
+--   
+--   <h1>Limitations</h1>
+--   
+--   <ul>
+--   <li>Not all numerical operations are supported yet. Eg <tt>tan</tt>,
+--   <tt>atan</tt> are missing at the moment.</li>
+--   </ul>
+--   
+--   <ul>
+--   <li>Inferred types can be very large. Eg for <tt>f a b c = sqrt (a + b
+--   * c + 1)</tt> the inferred type is:</li>
+--   </ul>
+--   
+--   <pre>
+--   f: (CanMulAsymmetric t1 t2, CanAddAsymmetric t4 (MulType t1 t2),
+--       CanAddAsymmetric (AddType t4 (MulType t1 t2)) Integer,
+--       CanSqrt (AddType (AddType t4 (MulType t1 t2)) Integer)) =&gt;
+--      t4
+--      -&gt; t1
+--      -&gt; t2
+--      -&gt; SqrtType (AddType (AddType t4 (MulType t1 t2)) Integer)
+--   
+--   </pre>
+--   
+--   <ul>
+--   <li>Due to limitations of some versions of ghc, type inferrence
+--   sometimes fails. Eg <tt>add1 = (+ 1)</tt> fails (eg with ghc 8.0.2)
+--   unless we explicitly declare the type <tt>add1 :: (CanAdd Integer t)
+--   =&gt; t -&gt; AddType t Integer</tt> or use an explicit parameter, eg
+--   <tt>add1 x = x + 1</tt>.</li>
+--   </ul>
+--   
+--   <h1>Origin</h1>
+--   
+--   The idea of having numeric expressions in Haskell with types derived
+--   bottom-up was initially suggested and implemented by Pieter Collins.
+--   This version is a fresh rewrite by Michal Konečný.
+--   
+--   <h1>More details</h1>
+--   
+--   This module facilitates a single-line import for the package
+--   mixed-types-num. See the re-exported modules for further details.
 module Numeric.MixedTypes
