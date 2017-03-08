@@ -41,11 +41,25 @@ Description:
       .
       @2^(1/2) :: CauchyReal@
       .
+      (@CauchyReal@ is defined in <https://github.com/michalkonecny/aern2/aern2-real aern2-real> .)
+      .
+      @pi :: CauchyReal@
+      .
       * comparing an integer with an (exact) real number, giving a @Maybe Bool@:
       .
       @... x :: CauchyReal ... if (isCertainlyTrue (x > 1)) then ...@
-      .
-      (@CauchyReal@ is defined in <https://github.com/michalkonecny/aern2/aern2-real aern2-real> .)
+    .
+    = Limitations
+    .
+    Not all numerical operations are supported yet.
+    For now, eg @tan@, @atan@ are missing.
+    .
+    Type inference for numerical expressions is limited.
+    For example, the following:
+    .
+    TODO
+    .
+    will give a compiler error.
     .
     = Type classes
     .
