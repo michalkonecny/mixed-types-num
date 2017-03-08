@@ -18,6 +18,10 @@
 --   let n = 1 :: Integer in n/(n+1) :: Rational
 --   </pre>
 --   
+--   <pre>
+--   1/2 :: Rational
+--   </pre>
+--   
 --   (The type Rational would be derived automatically because integer
 --   literals are always of type <tt>Integer</tt>, not <tt>Num t =&gt;
 --   t</tt>.)
@@ -47,11 +51,11 @@
 --   (double 2)^(1/2) :: Double
 --   </pre>
 --   
+--   The following examples require package <a>aern2-real</a>:
+--   
 --   <pre>
 --   2^(1/2) :: CauchyReal
 --   </pre>
---   
---   (<tt>CauchyReal</tt> is defined in <a>aern2-real</a> .)
 --   
 --   <pre>
 --   pi :: CauchyReal
@@ -66,18 +70,6 @@
 --   ... x :: CauchyReal ... if (isCertainlyTrue (x &gt; 1)) then ...
 --   </pre>
 --   
---   <h1>Limitations</h1>
---   
---   Type inference for numerical expressions is limited. For example, the
---   following:
---   
---   TODO
---   
---   will give a compiler error.
---   
---   Not all numerical operations are supported yet. For now, eg
---   <tt>tan</tt>, <tt>atan</tt> are missing.
---   
 --   <h1>Type classes</h1>
 --   
 --   Arithmetic operations are provided via multi-parameter type classes
@@ -87,8 +79,47 @@
 --   (+) :: (CanAddAsymmetric t1 t2) =&gt; t1 -&gt; t2 -&gt; AddType t1 t2
 --   </pre>
 --   
---   Each such type class is accompanied by a hspec test suite, which can
---   be applied to instance types.
+--   The type constraint <tt>CanAdd t1 t2</tt> implies both
+--   <tt>CanAddAsymmetric t1 t2</tt> and <tt>CanAddAsymmetric t2 t1</tt>.
+--   
+--   For convenience there are other aggregate type constraints such as
+--   <tt>CanAddThis t1 t2</tt>, which implies that the result is of type
+--   <tt>t1</tt>, and <tt>CanAddSameType t</tt>, which is a shortcut for
+--   <tt>CanAddThis t t</tt>.
+--   
+--   <h2>Testable specification</h2>
+--   
+--   The arithmetic type classes are accompanied by generic hspec test
+--   suites, which are specialised to concrete instance types for their
+--   testing. These test suites include the expected algebraic properties
+--   of operations, such as commutativity and associativity of addition.
+--   
+--   <h1>Limitations</h1>
+--   
+--   <ul>
+--   <li>Not all numerical operations are supported yet. Eg <tt>tan</tt>,
+--   <tt>atan</tt> are missing at the moment.</li>
+--   <li>Inferred types can be very large. Eg for <tt>f a b c = sqrt (a + b
+--   * c + 1)</tt> the inferred type is:</li>
+--   </ul>
+--   
+--   <pre>
+--   f: (CanMulAsymmetric t1 t2, CanAddAsymmetric t4 (MulType t1 t2),
+--   CanAddAsymmetric (AddType t4 (MulType t1 t2)) Integer,
+--   CanSqrt (AddType (AddType t4 (MulType t1 t2)) Integer)) =&gt;
+--   t4
+--   -&gt; t1
+--   -&gt; t2
+--   -&gt; SqrtType (AddType (AddType t4 (MulType t1 t2)) Integer)
+--   </pre>
+--   
+--   <ul>
+--   <li>Due to limitations of some versions of ghc, type inferrence
+--   sometimes fails. Eg <tt>add1 = (+ 1)</tt> fails (eg with ghc 8.0.2)
+--   unless we explicitly declare the type <tt>add1 :: (CanAdd Integer t)
+--   =&gt; t -&gt; AddType t Integer</tt> or use an explicit parameter, eg
+--   <tt>add1 x = x + 1</tt>.</li>
+--   </ul>
 --   
 --   <h1>Further reading</h1>
 --   
@@ -123,11 +154,12 @@ module Numeric.MixedTypes.PreludeHiding
 --   <li><pre>double 0.5</pre></li>
 --   </ul>
 --   
---   To avoid the issue of integer overflow, aritmetic operations are not
---   defined for <a>Int</a>.
+--   To avoid integer overflow, no aritmetic operations return <a>Int</a>.
+--   Nevertheless, one can usually mix <a>Int</a> with other types in
+--   expressions.
 --   
---   Any approximate arithmetic, ie arithmetic involving Doubles, gives
---   values of type <a>Double</a>. <a>Double</a> values cannot be normally
+--   Any approximate arithmetic, ie arithmetic involving Doubles, returns
+--   values of type <a>Double</a>. <a>Double</a> values cannot be easily
 --   converted to exact types such as <a>Rational</a> or <a>Integer</a> so
 --   that all such conversions are clearly visible as labelled as inexact.
 module Numeric.MixedTypes.Literals

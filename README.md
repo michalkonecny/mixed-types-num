@@ -1,3 +1,3 @@
 # mixed-types-num
 
-Package Haddock documentation: <http://duck.aston.ac.uk/konecnym/mixed-types-num/>
+Package Haddock documentation: <https://michalkonecny.github.io/mixed-types-num/>

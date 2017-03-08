@@ -22,12 +22,12 @@
     * @integer (length list)@.
     * @double 0.5@
 
-    To avoid the issue of integer overflow, aritmetic operations are
-    not defined for 'Int'.
+    To avoid integer overflow, no aritmetic operations return 'Int'.
+    Nevertheless, one can usually mix 'Int' with other types in expressions.
 
-    Any approximate arithmetic, ie arithmetic involving Doubles, gives
+    Any approximate arithmetic, ie arithmetic involving Doubles, returns
     values of type 'Double'.
-    'Double' values cannot be normally converted to exact
+    'Double' values cannot be easily converted to exact
     types such as 'Rational' or 'Integer' so that all such
     conversions are clearly visible as labelled as inexact.
 -}</span><span>
