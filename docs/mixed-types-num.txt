@@ -61,6 +61,10 @@
 --   pi :: CauchyReal
 --   </pre>
 --   
+--   <pre>
+--   sqrt 2 :: CauchyReal
+--   </pre>
+--   
 --   <ul>
 --   <li>comparing an integer with an (exact) real number, giving a
 --   <tt>Maybe Bool</tt>:</li>

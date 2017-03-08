@@ -51,6 +51,8 @@ Description:
       .
       @pi :: CauchyReal@
       .
+      @sqrt 2 :: CauchyReal@
+      .
       * comparing an integer with an (exact) real number, giving a @Maybe Bool@:
       .
       @... x :: CauchyReal ... if (isCertainlyTrue (x > 1)) then ...@
