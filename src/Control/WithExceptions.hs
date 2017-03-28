@@ -3,33 +3,63 @@ module Control.WithExceptions where
 
 import Numeric.MixedTypes
 
+import Data.Monoid
+
 {- Exception-bearing machinery -}
 
-type Exceptions = [String]
-
-data WithExceptions v =
-  WithExceptions (Maybe v) Exceptions
+data WithExceptions v e =
+  WithExceptions (Maybe v) e
   deriving (Show)
 
-noExceptions :: v -> WithExceptions v
-noExceptions v = WithExceptions (Just v) []
+noExceptions :: (Monoid e) => v -> WithExceptions v e
+noExceptions v = WithExceptions (Just v) mempty
 
-prependExceptions :: Exceptions -> WithExceptions v -> WithExceptions v
-prependExceptions es1 (WithExceptions mv es2) = WithExceptions mv (es1 ++ es2)
+prependExceptions :: (Monoid e) => e -> WithExceptions v e -> WithExceptions v e
+prependExceptions es1 (WithExceptions mv es2) = WithExceptions mv (es1 <> es2)
 
-class CanEnsureExceptions v where
+firstNoExceptions ::
+  (Monoid e)
+  =>
+  ((WithExceptions a e) -> (WithExceptions b e) -> t)
+  ->
+  (a -> (WithExceptions b e) -> t)
+firstNoExceptions op (a :: a) (be :: WithExceptions b e) =
+  op (noExceptions a :: WithExceptions a e) be
+
+secondNoExceptions ::
+  (Monoid e)
+  =>
+  ((WithExceptions a e) -> (WithExceptions b e) -> t)
+  ->
+  ((WithExceptions a e) -> b -> t)
+secondNoExceptions op (ae :: WithExceptions a e) (b :: b)  =
+  op ae (noExceptions b :: WithExceptions b e)
+
+class CanEnsureExceptions v e where
   type Value v
-  ensureWithExceptions :: v -> WithExceptions (Value v)
+  ensureWithExceptions :: v -> WithExceptions (Value v) e
 
-type EnsureWithExceptions v = WithExceptions (Value v)
+type EnsureWithExceptions v e = WithExceptions (Value v) e
 
-instance CanEnsureExceptions (WithExceptions v) where
-  type Value (WithExceptions v) = v
+instance CanEnsureExceptions (WithExceptions v e) e where
+  type Value (WithExceptions v e) = v
   ensureWithExceptions we = we
 
-instance CanEnsureExceptions Rational where
+instance (Monoid e) => CanEnsureExceptions Rational e where
   type Value Rational = Rational
-  ensureWithExceptions r = WithExceptions (Just r) []
+  ensureWithExceptions r = noExceptions r
+
+{- Numeric exceptions -}
+
+type NumExceptions = [(ExceptionCertaintyLevel, NumException)]
+
+data ExceptionCertaintyLevel =
+  ExceptionCertain | ExceptionPotential
+    deriving (Show)
+
+data NumException =
+    DivByZero | OutOfRange String | NumericalException String
+    deriving (Show)
 
 {- division with exception handling -}
 
@@ -38,51 +68,54 @@ class CanMyDiv a b where
   myDiv :: a -> b -> MyDivType a b
 
 instance CanMyDiv Rational Rational where
-  type MyDivType Rational Rational = WithExceptions Rational
+  type MyDivType Rational Rational = WithExceptions Rational NumExceptions
   myDiv a b
-    | b == 0 = WithExceptions Nothing ["division by zero"]
-    | otherwise = WithExceptions (Just (a/b)) []
+    | b == 0 = WithExceptions Nothing [(ExceptionCertain, DivByZero)]
+    | otherwise = noExceptions (a/b)
 
 (/!) :: (CanMyDiv a b) => a -> b -> MyDivType a b
 a /! b = myDiv a b
 
 instance
   (CanMyDiv a b,
-  CanEnsureExceptions (MyDivType a b))
+   Monoid e,
+   CanEnsureExceptions (MyDivType a b) e)
   =>
-  CanMyDiv (WithExceptions a) (WithExceptions b)
+  CanMyDiv (WithExceptions a e) (WithExceptions b e)
   where
-  type MyDivType (WithExceptions a) (WithExceptions b) = EnsureWithExceptions (MyDivType a b)
+  type MyDivType (WithExceptions a e) (WithExceptions b e) = EnsureWithExceptions (MyDivType a b) e
   myDiv (WithExceptions ma ae) (WithExceptions mb be) =
     case (ma, mb) of
-      (Just a, Just b) -> prependExceptions (ae ++ be) (ensureWithExceptions (myDiv a b))
-      _ -> WithExceptions Nothing (ae ++ be)
+      (Just a, Just b) -> prependExceptions (ae <> be) (ensureWithExceptions (myDiv a b))
+      _ -> WithExceptions Nothing (ae <> be)
 
 instance
   (CanMyDiv Rational b,
-  CanEnsureExceptions (MyDivType Rational b))
+   Monoid e,
+   CanEnsureExceptions (MyDivType Rational b) e)
   =>
-  CanMyDiv Rational (WithExceptions b)
+  CanMyDiv Rational (WithExceptions b e)
   where
-  type MyDivType Rational (WithExceptions b) = EnsureWithExceptions (MyDivType Rational b)
-  myDiv r b = myDiv (noExceptions r) b
+  type MyDivType Rational (WithExceptions b e) = EnsureWithExceptions (MyDivType Rational b) e
+  myDiv = firstNoExceptions myDiv
 
 instance
   (CanMyDiv a Rational,
-  CanEnsureExceptions (MyDivType a Rational))
+   Monoid e,
+   CanEnsureExceptions (MyDivType a Rational) e)
   =>
-  CanMyDiv (WithExceptions a) Rational
+  CanMyDiv (WithExceptions a e) Rational
   where
-  type MyDivType (WithExceptions a) Rational = EnsureWithExceptions (MyDivType a Rational)
-  myDiv a r = myDiv a (noExceptions r)
+  type MyDivType (WithExceptions a e) Rational = EnsureWithExceptions (MyDivType a Rational) e
+  myDiv = secondNoExceptions myDiv
 
-withExceptionsExample1 :: WithExceptions Rational
+withExceptionsExample1 :: WithExceptions Rational NumExceptions
 withExceptionsExample1 = 1.0 /! 1.0
 
-withExceptionsExample2 :: WithExceptions Rational
+withExceptionsExample2 :: WithExceptions Rational NumExceptions
 withExceptionsExample2 = 1.0 /! (1.0 /! 1.0)
 
-withExceptionsExample3 :: WithExceptions Rational
+withExceptionsExample3 :: WithExceptions Rational NumExceptions
 withExceptionsExample3 = (1.0 /! 1.0) /! (1.0 /! 1.0)
 
 -- class CanMyMul a b where
