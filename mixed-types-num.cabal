@@ -46,7 +46,6 @@ library
     FlexibleInstances,
     UndecidableInstances
   exposed-modules:
-    Control.WithExceptions
     Numeric.MixedTypes
     Numeric.MixedTypes.PreludeHiding
     Numeric.MixedTypes.Literals
@@ -59,6 +58,7 @@ library
     Numeric.MixedTypes.Ring
     Numeric.MixedTypes.Field
     Numeric.MixedTypes.Elementary
+    Numeric.MixedTypes.Concept.WithExceptions
 
 test-suite spec
   type:

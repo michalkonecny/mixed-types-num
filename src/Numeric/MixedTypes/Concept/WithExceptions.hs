@@ -1,5 +1,4 @@
--- {-# LANGUAGE FlexibleInstances, OverlappingInstances #-}
-module Control.WithExceptions where
+module Numeric.MixedTypes.Concept.WithExceptions where
 
 import Numeric.MixedTypes
 
@@ -118,13 +117,51 @@ withExceptionsExample2 = 1.0 /! (1.0 /! 1.0)
 withExceptionsExample3 :: WithExceptions Rational NumExceptions
 withExceptionsExample3 = (1.0 /! 1.0) /! (1.0 /! 1.0)
 
--- class CanMyMul a b where
---   type MyMulType a b
---   myMul :: a -> b -> MyMulType a b
---
--- (*!) :: (CanMyMul a b) => a -> b -> MyMulType a b
--- a *! b = myMul a b
---
--- instance CanMyMul Rational Rational where
---   type MyMulType Rational Rational = Rational
---   myMul = (*)
+{- multiplication with exception propagation -}
+
+class CanMyMul a b where
+  type MyMulType a b
+  myMul :: a -> b -> MyMulType a b
+
+(*!) :: (CanMyMul a b) => a -> b -> MyMulType a b
+a *! b = myMul a b
+
+instance CanMyMul Rational Rational where
+  type MyMulType Rational Rational = Rational
+  myMul = (*)
+
+instance
+  (CanMyMul a b,
+   Monoid e,
+   CanEnsureExceptions (MyMulType a b) e)
+  =>
+  CanMyMul (WithExceptions a e) (WithExceptions b e)
+  where
+  type MyMulType (WithExceptions a e) (WithExceptions b e) = EnsureWithExceptions (MyMulType a b) e
+  myMul (WithExceptions ma ae) (WithExceptions mb be) =
+    case (ma, mb) of
+      (Just a, Just b) -> prependExceptions (ae <> be) (ensureWithExceptions (myMul a b))
+      _ -> WithExceptions Nothing (ae <> be)
+
+instance
+  (CanMyMul Rational b,
+   Monoid e,
+   CanEnsureExceptions (MyMulType Rational b) e)
+  =>
+  CanMyMul Rational (WithExceptions b e)
+  where
+  type MyMulType Rational (WithExceptions b e) = EnsureWithExceptions (MyMulType Rational b) e
+  myMul = firstNoExceptions myMul
+
+instance
+  (CanMyMul a Rational,
+   Monoid e,
+   CanEnsureExceptions (MyMulType a Rational) e)
+  =>
+  CanMyMul (WithExceptions a e) Rational
+  where
+  type MyMulType (WithExceptions a e) Rational = EnsureWithExceptions (MyMulType a Rational) e
+  myMul = secondNoExceptions myMul
+
+withExceptionsExample4 :: WithExceptions Rational NumExceptions
+withExceptionsExample4 = ((1.0 *! 1.0) /! 1.0) *! (1.0 *! (1.0 /! 1.0))
