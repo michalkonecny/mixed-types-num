@@ -10,25 +10,6 @@ data WithExceptions e v =
   WithExceptions (Maybe v) e
   deriving (Show)
 
-instance Functor (WithExceptions e) where
-  fmap f (WithExceptions mv es) =
-    WithExceptions (fmap f mv) es
-
-instance (Monoid e) => Applicative (WithExceptions e) where
-  pure = noExceptions
-  (<*>) = zipExceptionsWith ($)
-
-zipExceptionsWith ::
-  (Monoid e) =>
-  (a -> b -> c) ->
-  (WithExceptions e a) -> (WithExceptions e b) -> (WithExceptions e c)
-zipExceptionsWith fn
-    (WithExceptions (Just a) ae) (WithExceptions (Just b) be) =
-        WithExceptions (Just (fn a b)) (ae <> be)
-zipExceptionsWith _
-    (WithExceptions _ ae) (WithExceptions _ be) =
-        WithExceptions Nothing (ae <> be)
-
 -- utilities:
 
 noExceptions :: (Monoid e) => v -> WithExceptions e v
@@ -54,6 +35,41 @@ secondNoExceptions ::
   ((WithExceptions e a) -> b -> t)
 secondNoExceptions op (ae :: WithExceptions e a) (b :: b)  =
   op ae (noExceptions b :: WithExceptions e b)
+
+-- functor instances:
+
+instance Functor (WithExceptions e) where
+  fmap f (WithExceptions mv es) =
+    WithExceptions (fmap f mv) es
+
+instance (Monoid e) => Applicative (WithExceptions e) where
+  pure = noExceptions
+  (<*>) = zipExceptionsWith ($)
+
+zipExceptionsWith ::
+  (Monoid e) =>
+  (a -> b -> c) ->
+  (WithExceptions e a) -> (WithExceptions e b) -> (WithExceptions e c)
+zipExceptionsWith fn
+    (WithExceptions (Just a) ae) (WithExceptions (Just b) be) =
+        WithExceptions (Just (fn a b)) (ae <> be)
+zipExceptionsWith _
+    (WithExceptions _ ae) (WithExceptions _ be) =
+        WithExceptions Nothing (ae <> be)
+
+instance (Monoid e) => Monad (WithExceptions e) where
+  ae >>= f =
+    case ae of
+      WithExceptions (Just a) es ->
+        prependExceptions es (f a)
+      WithExceptions _ es ->
+        WithExceptions Nothing es
+
+-- idempotent functor:
+
+-- class IdempotentFunctor f where
+--   type Value :: * -> *
+--   ensureFunctor :: a -> f (Value a)
 
 class CanEnsureExceptions e v where
   type Value v
