@@ -11,44 +11,27 @@ data WithExceptions v =
   WithExceptions (Maybe v) Exceptions
   deriving (Show)
 
-class HasExceptions ve where
-  type HasExceptionsValue ve
-  getExceptions :: ve -> Exceptions
-  getMaybeValue :: ve -> Maybe (HasExceptionsValue ve)
-  pureValue :: (HasExceptionsValue ve) -> ve
-  noValue :: Exceptions -> ve
-  addExceptions :: Exceptions -> ve -> ve
+noExceptions :: v -> WithExceptions v
+noExceptions v = WithExceptions (Just v) []
 
-instance HasExceptions (WithExceptions v) where
-  type HasExceptionsValue (WithExceptions v) = v
-  getExceptions (WithExceptions _ es) = es
-  getMaybeValue (WithExceptions mv _) = mv
-  pureValue v = WithExceptions (Just v) []
-  noValue es = WithExceptions Nothing es
-  addExceptions es2 (WithExceptions mv es1) = WithExceptions mv (es1 ++ es2)
+prependExceptions :: Exceptions -> WithExceptions v -> WithExceptions v
+prependExceptions es1 (WithExceptions mv es2) = WithExceptions mv (es1 ++ es2)
 
-class (HasExceptions (EnsureHasExceptions v)) => CanEnsureExceptions v where
-  type EnsureHasExceptions v
-  ensureHasExceptions :: v -> EnsureHasExceptions v
+class CanEnsureExceptions v where
+  type Value v
+  ensureWithExceptions :: v -> WithExceptions (Value v)
+
+type EnsureWithExceptions v = WithExceptions (Value v)
 
 instance CanEnsureExceptions (WithExceptions v) where
-  type EnsureHasExceptions (WithExceptions v) = WithExceptions v
-  ensureHasExceptions we = we
+  type Value (WithExceptions v) = v
+  ensureWithExceptions we = we
 
 instance CanEnsureExceptions Rational where
-  type EnsureHasExceptions Rational = WithExceptions Rational
-  ensureHasExceptions r = WithExceptions (Just r) []
+  type Value Rational = Rational
+  ensureWithExceptions r = WithExceptions (Just r) []
 
--- class CanMyMul a b where
---   type MyMulType a b
---   myMul :: a -> b -> MyMulType a b
---
--- (*!) :: (CanMyMul a b) => a -> b -> MyMulType a b
--- a *! b = myMul a b
---
--- instance CanMyMul Rational Rational where
---   type MyMulType Rational Rational = Rational
---   myMul = (*)
+{- division with exception handling -}
 
 class CanMyDiv a b where
   type MyDivType a b
@@ -69,11 +52,11 @@ instance
   =>
   CanMyDiv (WithExceptions a) (WithExceptions b)
   where
-  type MyDivType (WithExceptions a) (WithExceptions b) = EnsureHasExceptions (MyDivType a b)
+  type MyDivType (WithExceptions a) (WithExceptions b) = EnsureWithExceptions (MyDivType a b)
   myDiv (WithExceptions ma ae) (WithExceptions mb be) =
     case (ma, mb) of
-      (Just a, Just b) -> addExceptions (ae ++ be) $ ensureHasExceptions (myDiv a b)
-      _ -> noValue (ae ++ be)
+      (Just a, Just b) -> prependExceptions (ae ++ be) (ensureWithExceptions (myDiv a b))
+      _ -> WithExceptions Nothing (ae ++ be)
 
 instance
   (CanMyDiv Rational b,
@@ -81,8 +64,34 @@ instance
   =>
   CanMyDiv Rational (WithExceptions b)
   where
-  type MyDivType Rational (WithExceptions b) = EnsureHasExceptions (MyDivType Rational b)
-  myDiv a (WithExceptions mb be) =
-    case (mb) of
-      (Just b) -> addExceptions (be) $ ensureHasExceptions (myDiv a b)
-      _ -> noValue (be)
+  type MyDivType Rational (WithExceptions b) = EnsureWithExceptions (MyDivType Rational b)
+  myDiv r b = myDiv (noExceptions r) b
+
+instance
+  (CanMyDiv a Rational,
+  CanEnsureExceptions (MyDivType a Rational))
+  =>
+  CanMyDiv (WithExceptions a) Rational
+  where
+  type MyDivType (WithExceptions a) Rational = EnsureWithExceptions (MyDivType a Rational)
+  myDiv a r = myDiv a (noExceptions r)
+
+withExceptionsExample1 :: WithExceptions Rational
+withExceptionsExample1 = 1.0 /! 1.0
+
+withExceptionsExample2 :: WithExceptions Rational
+withExceptionsExample2 = 1.0 /! (1.0 /! 1.0)
+
+withExceptionsExample3 :: WithExceptions Rational
+withExceptionsExample3 = (1.0 /! 1.0) /! (1.0 /! 1.0)
+
+-- class CanMyMul a b where
+--   type MyMulType a b
+--   myMul :: a -> b -> MyMulType a b
+--
+-- (*!) :: (CanMyMul a b) => a -> b -> MyMulType a b
+-- a *! b = myMul a b
+--
+-- instance CanMyMul Rational Rational where
+--   type MyMulType Rational Rational = Rational
+--   myMul = (*)
