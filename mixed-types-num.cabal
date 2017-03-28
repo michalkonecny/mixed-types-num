@@ -46,6 +46,7 @@ library
     FlexibleInstances,
     UndecidableInstances
   exposed-modules:
+    Control.WithExceptions
     Numeric.MixedTypes
     Numeric.MixedTypes.PreludeHiding
     Numeric.MixedTypes.Literals
