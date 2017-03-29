@@ -67,23 +67,25 @@ instance (Monoid e) => Monad (WithExceptions e) where
 
 -- idempotent functor:
 
--- class IdempotentFunctor f where
---   type Value :: * -> *
---   ensureFunctor :: a -> f (Value a)
+class IdempotentFunctor f a where
+  ensureFunctor :: a -> f (FunctorValue f a)
 
-class CanEnsureExceptions e v where
-  type Value v
-  ensureWithExceptions :: v -> WithExceptions e (Value v)
+type family FunctorValue f a where
+  FunctorValue f (f a) = a
+  FunctorValue f a = a
 
-type EnsureWithExceptions e v = WithExceptions e (Value v)
+instance IdempotentFunctor (WithExceptions e) (WithExceptions e a) where
+  ensureFunctor = id
 
-instance CanEnsureExceptions e (WithExceptions e v) where
-  type Value (WithExceptions e v) = v
-  ensureWithExceptions we = we
+instance (Monoid e) => IdempotentFunctor (WithExceptions e) Rational where
+  ensureFunctor = noExceptions
 
-instance (Monoid e) => CanEnsureExceptions e Rational where
-  type Value Rational = Rational
-  ensureWithExceptions r = noExceptions r
+type CanEnsureExceptions e v = IdempotentFunctor (WithExceptions e) v
+type WithExceptionsValue e v = FunctorValue (WithExceptions e) v
+type EnsureWithExceptions e v = WithExceptions e (WithExceptionsValue e v)
+
+ensureWithExceptions :: (CanEnsureExceptions e v) => v -> EnsureWithExceptions e v
+ensureWithExceptions = ensureFunctor
 
 {- Numeric exceptions -}
 
