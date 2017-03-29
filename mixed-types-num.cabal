@@ -46,7 +46,8 @@ library
     FlexibleInstances,
     UndecidableInstances
   exposed-modules:
-    Data.EnsureTypeOp
+    Control.EnsureTypeOp
+    Control.CollectErrors
     Numeric.MixedTypes
     Numeric.MixedTypes.PreludeHiding
     Numeric.MixedTypes.Literals
