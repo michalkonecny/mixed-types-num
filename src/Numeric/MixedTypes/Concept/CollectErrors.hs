@@ -5,6 +5,9 @@ import Numeric.MixedTypes
 import Data.Monoid
 
 import Control.CollectErrors
+  (CollectErrors, CanEnsureCollectErrors,
+   EnsureCollectErrors, ensureCollectErrors)
+import qualified Control.CollectErrors as CE
 
 {- Numeric exceptions -}
 
@@ -22,7 +25,7 @@ type CollectNumErrors v = CollectErrors NumErrors v
 type CanEnsureCollectNumErrors v = CanEnsureCollectErrors NumErrors v
 
 noNumErrors :: v -> CollectNumErrors v
-noNumErrors = noErrors
+noNumErrors = CE.noErrors
 
 {- division with exception handling -}
 
@@ -33,7 +36,7 @@ class CanMyDiv a b where
 instance CanMyDiv Rational Rational where
   type MyDivType Rational Rational = CollectNumErrors Rational
   myDiv a b
-    | b == 0 = CollectErrors Nothing [(ErrorCertain, DivByZero)]
+    | b == 0 = CE.noValue [(ErrorCertain, DivByZero)]
     | otherwise = noNumErrors (a/b)
 
 (/!) :: (CanMyDiv a b) => a -> b -> MyDivType a b
@@ -47,10 +50,7 @@ instance
   CanMyDiv (CollectErrors es a) (CollectErrors es b)
   where
   type MyDivType (CollectErrors es a) (CollectErrors es b) = EnsureCollectErrors es (MyDivType a b)
-  myDiv (CollectErrors ma ae) (CollectErrors mb be) =
-    case (ma, mb) of
-      (Just a, Just b) -> prependErrors (ae <> be) (ensureCollectErrors (myDiv a b))
-      _ -> CollectErrors Nothing (ae <> be)
+  myDiv = CE.lift2ensureCE myDiv
 
 instance
   (CanMyDiv Rational b,
@@ -60,7 +60,7 @@ instance
   CanMyDiv Rational (CollectErrors es b)
   where
   type MyDivType Rational (CollectErrors es b) = EnsureCollectErrors es (MyDivType Rational b)
-  myDiv = firstNoErrors myDiv
+  myDiv = CE.unlift2first myDiv
 
 instance
   (CanMyDiv a Rational,
@@ -70,7 +70,7 @@ instance
   CanMyDiv (CollectErrors es a) Rational
   where
   type MyDivType (CollectErrors es a) Rational = EnsureCollectErrors es (MyDivType a Rational)
-  myDiv = secondNoErrors myDiv
+  myDiv = CE.unlift2second myDiv
 
 withErrorsExample1 :: CollectNumErrors Rational
 withErrorsExample1 = 1.0 /! 1.0
@@ -102,10 +102,7 @@ instance
   CanMyMul (CollectErrors es a) (CollectErrors es b)
   where
   type MyMulType (CollectErrors es a) (CollectErrors es b) = EnsureCollectErrors es (MyMulType a b)
-  myMul (CollectErrors ma ae) (CollectErrors mb be) =
-    case (ma, mb) of
-      (Just a, Just b) -> prependErrors (ae <> be) (ensureCollectErrors (myMul a b))
-      _ -> CollectErrors Nothing (ae <> be)
+  myMul = CE.lift2ensureCE myMul
 
 instance
   (CanMyMul Rational b,
@@ -115,7 +112,7 @@ instance
   CanMyMul Rational (CollectErrors es b)
   where
   type MyMulType Rational (CollectErrors es b) = EnsureCollectErrors es (MyMulType Rational b)
-  myMul = firstNoErrors myMul
+  myMul = CE.unlift2first myMul
 
 instance
   (CanMyMul a Rational,
@@ -125,7 +122,7 @@ instance
   CanMyMul (CollectErrors es a) Rational
   where
   type MyMulType (CollectErrors es a) Rational = EnsureCollectErrors es (MyMulType a Rational)
-  myMul = secondNoErrors myMul
+  myMul = CE.unlift2second myMul
 
 withErrorsExample4 :: CollectNumErrors Rational
 withErrorsExample4 = ((1.0 *! 1.0) /! 1.0) *! (1.0 *! (1.0 /! 1.0))
