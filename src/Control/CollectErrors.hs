@@ -33,13 +33,15 @@ data CollectErrors es v =
 
 -- utilities:
 
-{-|  Move a value into the -}
+{-|  Wrap a pure value in a CollectErrors record -}
 noErrors :: (Monoid es) => v -> CollectErrors es v
 noErrors v = CollectErrors (Just v) mempty
 
+{-|  Make CollectErrors record with no value, only errors. -}
 noValue :: es -> CollectErrors es v
 noValue es = CollectErrors Nothing es
 
+{-|  Add further errors into a CollectErrors record. -}
 prependErrors :: (Monoid es) => es -> CollectErrors es v -> CollectErrors es v
 prependErrors es1 (CollectErrors mv es2) = CollectErrors mv (es1 <> es2)
 

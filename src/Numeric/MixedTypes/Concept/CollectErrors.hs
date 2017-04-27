@@ -2,11 +2,8 @@ module Numeric.MixedTypes.Concept.CollectErrors where
 
 import Numeric.MixedTypes
 
-import Data.Monoid
-
 import Control.CollectErrors
-  (CollectErrors, CanEnsureCollectErrors,
-   EnsureCollectErrors, ensureCollectErrors)
+  (CollectErrors, CanEnsureCollectErrors, EnsureCollectErrors)
 import qualified Control.CollectErrors as CE
 
 {- Numeric exceptions -}
@@ -25,7 +22,7 @@ type CollectNumErrors v = CollectErrors NumErrors v
 type CanEnsureCollectNumErrors v = CanEnsureCollectErrors NumErrors v
 
 noNumErrors :: v -> CollectNumErrors v
-noNumErrors = CE.noErrors
+noNumErrors = pure
 
 {- division with exception handling -}
 
