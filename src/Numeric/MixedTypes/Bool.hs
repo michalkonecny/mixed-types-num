@@ -35,6 +35,9 @@ import Text.Printf
 
 import qualified Data.List as List
 
+import Numeric.CollectErrors (CollectErrors, EnsureCollectErrors, CanEnsureCollectErrors)
+import qualified Numeric.CollectErrors as CN
+
 import Numeric.MixedTypes.Literals
 
 import Test.Hspec
@@ -118,6 +121,14 @@ instance (CanTestCertainly t) => CanTestCertainly (Maybe t) where
   isCertainlyFalse (Just b) = isCertainlyFalse b
   isCertainlyFalse _ = False
 
+instance (ConvertibleExactly Bool t, Monoid es) => ConvertibleExactly Bool (CollectErrors es t) where
+  safeConvertExactly = fmap CN.noErrors . safeConvertExactly
+
+instance (CanTestCertainly t, P.Eq es, Monoid es) => CanTestCertainly (CollectErrors es t) where
+  isCertainlyTrue ce = CN.ifError ce (const False) isCertainlyTrue
+  isCertainlyFalse ce = CN.ifError ce (const False) isCertainlyFalse
+
+
 {---- Negation ----}
 
 {-|
@@ -173,6 +184,13 @@ instance CanNeg t => CanNeg (Maybe t) where
 
 _testNeg1 :: Maybe Bool
 _testNeg1 = not (Just True)
+
+instance
+  (CanNeg t, Monoid es, CanEnsureCollectErrors es (NegType t))
+  =>
+  CanNeg (CollectErrors es t) where
+  type NegType (CollectErrors es t) = EnsureCollectErrors es (NegType t)
+  negate = CN.lift1ensureCE negate
 
 {---- And/Or ----}
 
@@ -331,12 +349,33 @@ _testAndOr2 = (Just (Just True)) || False
 _testAndOr3 :: Maybe Bool
 _testAndOr3 = and [Just True, Nothing, Just False]
 
+instance (CanAndOrAsymmetric t1 t2, Monoid es, CanEnsureCollectErrors es (AndOrType t1 t2)) =>
+  CanAndOrAsymmetric (CollectErrors es t1) (CollectErrors es t2)
+  where
+  type AndOrType (CollectErrors es t1) (CollectErrors es t2) = EnsureCollectErrors es (AndOrType t1 t2)
+  and2 = CN.lift2ensureCE and2
+  or2 = CN.lift2ensureCE or2
+
+instance (CanAndOrAsymmetric t1 Bool, Monoid es, CanEnsureCollectErrors es (AndOrType t1 Bool)) =>
+  CanAndOrAsymmetric (CollectErrors es t1) Bool
+  where
+  type AndOrType (CollectErrors es t1) Bool = EnsureCollectErrors es (AndOrType t1 Bool)
+  and2 = CN.unlift2second and2
+  or2 = CN.unlift2second or2
+
+instance (CanAndOrAsymmetric Bool t2, Monoid es, CanEnsureCollectErrors es (AndOrType Bool t2)) =>
+  CanAndOrAsymmetric Bool (CollectErrors es t2)
+  where
+  type AndOrType Bool (CollectErrors es t2) = EnsureCollectErrors es (AndOrType Bool t2)
+  and2 = CN.unlift2first and2
+  or2 = CN.unlift2first or2
+
 {-|
   A type constraint synonym that stipulates that the type behaves very
   much like Bool, except it does not necessarily satisfy the law of excluded middle,
   which means that the type can contain a "do-not-know" value.
 
-  Examples: @Bool@, @Maybe Bool@, @Maybe (Maybe Bool)@
+  Examples: @Bool@, @Maybe Bool@, @Maybe (Maybe Bool)@, @CollectErrors Bool@
 -}
 type IsBool t = (HasBools t, CanNegSameType t, CanAndOrSameType t)
 

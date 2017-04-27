@@ -120,6 +120,110 @@ instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Integer.Type.Integer
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Real.Rational GHC.Types.Double
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Double GHC.Types.Double
 
+module Control.EnsureTypeOp
+
+-- | A mechanism for applying a type operator to a type except when the
+--   type already has that operator.
+type EnsureTypeOp f a = f (RemoveTypeOp f a)
+
+-- | A mechanism for translating a value of a type <tt>a</tt> to a value of
+--   a type <tt>f a</tt> except when <tt>a = f b</tt> for some <tt>b</tt>,
+--   in which case the value is left as is.
+class CanEnsureTypeOp f a
+ensureTypeOp :: CanEnsureTypeOp f a => a -> EnsureTypeOp f a
+instance Control.EnsureTypeOp.CanEnsureTypeOp f (f a)
+
+module Control.CollectErrors
+
+-- | A wrapper around values which can accommodate a list of (potential)
+--   errors that have (maybe) occurred during the computation of a value. A
+--   value may be missing, leaving only the error(s).
+--   
+--   Such error collectoin allows one to write expressions with partial
+--   functions (ie functions that fail for some inputs) instead of
+--   branching after each application of such function. Dealing with the
+--   errors can be moved outside the expression. If the error data contain
+--   enough information, their list can be used to trace the source of the
+--   errors.
+data CollectErrors es v
+CollectErrors :: (Maybe v) -> es -> CollectErrors es v
+
+-- | Wrap a pure value in a CollectErrors record
+noErrors :: (Monoid es) => v -> CollectErrors es v
+
+-- | Make CollectErrors record with no value, only errors.
+noValue :: es -> CollectErrors es v
+
+-- | Add further errors into a CollectErrors record.
+prependErrors :: (Monoid es) => es -> CollectErrors es v -> CollectErrors es v
+ifError :: (Monoid es, Eq es) => (CollectErrors es v) -> (CollectErrors es v -> t) -> (v -> t) -> t
+
+-- | Add error collection support to an unary operation.
+lift1 :: (a -> b) -> (CollectErrors es a) -> (CollectErrors es b)
+
+-- | Add error collection support to a binary operation.
+lift2 :: (Monoid es) => (a -> b -> c) -> (CollectErrors es a) -> (CollectErrors es b) -> (CollectErrors es c)
+
+-- | An utility function for easily defining a binary function with only
+--   the second parameter collecting errors, if we have an analogous
+--   function that requires both parameters to collect errors.
+unlift2first :: (Monoid es) => ((CollectErrors es a) -> (CollectErrors es b) -> t) -> (a -> (CollectErrors es b) -> t)
+
+-- | An utility function for easily defining a binary function with only
+--   the first parameter collecting errors, if we have an analogous
+--   function that requires both parameters to collect errors.
+unlift2second :: (Monoid es) => ((CollectErrors es a) -> (CollectErrors es b) -> t) -> ((CollectErrors es a) -> b -> t)
+
+-- | Translate a value of a type <tt>a</tt> to a value of a type
+--   <tt>CollectErrors es a</tt> except when <tt>a</tt> already is a
+--   <tt>CollectErrors</tt> type, in which case the value is left as is.
+ensureCollectErrors :: (CanEnsureCollectErrors es v) => v -> EnsureCollectErrors es v
+type CanEnsureCollectErrors es v = CanEnsureTypeOp (CollectErrors es) v
+
+-- | Apply CollectErrors to a type except when the type already is a
+--   CollectErrors type.
+type EnsureCollectErrors es v = EnsureTypeOp (CollectErrors es) v
+
+-- | Add error collection support to a binary function whose result may
+--   already have collected errors.
+lift1ensureCE :: (Monoid es, CanEnsureCollectErrors es b) => (a -> b) -> (CollectErrors es a) -> (EnsureCollectErrors es b)
+
+-- | Add error collection support to a binary function whose result may
+--   already have collected errors.
+lift2ensureCE :: (Monoid es, CanEnsureCollectErrors es c) => (a -> b -> c) -> (CollectErrors es a) -> (CollectErrors es b) -> (EnsureCollectErrors es c)
+instance (GHC.Show.Show es, GHC.Show.Show v) => GHC.Show.Show (Control.CollectErrors.CollectErrors es v)
+instance GHC.Base.Functor (Control.CollectErrors.CollectErrors es)
+instance GHC.Base.Monoid es => GHC.Base.Applicative (Control.CollectErrors.CollectErrors es)
+instance GHC.Base.Monoid es => GHC.Base.Monad (Control.CollectErrors.CollectErrors es)
+instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Types.Int
+instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Integer.Type.Integer
+instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Real.Rational
+instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Types.Char
+instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Types.Bool
+instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) [a]
+instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) (GHC.Base.Maybe a)
+instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) (Data.Either.Either e a)
+
+
+-- | A type of numeric errors to be collected.
+module Numeric.CollectErrors
+data ErrorCertaintyLevel
+ErrorCertain :: ErrorCertaintyLevel
+ErrorPotential :: ErrorCertaintyLevel
+data NumError
+DivByZero :: NumError
+OutOfRange :: String -> NumError
+NumError :: String -> NumError
+type NumErrors = [(ErrorCertaintyLevel, NumError)]
+type CollectNumErrors v = CollectErrors NumErrors v
+noNumErrors :: v -> CollectNumErrors v
+type CanEnsureCollectNumErrors v = CanEnsureCollectErrors NumErrors v
+type EnsureCollectNumErrors v = EnsureCollectErrors NumErrors v
+instance GHC.Classes.Eq Numeric.CollectErrors.ErrorCertaintyLevel
+instance GHC.Show.Show Numeric.CollectErrors.ErrorCertaintyLevel
+instance GHC.Classes.Eq Numeric.CollectErrors.NumError
+instance GHC.Show.Show Numeric.CollectErrors.NumError
+
 
 module Numeric.MixedTypes.Bool
 
@@ -129,7 +233,7 @@ module Numeric.MixedTypes.Bool
 --   value.
 --   
 --   Examples: <tt>Bool</tt>, <tt>Maybe Bool</tt>, <tt>Maybe (Maybe
---   Bool)</tt>
+--   Bool)</tt>, <tt>CollectErrors Bool</tt>
 type IsBool t = (HasBools t, CanNegSameType t, CanAndOrSameType t)
 
 -- | HSpec properties that each implementation of IsBool should satisfy.
@@ -223,12 +327,18 @@ instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Bool GHC.Types
 instance Numeric.MixedTypes.Bool.CanTestCertainly GHC.Types.Bool
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Bool t => Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Bool (GHC.Base.Maybe t)
 instance Numeric.MixedTypes.Bool.CanTestCertainly t => Numeric.MixedTypes.Bool.CanTestCertainly (GHC.Base.Maybe t)
+instance (Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Bool t, GHC.Base.Monoid es) => Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Bool (Control.CollectErrors.CollectErrors es t)
+instance (Numeric.MixedTypes.Bool.CanTestCertainly t, GHC.Classes.Eq es, GHC.Base.Monoid es) => Numeric.MixedTypes.Bool.CanTestCertainly (Control.CollectErrors.CollectErrors es t)
 instance Numeric.MixedTypes.Bool.CanNeg GHC.Types.Bool
 instance Numeric.MixedTypes.Bool.CanNeg t => Numeric.MixedTypes.Bool.CanNeg (GHC.Base.Maybe t)
+instance (Numeric.MixedTypes.Bool.CanNeg t, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCollectErrors es (Numeric.MixedTypes.Bool.NegType t)) => Numeric.MixedTypes.Bool.CanNeg (Control.CollectErrors.CollectErrors es t)
 instance Numeric.MixedTypes.Bool.CanAndOrAsymmetric GHC.Types.Bool GHC.Types.Bool
 instance (Numeric.MixedTypes.Bool.CanAndOrAsymmetric t1 t2, Numeric.MixedTypes.Bool.CanTestCertainly t1, Numeric.MixedTypes.Bool.CanTestCertainly t2, Numeric.MixedTypes.Bool.CanTestCertainly (Numeric.MixedTypes.Bool.AndOrType t1 t2)) => Numeric.MixedTypes.Bool.CanAndOrAsymmetric (GHC.Base.Maybe t1) (GHC.Base.Maybe t2)
 instance (Numeric.MixedTypes.Bool.CanAndOrAsymmetric GHC.Types.Bool t2, Numeric.MixedTypes.Bool.CanTestCertainly t2, Numeric.MixedTypes.Bool.CanTestCertainly (Numeric.MixedTypes.Bool.AndOrType GHC.Types.Bool t2)) => Numeric.MixedTypes.Bool.CanAndOrAsymmetric GHC.Types.Bool (GHC.Base.Maybe t2)
 instance (Numeric.MixedTypes.Bool.CanAndOrAsymmetric t1 GHC.Types.Bool, Numeric.MixedTypes.Bool.CanTestCertainly t1, Numeric.MixedTypes.Bool.CanTestCertainly (Numeric.MixedTypes.Bool.AndOrType t1 GHC.Types.Bool)) => Numeric.MixedTypes.Bool.CanAndOrAsymmetric (GHC.Base.Maybe t1) GHC.Types.Bool
+instance (Numeric.MixedTypes.Bool.CanAndOrAsymmetric t1 t2, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCollectErrors es (Numeric.MixedTypes.Bool.AndOrType t1 t2)) => Numeric.MixedTypes.Bool.CanAndOrAsymmetric (Control.CollectErrors.CollectErrors es t1) (Control.CollectErrors.CollectErrors es t2)
+instance (Numeric.MixedTypes.Bool.CanAndOrAsymmetric t1 GHC.Types.Bool, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCollectErrors es (Numeric.MixedTypes.Bool.AndOrType t1 GHC.Types.Bool)) => Numeric.MixedTypes.Bool.CanAndOrAsymmetric (Control.CollectErrors.CollectErrors es t1) GHC.Types.Bool
+instance (Numeric.MixedTypes.Bool.CanAndOrAsymmetric GHC.Types.Bool t2, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCollectErrors es (Numeric.MixedTypes.Bool.AndOrType GHC.Types.Bool t2)) => Numeric.MixedTypes.Bool.CanAndOrAsymmetric GHC.Types.Bool (Control.CollectErrors.CollectErrors es t2)
 
 
 module Numeric.MixedTypes.Eq
@@ -989,112 +1099,3 @@ instance Numeric.MixedTypes.Round.HasIntegerBounds GHC.Types.Double
 --   This module facilitates a single-line import for the package
 --   mixed-types-num. See the re-exported modules for further details.
 module Numeric.MixedTypes
-
-module Control.EnsureTypeOp
-
--- | A mechanism for applying a type operator to a type except when the
---   type already has that operator.
-type EnsureTypeOp f a = f (RemoveTypeOp f a)
-
--- | A mechanism for translating a value of a type <tt>a</tt> to a value of
---   a type <tt>f a</tt> except when <tt>a = f b</tt> for some <tt>b</tt>,
---   in which case the value is left as is.
-class CanEnsureTypeOp f a
-ensureTypeOp :: CanEnsureTypeOp f a => a -> EnsureTypeOp f a
-instance Control.EnsureTypeOp.CanEnsureTypeOp f (f a)
-
-module Control.CollectErrors
-
--- | A wrapper around values which can accommodate a list of (potential)
---   errors that have (maybe) occurred during the computation of a value. A
---   value may be missing, leaving only the error(s).
---   
---   Such error collectoin allows one to write expressions with partial
---   functions (ie functions that fail for some inputs) instead of
---   branching after each application of such function. Dealing with the
---   errors can be moved outside the expression. If the error data contain
---   enough information, their list can be used to trace the source of the
---   errors.
-data CollectErrors es v
-CollectErrors :: (Maybe v) -> es -> CollectErrors es v
-
--- | Move a value into the
-noErrors :: (Monoid es) => v -> CollectErrors es v
-noValue :: es -> CollectErrors es v
-prependErrors :: (Monoid es) => es -> CollectErrors es v -> CollectErrors es v
-
--- | Add error collection support to a binary function.
-lift2 :: (Monoid es) => (a -> b -> c) -> (CollectErrors es a) -> (CollectErrors es b) -> (CollectErrors es c)
-
--- | An utility function for easily defining a binary function with only
---   the second parameter collecting errors, if we have an analogous
---   function that requires both parameters to collect errors.
-unlift2first :: (Monoid es) => ((CollectErrors es a) -> (CollectErrors es b) -> t) -> (a -> (CollectErrors es b) -> t)
-
--- | An utility function for easily defining a binary function with only
---   the first parameter collecting errors, if we have an analogous
---   function that requires both parameters to collect errors.
-unlift2second :: (Monoid es) => ((CollectErrors es a) -> (CollectErrors es b) -> t) -> ((CollectErrors es a) -> b -> t)
-
--- | Translate a value of a type <tt>a</tt> to a value of a type
---   <tt>CollectErrors es a</tt> except when <tt>a</tt> already is a
---   <tt>CollectErrors</tt> type, in which case the value is left as is.
-ensureCollectErrors :: (CanEnsureCollectErrors es v) => v -> EnsureCollectErrors es v
-type CanEnsureCollectErrors es v = CanEnsureTypeOp (CollectErrors es) v
-
--- | Apply CollectErrors to a type except when the type already is a
---   CollectErrors type.
-type EnsureCollectErrors es v = EnsureTypeOp (CollectErrors es) v
-
--- | Add error collection support to a binary function whose result may
---   already have collected errors.
-lift2ensureCE :: (Monoid es, CanEnsureCollectErrors es c) => (a -> b -> c) -> (CollectErrors es a) -> (CollectErrors es b) -> (EnsureCollectErrors es c)
-instance (GHC.Show.Show es, GHC.Show.Show v) => GHC.Show.Show (Control.CollectErrors.CollectErrors es v)
-instance GHC.Base.Functor (Control.CollectErrors.CollectErrors es)
-instance GHC.Base.Monoid es => GHC.Base.Applicative (Control.CollectErrors.CollectErrors es)
-instance GHC.Base.Monoid es => GHC.Base.Monad (Control.CollectErrors.CollectErrors es)
-instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Types.Int
-instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Integer.Type.Integer
-instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Real.Rational
-instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Types.Char
-instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Types.Bool
-instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) [a]
-instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) (GHC.Base.Maybe a)
-instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) (Data.Either.Either e a)
-
-module Numeric.MixedTypes.Concept.CollectErrors
-type NumErrors = [(ErrorCertaintyLevel, NumError)]
-data ErrorCertaintyLevel
-ErrorCertain :: ErrorCertaintyLevel
-ErrorPotential :: ErrorCertaintyLevel
-data NumError
-DivByZero :: NumError
-OutOfRange :: String -> NumError
-NumError :: String -> NumError
-type CollectNumErrors v = CollectErrors NumErrors v
-type CanEnsureCollectNumErrors v = CanEnsureCollectErrors NumErrors v
-noNumErrors :: v -> CollectNumErrors v
-class CanMyDiv a b where type MyDivType a b where {
-    type family MyDivType a b;
-}
-myDiv :: CanMyDiv a b => a -> b -> MyDivType a b
-(/!) :: (CanMyDiv a b) => a -> b -> MyDivType a b
-withErrorsExample1 :: CollectNumErrors Rational
-withErrorsExample2 :: CollectNumErrors Rational
-withErrorsExample3 :: CollectNumErrors Rational
-class CanMyMul a b where type MyMulType a b where {
-    type family MyMulType a b;
-}
-myMul :: CanMyMul a b => a -> b -> MyMulType a b
-(*!) :: (CanMyMul a b) => a -> b -> MyMulType a b
-withErrorsExample4 :: CollectNumErrors Rational
-instance GHC.Show.Show Numeric.MixedTypes.Concept.CollectErrors.NumError
-instance GHC.Show.Show Numeric.MixedTypes.Concept.CollectErrors.ErrorCertaintyLevel
-instance Numeric.MixedTypes.Concept.CollectErrors.CanMyDiv GHC.Real.Rational GHC.Real.Rational
-instance (Numeric.MixedTypes.Concept.CollectErrors.CanMyDiv a b, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCollectErrors es (Numeric.MixedTypes.Concept.CollectErrors.MyDivType a b)) => Numeric.MixedTypes.Concept.CollectErrors.CanMyDiv (Control.CollectErrors.CollectErrors es a) (Control.CollectErrors.CollectErrors es b)
-instance (Numeric.MixedTypes.Concept.CollectErrors.CanMyDiv GHC.Real.Rational b, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCollectErrors es (Numeric.MixedTypes.Concept.CollectErrors.MyDivType GHC.Real.Rational b)) => Numeric.MixedTypes.Concept.CollectErrors.CanMyDiv GHC.Real.Rational (Control.CollectErrors.CollectErrors es b)
-instance (Numeric.MixedTypes.Concept.CollectErrors.CanMyDiv a GHC.Real.Rational, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCollectErrors es (Numeric.MixedTypes.Concept.CollectErrors.MyDivType a GHC.Real.Rational)) => Numeric.MixedTypes.Concept.CollectErrors.CanMyDiv (Control.CollectErrors.CollectErrors es a) GHC.Real.Rational
-instance Numeric.MixedTypes.Concept.CollectErrors.CanMyMul GHC.Real.Rational GHC.Real.Rational
-instance (Numeric.MixedTypes.Concept.CollectErrors.CanMyMul a b, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCollectErrors es (Numeric.MixedTypes.Concept.CollectErrors.MyMulType a b)) => Numeric.MixedTypes.Concept.CollectErrors.CanMyMul (Control.CollectErrors.CollectErrors es a) (Control.CollectErrors.CollectErrors es b)
-instance (Numeric.MixedTypes.Concept.CollectErrors.CanMyMul GHC.Real.Rational b, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCollectErrors es (Numeric.MixedTypes.Concept.CollectErrors.MyMulType GHC.Real.Rational b)) => Numeric.MixedTypes.Concept.CollectErrors.CanMyMul GHC.Real.Rational (Control.CollectErrors.CollectErrors es b)
-instance (Numeric.MixedTypes.Concept.CollectErrors.CanMyMul a GHC.Real.Rational, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCollectErrors es (Numeric.MixedTypes.Concept.CollectErrors.MyMulType a GHC.Real.Rational)) => Numeric.MixedTypes.Concept.CollectErrors.CanMyMul (Control.CollectErrors.CollectErrors es a) GHC.Real.Rational

@@ -48,6 +48,7 @@ library
   exposed-modules:
     Control.EnsureTypeOp
     Control.CollectErrors
+    Numeric.CollectErrors
     Numeric.MixedTypes
     Numeric.MixedTypes.PreludeHiding
     Numeric.MixedTypes.Literals
@@ -60,7 +61,6 @@ library
     Numeric.MixedTypes.Ring
     Numeric.MixedTypes.Field
     Numeric.MixedTypes.Elementary
-    Numeric.MixedTypes.Concept.CollectErrors
 
 test-suite spec
   type:

@@ -1,12 +1,12 @@
 module Control.CollectErrors
 (
   CollectErrors(..)
-, noErrors, noValue, prependErrors
-, lift2
+, noErrors, noValue, prependErrors, ifError
+, lift1, lift2
 , unlift2first, unlift2second
 , ensureCollectErrors
 , CanEnsureCollectErrors, EnsureCollectErrors
-, lift2ensureCE
+, lift1ensureCE, lift2ensureCE
 )
 where
 
@@ -45,8 +45,22 @@ noValue es = CollectErrors Nothing es
 prependErrors :: (Monoid es) => es -> CollectErrors es v -> CollectErrors es v
 prependErrors es1 (CollectErrors mv es2) = CollectErrors mv (es1 <> es2)
 
+ifError :: (Monoid es, Eq es) => (CollectErrors es v) -> (CollectErrors es v -> t) -> (v -> t) -> t
+ifError ce@(CollectErrors mv es) onError onValue =
+  case mv of
+    Just v | mempty == es -> onValue v
+    _ -> onError ce
+
 {-|
-  Add error collection support to a binary function.
+  Add error collection support to an unary operation.
+-}
+lift1 ::
+  (a -> b) ->
+  (CollectErrors es a) -> (CollectErrors es b)
+lift1 = fmap
+
+{-|
+  Add error collection support to a binary operation.
 -}
 lift2 ::
   (Monoid es) =>
@@ -138,6 +152,21 @@ instance (Monoid es) => CanEnsureTypeOp (CollectErrors es) (Maybe a) where
   ensureTypeOp = noErrors
 instance (Monoid es) => CanEnsureTypeOp (CollectErrors es) (Either e a) where
   ensureTypeOp = noErrors
+
+{-|
+  Add error collection support to a binary function whose
+  result may already have collected errors.
+-}
+lift1ensureCE ::
+  (Monoid es, CanEnsureCollectErrors es b) =>
+  (a -> b) ->
+  (CollectErrors es a) -> (EnsureCollectErrors es b)
+lift1ensureCE fn
+    (CollectErrors (Just a) ae) =
+        prependErrors ae (ensureCollectErrors $ fn a)
+lift1ensureCE _
+    (CollectErrors _ ae) =
+        CollectErrors Nothing ae
 
 {-|
   Add error collection support to a binary function whose
