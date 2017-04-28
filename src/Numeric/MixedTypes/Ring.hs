@@ -14,7 +14,7 @@
 module Numeric.MixedTypes.Ring
 (
   -- * Ring
-  CanAddPowMulBy, Ring, CertainlyEqRing, OrderedRing, OrderedCertainlyRing
+  CanAddSubMulBy, Ring, CertainlyEqRing, OrderedRing, OrderedCertainlyRing
   -- * Multiplication
   , CanMul, CanMulAsymmetric(..), CanMulBy, CanMulSameType
   , (*), product
@@ -52,17 +52,17 @@ import Numeric.MixedTypes.AddSub
 
 {----- Ring -----}
 
-type CanAddPowMulBy t s =
+type CanAddSubMulBy t s =
   (CanAddThis t s, CanSubThis t s, CanMulBy t s)
 
 type Ring t =
   (CanNegSameType t, CanAddSameType t, CanSubSameType t, CanMulSameType t,
    CanPowBy t Integer, CanPowBy t Int,
    HasEq t t,
-   HasEq t Integer, CanAddPowMulBy t Integer,
+   HasEq t Integer, CanAddSubMulBy t Integer,
    CanPow Integer t, PowType Integer t ~ t,
-   HasEq t Int, CanAddPowMulBy t Int,
-   CanPow Int t, SubType Int t ~ t,
+   HasEq t Int, CanAddSubMulBy t Int,
+   CanPow Int t, PowType Int t ~ t,
    ConvertibleExactly Integer t)
 
 type CertainlyEqRing t =

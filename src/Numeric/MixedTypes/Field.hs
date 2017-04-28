@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-|
     Module      :  Numeric.MixedType.Field
     Description :  Bottom-up typed division
@@ -23,6 +24,8 @@ module Numeric.MixedTypes.Field
 )
 where
 
+import Utils.TH.DeclForTypes
+
 import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 import Text.Printf
@@ -31,6 +34,11 @@ import Text.Printf
 
 import Test.Hspec
 import Test.QuickCheck
+
+import Numeric.CollectErrors
+  (CollectErrors, EnsureCollectErrors, CanEnsureCollectErrors
+  , CollectNumErrors)
+import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -68,10 +76,19 @@ type OrderedCertainlyField t =
 -}
 class CanDiv t1 t2 where
   type DivType t1 t2
-  type DivType t1 t2 = t1 -- default
   divide :: t1 -> t2 -> DivType t1 t2
-  default divide :: (DivType t1 t2 ~ t1, t1~t2, P.Fractional t1) => t1 -> t1 -> t1
-  divide = (P./)
+
+divideCN ::
+  (CanTestZero t2)
+  =>
+  (t1 -> t2 -> t3) ->
+  t1 -> t2 -> CollectNumErrors t3
+divideCN unsafeDivide a b
+  | isCertainlyZero b = CN.noValue [(CN.ErrorCertain, CN.DivByZero)]
+  | isCertainlyNonZero b = CN.noNumErrors $ a `unsafeDivide` b
+  | otherwise = CN.noValue [(CN.ErrorPotential, CN.DivByZero)]
+
+infixl 7  /
 
 (/) :: (CanDiv t1 t2) => t1 -> t2 -> DivType t1 t2
 (/) = divide
@@ -152,34 +169,39 @@ specCanDivNotMixed ::
 specCanDivNotMixed t = specCanDiv t t
 
 instance CanDiv Int Int where
-  type DivType Int Int = Rational
-  divide a b = (rational a) P./ (rational b)
+  type DivType Int Int = CollectNumErrors Rational
+  divide a b = divideCN (P./) (rational a) (rational b)
 
 instance CanDiv Integer Integer where
-  type DivType Integer Integer = Rational
-  divide a b = (rational a) P./ (rational b)
-instance CanDiv Rational Rational
-instance CanDiv Double Double
+  type DivType Integer Integer = CollectNumErrors Rational
+  divide a b = divideCN (P./) (rational a) (rational b)
+instance CanDiv Rational Rational where
+  type DivType Rational Rational = CollectNumErrors Rational
+  divide = divideCN (P./)
+
+instance CanDiv Double Double where
+  type DivType Double Double = Double
+  divide = (P./)
 
 instance CanDiv Int Integer where
-  type DivType Int Integer = Rational
-  divide a b = (rational a) P./ (rational b)
+  type DivType Int Integer = CollectNumErrors Rational
+  divide a b = divideCN (P./) (rational a) (rational b)
 instance CanDiv Integer Int where
-  type DivType Integer Int = Rational
-  divide a b = (rational a) P./ (rational b)
+  type DivType Integer Int = CollectNumErrors Rational
+  divide a b = divideCN (P./) (rational a) (rational b)
 
 instance CanDiv Int Rational where
-  type DivType Int Rational = Rational
+  type DivType Int Rational = CollectNumErrors Rational
   divide = convertFirst divide
 instance CanDiv Rational Int where
-  type DivType Rational Int = Rational
+  type DivType Rational Int = CollectNumErrors Rational
   divide = convertSecond divide
 
 instance CanDiv Integer Rational where
-  type DivType Integer Rational = Rational
+  type DivType Integer Rational = CollectNumErrors Rational
   divide = convertFirst divide
 instance CanDiv Rational Integer where
-  type DivType Rational Integer = Rational
+  type DivType Rational Integer = CollectNumErrors Rational
   divide = convertSecond divide
 
 instance CanDiv Int Double where
@@ -213,6 +235,17 @@ instance (CanDiv a b) => CanDiv (Maybe a) (Maybe b) where
   divide (Just x) (Just y) = Just (divide x y)
   divide _ _ = Nothing
 
+instance
+  (CanDiv a b
+  , CanEnsureCollectErrors es (DivType a b)
+  , Monoid es)
+  =>
+  CanDiv (CollectErrors es a) (CollectErrors es  b)
+  where
+  type DivType (CollectErrors es a) (CollectErrors es b) =
+    EnsureCollectErrors es (DivType a b)
+  divide = CN.lift2ensureCE divide
+
 powUsingMulRecip ::
   (CanBeInteger e,
    CanRecipSameType t, CanMulSameType t, ConvertibleExactly Integer t)
@@ -223,3 +256,30 @@ powUsingMulRecip x nPre
   | otherwise = powUsingMul x n
   where
     n = integer nPre
+
+$(declForTypes
+  [[t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
+  (\ t -> [d|
+
+    instance
+      (CanDiv $t b
+      , CanEnsureCollectErrors es (DivType $t b)
+      , Monoid es)
+      =>
+      CanDiv $t (CollectErrors es  b)
+      where
+      type DivType $t (CollectErrors es  b) =
+        EnsureCollectErrors es (DivType $t b)
+      divide = CN.unlift2first divide
+
+    instance
+      (CanDiv a $t
+      , CanEnsureCollectErrors es (DivType a $t)
+      , Monoid es)
+      =>
+      CanDiv (CollectErrors es a) $t
+      where
+      type DivType (CollectErrors es  a) $t =
+        EnsureCollectErrors es (DivType a $t)
+      divide = CN.unlift2second divide
+  |]))
