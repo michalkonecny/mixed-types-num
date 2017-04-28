@@ -34,6 +34,10 @@ import Text.Printf
 import Test.Hspec
 import Test.QuickCheck
 
+import Numeric.CollectErrors
+  (CollectErrors, EnsureCollectErrors, CanEnsureCollectErrors)
+import qualified Numeric.CollectErrors as CN
+
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
 import Numeric.MixedTypes.Eq
@@ -99,6 +103,17 @@ specCanSqrtReal (T typeName :: T t) =
 
 instance CanSqrt Double -- not exact, will not pass the tests
 
+instance
+  (CanSqrt a
+  , CanEnsureCollectErrors es (SqrtType a)
+  , Monoid es)
+  =>
+  CanSqrt (CollectErrors es a)
+  where
+  type SqrtType (CollectErrors es a) = EnsureCollectErrors es (SqrtType a)
+  sqrt = CN.lift1ensureCE sqrt
+
+
 {----  exp -----}
 
 {-|
@@ -162,6 +177,16 @@ specCanExpReal (T typeName :: T t) =
 
 instance CanExp Double -- not exact, will not pass the tests
 
+instance
+  (CanExp a
+  , CanEnsureCollectErrors es (ExpType a)
+  , Monoid es)
+  =>
+  CanExp (CollectErrors es a)
+  where
+  type ExpType (CollectErrors es a) = EnsureCollectErrors es (ExpType a)
+  exp = CN.lift1ensureCE exp
+
 {----  log -----}
 
 {-|
@@ -220,6 +245,16 @@ specCanLogReal (T typeName :: T t) =
 -}
 
 instance CanLog Double -- not exact, will not pass the tests
+
+instance
+  (CanLog a
+  , CanEnsureCollectErrors es (LogType a)
+  , Monoid es)
+  =>
+  CanLog (CollectErrors es a)
+  where
+  type LogType (CollectErrors es a) = EnsureCollectErrors es (LogType a)
+  log = CN.lift1ensureCE log
 
 instance CanPow Double Double where
   pow = (P.**)
@@ -332,6 +367,17 @@ specCanSinCosReal (T typeName :: T t) =
 -}
 
 instance CanSinCos Double -- not exact, will not pass the tests
+
+instance
+  (CanSinCos a
+  , CanEnsureCollectErrors es (SinCosType a)
+  , Monoid es)
+  =>
+  CanSinCos (CollectErrors es a)
+  where
+  type SinCosType (CollectErrors es a) = EnsureCollectErrors es (SinCosType a)
+  sin = CN.lift1ensureCE sin
+  cos = CN.lift1ensureCE cos
 
 {-|
   Approximate pi, synonym for Prelude's `P.pi`.
