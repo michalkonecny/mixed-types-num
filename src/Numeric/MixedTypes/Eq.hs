@@ -244,7 +244,7 @@ instance
   equalTo = CN.lift2ensureCE equalTo
 
 $(declForTypes
-  [[t| Bool |], [t| Maybe Bool |], [t| Integer |], [t| Int |], [t| Rational |]]
+  [[t| Bool |], [t| Maybe Bool |], [t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
   (\ t -> [d|
 
     instance

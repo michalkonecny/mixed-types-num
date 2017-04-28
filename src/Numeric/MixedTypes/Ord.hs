@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-|
     Module      :  Numeric.MixedType.Ord
     Description :  Bottom-up typed order comparisons
@@ -24,12 +25,17 @@ module Numeric.MixedTypes.Ord
 )
 where
 
+import Utils.TH.DeclForTypes
+
 import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 import Text.Printf
 
 import Test.Hspec
 import qualified Test.QuickCheck as QC
+
+import Numeric.CollectErrors (CollectErrors, EnsureCollectErrors, CanEnsureCollectErrors)
+import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -192,6 +198,56 @@ instance HasOrderAsymmetric Double Int where
   lessThan d n = lessThan d (integer n)
   leq d n = leq d (integer n)
 
+instance
+  (HasOrderAsymmetric a b
+  , CanEnsureCollectErrors es (OrderCompareType a b)
+  , IsBool (EnsureCollectErrors es (OrderCompareType a b))
+  , Monoid es)
+  =>
+  HasOrderAsymmetric (CollectErrors es a) (CollectErrors es  b)
+  where
+  type OrderCompareType (CollectErrors es a) (CollectErrors es b) =
+    EnsureCollectErrors es (OrderCompareType a b)
+  lessThan = CN.lift2ensureCE lessThan
+  leq = CN.lift2ensureCE leq
+  greaterThan = CN.lift2ensureCE greaterThan
+  geq = CN.lift2ensureCE geq
+
+$(declForTypes
+  [[t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
+  (\ t -> [d|
+
+    instance
+      (HasOrderAsymmetric $t b
+      , CanEnsureCollectErrors es (OrderCompareType $t b)
+      , IsBool (EnsureCollectErrors es (OrderCompareType $t b))
+      , Monoid es)
+      =>
+      HasOrderAsymmetric $t (CollectErrors es  b)
+      where
+      type OrderCompareType $t (CollectErrors es  b) =
+        EnsureCollectErrors es (OrderCompareType $t b)
+      lessThan = CN.unlift2first lessThan
+      leq = CN.unlift2first leq
+      greaterThan = CN.unlift2first greaterThan
+      geq = CN.unlift2first geq
+
+    instance
+      (HasOrderAsymmetric a $t
+      , CanEnsureCollectErrors es (OrderCompareType a $t)
+      , IsBool (EnsureCollectErrors es (OrderCompareType a $t))
+      , Monoid es)
+      =>
+      HasOrderAsymmetric (CollectErrors es a) $t
+      where
+      type OrderCompareType (CollectErrors es  a) $t =
+        EnsureCollectErrors es (OrderCompareType a $t)
+      lessThan = CN.unlift2second lessThan
+      leq = CN.unlift2second leq
+      greaterThan = CN.unlift2second greaterThan
+      geq = CN.unlift2second geq
+
+  |]))
 
 class CanTestPosNeg t where
     isCertainlyPositive :: t -> Bool
@@ -211,3 +267,9 @@ instance CanTestPosNeg Int
 instance CanTestPosNeg Integer
 instance CanTestPosNeg Rational
 instance CanTestPosNeg Double
+
+instance (CanTestPosNeg t, Monoid es, P.Eq es) => (CanTestPosNeg (CollectErrors es t)) where
+  isCertainlyPositive ce = CN.getValueIfNoError ce isCertainlyPositive (const False)
+  isCertainlyNonNegative ce = CN.getValueIfNoError ce isCertainlyNonNegative (const False)
+  isCertainlyNegative ce = CN.getValueIfNoError ce isCertainlyNegative (const False)
+  isCertainlyNonPositive ce = CN.getValueIfNoError ce isCertainlyNonPositive (const False)
