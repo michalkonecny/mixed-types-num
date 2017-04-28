@@ -35,7 +35,8 @@ import Text.Printf
 
 import qualified Data.List as List
 
-import Numeric.CollectErrors (CollectErrors, EnsureCollectErrors, CanEnsureCollectErrors)
+import Numeric.CollectErrors
+  (CollectErrors, EnsureCE, CanEnsureCE)
 import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
@@ -47,7 +48,7 @@ import qualified Test.SmallCheck as SC
 import qualified Test.SmallCheck.Series as SCS
 -- import Control.Exception (evaluate)
 
-type HasBools t = ConvertibleExactly Bool t
+type HasBools t = (ConvertibleExactly Bool t)
 
 {-|
   Tests for truth or falsity.  Beware, when @isCertainlyTrue@ returns @False@,
@@ -187,10 +188,10 @@ _testNeg1 :: Maybe Bool
 _testNeg1 = not (Just True)
 
 instance
-  (CanNeg t, Monoid es, CanEnsureCollectErrors es (NegType t))
+  (CanNeg t, Monoid es, CanEnsureCE es (NegType t))
   =>
   CanNeg (CollectErrors es t) where
-  type NegType (CollectErrors es t) = EnsureCollectErrors es (NegType t)
+  type NegType (CollectErrors es t) = EnsureCE es (NegType t)
   negate = CN.lift1ensureCE negate
 
 {---- And/Or ----}
@@ -350,24 +351,24 @@ _testAndOr2 = (Just (Just True)) || False
 _testAndOr3 :: Maybe Bool
 _testAndOr3 = and [Just True, Nothing, Just False]
 
-instance (CanAndOrAsymmetric t1 t2, Monoid es, CanEnsureCollectErrors es (AndOrType t1 t2)) =>
+instance (CanAndOrAsymmetric t1 t2, Monoid es, CanEnsureCE es (AndOrType t1 t2)) =>
   CanAndOrAsymmetric (CollectErrors es t1) (CollectErrors es t2)
   where
-  type AndOrType (CollectErrors es t1) (CollectErrors es t2) = EnsureCollectErrors es (AndOrType t1 t2)
+  type AndOrType (CollectErrors es t1) (CollectErrors es t2) = EnsureCE es (AndOrType t1 t2)
   and2 = CN.lift2ensureCE and2
   or2 = CN.lift2ensureCE or2
 
-instance (CanAndOrAsymmetric t1 Bool, Monoid es, CanEnsureCollectErrors es (AndOrType t1 Bool)) =>
+instance (CanAndOrAsymmetric t1 Bool, Monoid es, CanEnsureCE es (AndOrType t1 Bool)) =>
   CanAndOrAsymmetric (CollectErrors es t1) Bool
   where
-  type AndOrType (CollectErrors es t1) Bool = EnsureCollectErrors es (AndOrType t1 Bool)
+  type AndOrType (CollectErrors es t1) Bool = EnsureCE es (AndOrType t1 Bool)
   and2 = CN.unlift2second and2
   or2 = CN.unlift2second or2
 
-instance (CanAndOrAsymmetric Bool t2, Monoid es, CanEnsureCollectErrors es (AndOrType Bool t2)) =>
+instance (CanAndOrAsymmetric Bool t2, Monoid es, CanEnsureCE es (AndOrType Bool t2)) =>
   CanAndOrAsymmetric Bool (CollectErrors es t2)
   where
-  type AndOrType Bool (CollectErrors es t2) = EnsureCollectErrors es (AndOrType Bool t2)
+  type AndOrType Bool (CollectErrors es t2) = EnsureCE es (AndOrType Bool t2)
   and2 = CN.unlift2first and2
   or2 = CN.unlift2first or2
 

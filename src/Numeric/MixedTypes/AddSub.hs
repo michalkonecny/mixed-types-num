@@ -37,7 +37,7 @@ import qualified Data.List as List
 import Test.Hspec
 import Test.QuickCheck
 
-import Numeric.CollectErrors (CollectErrors, EnsureCollectErrors, CanEnsureCollectErrors)
+import Numeric.CollectErrors (CollectErrors, EnsureCE, CanEnsureCE)
 import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
@@ -197,24 +197,24 @@ instance CanAddAsymmetric Rational Integer where
 
 instance CanAddAsymmetric Int Double where
   type AddType Int Double = Double
-  add = convertFirst add
+  add n d = add (double n) d
 instance CanAddAsymmetric Double Int where
   type AddType Double Int = Double
-  add = convertSecond add
+  add d n = add d (double n)
 
 instance CanAddAsymmetric Integer Double where
   type AddType Integer Double = Double
-  add = convertFirst add
+  add n d = add (double n) d
 instance CanAddAsymmetric Double Integer where
   type AddType Double Integer = Double
-  add = convertSecond add
+  add d n = add d (double n)
 
 instance CanAddAsymmetric Rational Double where
   type AddType Rational Double = Double
-  add = convertFirst add
+  add n d = add (double n) d
 instance CanAddAsymmetric Double Rational where
   type AddType Double Rational = Double
-  add = convertSecond add
+  add d n = add d (double n)
 
 instance (CanAddAsymmetric a b) => CanAddAsymmetric [a] [b] where
   type AddType [a] [b] = [AddType a b]
@@ -228,13 +228,13 @@ instance (CanAddAsymmetric a b) => CanAddAsymmetric (Maybe a) (Maybe b) where
 
 instance
   (CanAddAsymmetric a b
-  , CanEnsureCollectErrors es (AddType a b)
+  , CanEnsureCE es (AddType a b)
   , Monoid es)
   =>
   CanAddAsymmetric (CollectErrors es a) (CollectErrors es  b)
   where
   type AddType (CollectErrors es a) (CollectErrors es b) =
-    EnsureCollectErrors es (AddType a b)
+    EnsureCE es (AddType a b)
   add = CN.lift2ensureCE add
 
 -- TH for ground type instances at is the end of the file due to a bug in TH
@@ -344,24 +344,24 @@ instance CanSub Rational Integer where
 
 instance CanSub Int Double where
   type SubType Int Double = Double
-  sub = convertFirst sub
+  sub n d = sub (double n) d
 instance CanSub Double Int where
   type SubType Double Int = Double
-  sub = convertSecond sub
+  sub d n = sub d (double n)
 
 instance CanSub Integer Double where
   type SubType Integer Double = Double
-  sub = convertFirst sub
+  sub n d = sub (double n) d
 instance CanSub Double Integer where
   type SubType Double Integer = Double
-  sub = convertSecond sub
+  sub d n = sub d (double n)
 
 instance CanSub Rational Double where
   type SubType Rational Double = Double
-  sub = convertFirst sub
+  sub n d = sub (double n) d
 instance CanSub Double Rational where
   type SubType Double Rational = Double
-  sub = convertSecond sub
+  sub d n = sub d (double n)
 
 instance (CanSub a b) => CanSub [a] [b] where
   type SubType [a] [b] = [SubType a b]
@@ -376,13 +376,13 @@ instance (CanSub a b) => CanSub (Maybe a) (Maybe b) where
 
 instance
   (CanSub a b
-  , CanEnsureCollectErrors es (SubType a b)
+  , CanEnsureCE es (SubType a b)
   , Monoid es)
   =>
   CanSub (CollectErrors es a) (CollectErrors es  b)
   where
   type SubType (CollectErrors es a) (CollectErrors es b) =
-    EnsureCollectErrors es (SubType a b)
+    EnsureCE es (SubType a b)
   sub = CN.lift2ensureCE sub
 
 
@@ -392,45 +392,45 @@ $(declForTypes
 
     instance
       (CanSub $t b
-      , CanEnsureCollectErrors es (SubType $t b)
+      , CanEnsureCE es (SubType $t b)
       , Monoid es)
       =>
       CanSub $t (CollectErrors es  b)
       where
       type SubType $t (CollectErrors es  b) =
-        EnsureCollectErrors es (SubType $t b)
+        EnsureCE es (SubType $t b)
       sub = CN.unlift2first sub
 
     instance
       (CanSub a $t
-      , CanEnsureCollectErrors es (SubType a $t)
+      , CanEnsureCE es (SubType a $t)
       , Monoid es)
       =>
       CanSub (CollectErrors es a) $t
       where
       type SubType (CollectErrors es  a) $t =
-        EnsureCollectErrors es (SubType a $t)
+        EnsureCE es (SubType a $t)
       sub = CN.unlift2second sub
 
     instance
       (CanAddAsymmetric $t b
-      , CanEnsureCollectErrors es (AddType $t b)
+      , CanEnsureCE es (AddType $t b)
       , Monoid es)
       =>
       CanAddAsymmetric $t (CollectErrors es  b)
       where
       type AddType $t (CollectErrors es  b) =
-        EnsureCollectErrors es (AddType $t b)
+        EnsureCE es (AddType $t b)
       add = CN.unlift2first add
 
     instance
       (CanAddAsymmetric a $t
-      , CanEnsureCollectErrors es (AddType a $t)
+      , CanEnsureCE es (AddType a $t)
       , Monoid es)
       =>
       CanAddAsymmetric (CollectErrors es a) $t
       where
       type AddType (CollectErrors es  a) $t =
-        EnsureCollectErrors es (AddType a $t)
+        EnsureCE es (AddType a $t)
       add = CN.unlift2second add
   |]))

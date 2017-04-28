@@ -8,8 +8,8 @@ module Control.CollectErrors
 , lift1, lift2
 , unlift2first, unlift2second
 -- * Tools for avoiding @CollectErrors(CollectErrors t)@
-, ensureCollectErrors
-, CanEnsureCollectErrors, EnsureCollectErrors
+, ensureCE
+, CanEnsureCE, EnsureCE, WithoutCE
 , lift1ensureCE, lift2ensureCE
 )
 where
@@ -17,7 +17,7 @@ where
 import Prelude
 import Data.Monoid
 
-import Language.Haskell.TH
+-- import Language.Haskell.TH
 
 import Control.EnsureTypeOp
 
@@ -144,21 +144,26 @@ instance (Monoid es) => Monad (CollectErrors es) where
         CollectErrors Nothing es
 
 
+type EnsureCE es v = EnsureTypeOp (CollectErrors es) v
 {-|
-  Apply CollectErrors to a type except when the type already
-  is a CollectErrors type.
+Apply CollectErrors to a type except when the type already
+is a CollectErrors type.
 -}
-type EnsureCollectErrors es v = EnsureTypeOp (CollectErrors es) v
+
+{-|
+  Remove CollectErrors wrapper from a type if it is there.
+-}
+type WithoutCE es v = RemoveTypeOp (CollectErrors es) v
 
 {-|
   Translate a value of a type @a@
   to a value of a type @CollectErrors es a@ except when @a@
   already is a @CollectErrors@ type, in which case the value is left as is.
 -}
-ensureCollectErrors :: (CanEnsureCollectErrors es v) => v -> EnsureCollectErrors es v
-ensureCollectErrors = ensureTypeOp
+ensureCE :: (CanEnsureCE es v) => v -> EnsureCE es v
+ensureCE = ensureTypeOp
 
-type CanEnsureCollectErrors es v = CanEnsureTypeOp (CollectErrors es) v
+type CanEnsureCE es v = CanEnsureTypeOp (CollectErrors es) v
 
 instance (Monoid es) => CanEnsureTypeOp (CollectErrors es) Int where
   ensureTypeOp = noErrors
@@ -182,12 +187,12 @@ instance (Monoid es) => CanEnsureTypeOp (CollectErrors es) (Either e a) where
   result may already have collected errors.
 -}
 lift1ensureCE ::
-  (Monoid es, CanEnsureCollectErrors es b) =>
+  (Monoid es, CanEnsureCE es b) =>
   (a -> b) ->
-  (CollectErrors es a) -> (EnsureCollectErrors es b)
+  (CollectErrors es a) -> (EnsureCE es b)
 lift1ensureCE fn
     (CollectErrors (Just a) ae) =
-        prependErrors ae (ensureCollectErrors $ fn a)
+        prependErrors ae (ensureCE $ fn a)
 lift1ensureCE _
     (CollectErrors _ ae) =
         CollectErrors Nothing ae
@@ -197,18 +202,18 @@ lift1ensureCE _
   result may already have collected errors.
 -}
 lift2ensureCE ::
-  (Monoid es, CanEnsureCollectErrors es c) =>
+  (Monoid es, CanEnsureCE es c) =>
   (a -> b -> c) ->
-  (CollectErrors es a) -> (CollectErrors es b) -> (EnsureCollectErrors es c)
+  (CollectErrors es a) -> (CollectErrors es b) -> (EnsureCE es c)
 lift2ensureCE fn
     (CollectErrors (Just a) ae) (CollectErrors (Just b) be) =
-        prependErrors (ae <> be) (ensureCollectErrors $ fn a b)
+        prependErrors (ae <> be) (ensureCE $ fn a b)
 lift2ensureCE _
     (CollectErrors _ ae) (CollectErrors _ be) =
         CollectErrors Nothing (ae <> be)
 
 -- Templates for instances propagating CollectErrors through operations
--- 
+--
 -- makeInstanceForCollectErrors2 :: Name -> Q Type -> [Q Exp] -> Q Dec
 -- makeInstanceForCollectErrors2 opClass resultType operations =
 --   -- instanceD (return []) (conT opClass `appT` (conT ''CollectErrors `appT` (varT (mkName "es")))) []
@@ -222,12 +227,12 @@ lift2ensureCE _
 --
 -- instance
 --   (CanMinMaxAsymmetric a b
---   , CanEnsureCollectErrors es (MinMaxType a b)
+--   , CanEnsureCE es (MinMaxType a b)
 --   , Monoid es)
 --   =>
 --   CanMinMaxAsymmetric (CollectErrors es a) (CollectErrors es  b)
 --   where
 --   type MinMaxType (CollectErrors es a) (CollectErrors es b) =
---     EnsureCollectErrors es (MinMaxType a b)
+--     EnsureCE es (MinMaxType a b)
 --   min = CN.lift2ensureCE min
 --   max = CN.lift2ensureCE max

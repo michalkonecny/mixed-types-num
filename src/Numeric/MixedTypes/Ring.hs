@@ -21,7 +21,7 @@ module Numeric.MixedTypes.Ring
   -- ** Tests
   , specCanMul, specCanMulNotMixed, specCanMulSameType, CanMulX
   -- * Exponentiation
-  , CanPow(..), CanPowBy
+  , CanPow(..), CanPowBy, CanPowCNBy
   , (^), (^^), (**)
   , powUsingMul
   -- ** Tests
@@ -40,7 +40,9 @@ import qualified Data.List as List
 import Test.Hspec
 import Test.QuickCheck
 
-import Numeric.CollectErrors (CollectErrors, EnsureCollectErrors, CanEnsureCollectErrors)
+import Numeric.CollectErrors
+  (CollectErrors, EnsureCE, CanEnsureCE
+  , CollectNumErrors, EnsureCN, CanEnsureCN)
 import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
@@ -230,24 +232,24 @@ instance CanMulAsymmetric Rational Integer where
 
 instance CanMulAsymmetric Int Double where
   type MulType Int Double = Double
-  mul = convertFirst mul
+  mul n d = mul (double n) d
 instance CanMulAsymmetric Double Int where
   type MulType Double Int = Double
-  mul = convertSecond mul
+  mul d n = mul d (double n)
 
 instance CanMulAsymmetric Integer Double where
   type MulType Integer Double = Double
-  mul = convertFirst mul
+  mul n d = mul (double n) d
 instance CanMulAsymmetric Double Integer where
   type MulType Double Integer = Double
-  mul = convertSecond mul
+  mul d n = mul d (double n)
 
 instance CanMulAsymmetric Rational Double where
   type MulType Rational Double = Double
-  mul = convertFirst mul
+  mul n d = mul (double n) d
 instance CanMulAsymmetric Double Rational where
   type MulType Double Rational = Double
-  mul = convertSecond mul
+  mul d n = mul d (double n)
 
 instance (CanMulAsymmetric a b) => CanMulAsymmetric [a] [b] where
   type MulType [a] [b] = [MulType a b]
@@ -261,13 +263,13 @@ instance (CanMulAsymmetric a b) => CanMulAsymmetric (Maybe a) (Maybe b) where
 
 instance
   (CanMulAsymmetric a b
-  , CanEnsureCollectErrors es (MulType a b)
+  , CanEnsureCE es (MulType a b)
   , Monoid es)
   =>
   CanMulAsymmetric (CollectErrors es a) (CollectErrors es  b)
   where
   type MulType (CollectErrors es a) (CollectErrors es b) =
-    EnsureCollectErrors es (MulType a b)
+    EnsureCE es (MulType a b)
   mul = CN.lift2ensureCE mul
 
 {---- Exponentiation -----}
@@ -280,8 +282,34 @@ class CanPow t1 t2 where
   type PowType t1 t2
   type PowType t1 t2 = t1 -- default
   pow :: t1 -> t2 -> PowType t1 t2
-  default pow :: (PowType t1 t2 ~ t1, P.Num t1, P.Integral t2) => t1 -> t2 -> t1
-  pow = (P.^)
+  -- default pow :: (PowType t1 t2 ~ t1, P.Num t1, P.Integral t2) => t1 -> t2 -> t1
+  -- pow = (P.^)
+
+integerPowCN ::
+  (HasOrderCertainly b Integer, HasOrderCertainly e Integer,
+   HasEqCertainly b Integer, HasEqCertainly e Integer,
+   CanEnsureCN r)
+  =>
+  (b -> e -> r) -> b -> e -> EnsureCN r
+integerPowCN unsafeIntegerPow b n
+  | n !<! 0 = CN.noValue [(CN.ErrorCertain, CN.OutOfRange "illegal integer pow: negative exponent")]
+  | n !==! 0 && b !==! 0 = CN.noValue [(CN.ErrorCertain, CN.OutOfRange "illegal integer pow: 0^0")]
+  | n ?<? 0 = CN.noValue [(CN.ErrorPotential, CN.OutOfRange "illegal integer pow: negative exponent")]
+  | n ?==? 0 && b ?==? 0 = CN.noValue [(CN.ErrorPotential, CN.OutOfRange "illegal integer pow: 0^0")]
+  | otherwise = CN.ensureCN $ unsafeIntegerPow b n
+
+powCN ::
+  (HasOrderCertainly b Integer, HasOrderCertainly e Integer,
+   HasEqCertainly b Integer, CanTestInteger e,
+   CanEnsureCN r)
+  =>
+  (b -> e -> r) -> b -> e -> EnsureCN r
+powCN unsafePow b e
+  | b !==! 0 && e !<=! 0  = CN.noValue [(CN.ErrorCertain, CN.OutOfRange "illegal pow: 0^e with e <= 0")]
+  | b !<! 0 && certainlyNotInteger e = CN.noValue [(CN.ErrorCertain, CN.OutOfRange "illegal pow: b^e with b < 0 and e non-integer")]
+  | b ?==? 0 && e ?<=? 0 = CN.noValue [(CN.ErrorPotential, CN.OutOfRange "illegal pow: 0^e with e <= 0")]
+  | b ?<? 0 && not (certainlyInteger e) = CN.noValue [(CN.ErrorPotential, CN.OutOfRange "illegal pow: b^e with b < 0 and e non-integer")]
+  | otherwise = CN.ensureCN $ unsafePow b e
 
 powUsingMul ::
   (CanBeInteger e,
@@ -303,6 +331,9 @@ powUsingMul x nPre
 
 type CanPowBy t1 t2 =
   (CanPow t1 t2, PowType t1 t2 ~ t1)
+
+type CanPowCNBy t1 t2 =
+  (CanPow t1 t2, PowType t1 t2 ~ EnsureCN t1)
 
 {-| Compound type constraint useful for test definition. -}
 type CanPowX t1 t2 =
@@ -346,19 +377,26 @@ specCanPow (T typeName1 :: T t1) (T typeName2 :: T t2) =
   (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
-instance CanPow Integer Integer
-instance CanPow Integer Int
+instance CanPow Integer Integer where
+  type PowType Integer Integer = CollectNumErrors Integer
+  pow = integerPowCN (P.^)
+instance CanPow Integer Int where
+  type PowType Integer Int = CollectNumErrors Integer
+  pow = integerPowCN (P.^)
 instance CanPow Int Integer where
-  type PowType Int Integer = Integer
-  pow x n = (integer x) P.^ n
+  type PowType Int Integer = CollectNumErrors Integer
+  pow x n = pow (integer x) n
 instance CanPow Int Int where
-  type PowType Int Int = Integer
-  pow x n = (integer x) P.^ n
-instance CanPow Rational Int where pow = (P.^^)
-instance CanPow Rational Integer where pow = (P.^^)
+  type PowType Int Int = CollectNumErrors Integer
+  pow x n = pow (integer x) n
+instance CanPow Rational Int where
+  type PowType Rational Int = CollectNumErrors Rational
+  pow = powCN (P.^^)
+instance CanPow Rational Integer where
+  type PowType Rational Integer = CollectNumErrors Rational
+  pow = powCN (P.^^)
 instance CanPow Double Int where pow = (P.^^)
 instance CanPow Double Integer where pow = (P.^^)
-{- No exponentiation of Int to avoid overflows. -}
 
 -- instance (CanPow a b) => CanPow [a] [b] where
 --   type PowType [a] [b] = [PowType a b]
@@ -372,13 +410,13 @@ instance (CanPow a b) => CanPow (Maybe a) (Maybe b) where
 
 instance
   (CanPow a b
-  , CanEnsureCollectErrors es (PowType a b)
+  , CanEnsureCE es (PowType a b)
   , Monoid es)
   =>
   CanPow (CollectErrors es a) (CollectErrors es  b)
   where
   type PowType (CollectErrors es a) (CollectErrors es b) =
-    EnsureCollectErrors es (PowType a b)
+    EnsureCE es (PowType a b)
   pow = CN.lift2ensureCE pow
 
 $(declForTypes
@@ -387,45 +425,45 @@ $(declForTypes
 
     instance
       (CanPow $t b
-      , CanEnsureCollectErrors es (PowType $t b)
+      , CanEnsureCE es (PowType $t b)
       , Monoid es)
       =>
       CanPow $t (CollectErrors es  b)
       where
       type PowType $t (CollectErrors es  b) =
-        EnsureCollectErrors es (PowType $t b)
+        EnsureCE es (PowType $t b)
       pow = CN.unlift2first pow
 
     instance
       (CanPow a $t
-      , CanEnsureCollectErrors es (PowType a $t)
+      , CanEnsureCE es (PowType a $t)
       , Monoid es)
       =>
       CanPow (CollectErrors es a) $t
       where
       type PowType (CollectErrors es  a) $t =
-        EnsureCollectErrors es (PowType a $t)
+        EnsureCE es (PowType a $t)
       pow = CN.unlift2second pow
 
     instance
       (CanMulAsymmetric $t b
-      , CanEnsureCollectErrors es (MulType $t b)
+      , CanEnsureCE es (MulType $t b)
       , Monoid es)
       =>
       CanMulAsymmetric $t (CollectErrors es  b)
       where
       type MulType $t (CollectErrors es  b) =
-        EnsureCollectErrors es (MulType $t b)
+        EnsureCE es (MulType $t b)
       mul = CN.unlift2first mul
 
     instance
       (CanMulAsymmetric a $t
-      , CanEnsureCollectErrors es (MulType a $t)
+      , CanEnsureCE es (MulType a $t)
       , Monoid es)
       =>
       CanMulAsymmetric (CollectErrors es a) $t
       where
       type MulType (CollectErrors es  a) $t =
-        EnsureCollectErrors es (MulType a $t)
+        EnsureCE es (MulType a $t)
       mul = CN.unlift2second mul
   |]))

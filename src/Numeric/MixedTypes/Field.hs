@@ -14,9 +14,10 @@
 module Numeric.MixedTypes.Field
 (
   -- * Field
-  CanAddSubMulDivBy, Field, CertainlyEqField, OrderedField, OrderedCertainlyField
+  CanAddSubMulDivCNBy, Field, CertainlyEqField, OrderedField, OrderedCertainlyField
   -- * Division
-  , CanDiv(..), CanDivBy, CanDivSameType, CanRecip, CanRecipSameType
+  , CanDiv(..), CanDivBy, CanDivCNBy, CanDivSameType, CanDivCNSameType
+  , CanRecip, CanRecipSameType, CanRecipCNSameType
   , (/), recip
   , powUsingMulRecip
   -- ** Tests
@@ -36,8 +37,8 @@ import Test.Hspec
 import Test.QuickCheck
 
 import Numeric.CollectErrors
-  (CollectErrors, EnsureCollectErrors, CanEnsureCollectErrors
-  , CollectNumErrors)
+  (CollectErrors, EnsureCE, CanEnsureCE
+  , CollectNumErrors, WithoutCN, EnsureCN, CanEnsureCN)
 import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
@@ -50,23 +51,49 @@ import Numeric.MixedTypes.Ring
 
 {----- Field -----}
 
-type CanAddSubMulDivBy t s =
-  (CanAddSubMulBy t s, CanDivBy t s)
+type CanAddSubMulDivCNBy t s =
+  (CanAddSubMulBy t s, CanDivCNBy t s)
 
-type Field t =
-    (Ring t, CanDivSameType t, CanRecipSameType t,
-     CanAddSubMulDivBy t Rational,
-     CanAddSubMulDivBy t Integer,
-     CanAddSubMulDivBy t Int
+type FieldPre t =
+    (Ring t,
+     CanDivCNSameType t, CanRecipCNSameType t,
+     CanAddSubMulDivCNBy t Rational,
+     CanAddSubMulDivCNBy t Integer,
+     CanAddSubMulDivCNBy t Int
     )
 
-type CertainlyEqField t = (Field t, CertainlyEqRing t)
+type Field t =
+  (FieldPre t,
+   FieldPre (WithoutCN t),
+   CanEnsureCN t,
+   FieldPre (EnsureCN t))
+
+type CertainlyEqFieldPre t =
+  (FieldPre t, CertainlyEqRing t)
+
+type CertainlyEqField t =
+  (CertainlyEqFieldPre t,
+   CertainlyEqFieldPre (WithoutCN t),
+   CanEnsureCN t,
+   CertainlyEqFieldPre (EnsureCN t))
+
+type OrderedFieldPre t =
+  (FieldPre t, OrderedRing t, HasOrder t Rational)
 
 type OrderedField t =
-  (Field t, OrderedRing t, HasOrder t Rational)
+  (OrderedFieldPre t,
+   OrderedFieldPre (WithoutCN t),
+   CanEnsureCN t,
+   OrderedFieldPre (EnsureCN t))
+
+type OrderedCertainlyFieldPre t =
+  (CertainlyEqFieldPre t, OrderedCertainlyRing t, HasOrderCertainly t Rational)
 
 type OrderedCertainlyField t =
-  (CertainlyEqField t, OrderedCertainlyRing t, HasOrderCertainly t Rational)
+  (OrderedCertainlyFieldPre t,
+   OrderedCertainlyFieldPre (WithoutCN t),
+   CanEnsureCN t,
+   OrderedCertainlyFieldPre (EnsureCN t))
 
 {---- Division -----}
 
@@ -99,6 +126,9 @@ type CanRecip t =
 type CanRecipSameType t =
   (CanDiv Integer t, DivType Integer t ~ t)
 
+type CanRecipCNSameType t =
+  (CanDiv Integer t, DivType Integer t ~ EnsureCN t)
+
 recip :: (CanRecip t) => t -> DivType Integer t
 recip = divide 1
 
@@ -106,6 +136,11 @@ type CanDivBy t1 t2 =
   (CanDiv t1 t2, DivType t1 t2 ~ t1)
 type CanDivSameType t =
   CanDivBy t t
+
+type CanDivCNBy t1 t2 =
+  (CanDiv t1 t2, DivType t1 t2 ~ EnsureCN t1)
+type CanDivCNSameType t =
+  CanDivCNBy t t
 
 {-| Compound type constraint useful for test definition. -}
 type CanDivX t1 t2 =
@@ -206,24 +241,24 @@ instance CanDiv Rational Integer where
 
 instance CanDiv Int Double where
   type DivType Int Double = Double
-  divide = convertFirst divide
+  divide n d = divide (double n) d
 instance CanDiv Double Int where
   type DivType Double Int = Double
-  divide = convertSecond divide
+  divide d n = divide d (double n)
 
 instance CanDiv Integer Double where
   type DivType Integer Double = Double
-  divide = convertFirst divide
+  divide n d = divide (double n) d
 instance CanDiv Double Integer where
   type DivType Double Integer = Double
-  divide = convertSecond divide
+  divide d n = divide d (double n)
 
 instance CanDiv Rational Double where
   type DivType Rational Double = Double
-  divide = convertFirst divide
+  divide n d = divide (double n) d
 instance CanDiv Double Rational where
   type DivType Double Rational = Double
-  divide = convertSecond divide
+  divide d n = divide d (double n)
 
 instance (CanDiv a b) => CanDiv [a] [b] where
   type DivType [a] [b] = [DivType a b]
@@ -237,23 +272,23 @@ instance (CanDiv a b) => CanDiv (Maybe a) (Maybe b) where
 
 instance
   (CanDiv a b
-  , CanEnsureCollectErrors es (DivType a b)
+  , CanEnsureCE es (DivType a b)
   , Monoid es)
   =>
   CanDiv (CollectErrors es a) (CollectErrors es  b)
   where
   type DivType (CollectErrors es a) (CollectErrors es b) =
-    EnsureCollectErrors es (DivType a b)
+    EnsureCE es (DivType a b)
   divide = CN.lift2ensureCE divide
 
 powUsingMulRecip ::
-  (CanBeInteger e,
-   CanRecipSameType t, CanMulSameType t, ConvertibleExactly Integer t)
+  (CanBeInteger e, ConvertibleExactly Integer t,
+   CanRecipCNSameType t, CanMulSameType t, CanEnsureCN t)
    =>
-   t -> e -> t
+   t -> e -> EnsureCN t
 powUsingMulRecip x nPre
   | n < 0 = recip $ powUsingMul x (negate n)
-  | otherwise = powUsingMul x n
+  | otherwise = CN.ensureCE $ powUsingMul x n
   where
     n = integer nPre
 
@@ -263,23 +298,23 @@ $(declForTypes
 
     instance
       (CanDiv $t b
-      , CanEnsureCollectErrors es (DivType $t b)
+      , CanEnsureCE es (DivType $t b)
       , Monoid es)
       =>
       CanDiv $t (CollectErrors es  b)
       where
       type DivType $t (CollectErrors es  b) =
-        EnsureCollectErrors es (DivType $t b)
+        EnsureCE es (DivType $t b)
       divide = CN.unlift2first divide
 
     instance
       (CanDiv a $t
-      , CanEnsureCollectErrors es (DivType a $t)
+      , CanEnsureCE es (DivType a $t)
       , Monoid es)
       =>
       CanDiv (CollectErrors es a) $t
       where
       type DivType (CollectErrors es  a) $t =
-        EnsureCollectErrors es (DivType a $t)
+        EnsureCE es (DivType a $t)
       divide = CN.unlift2second divide
   |]))

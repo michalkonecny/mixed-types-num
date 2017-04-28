@@ -17,7 +17,7 @@ module Numeric.MixedTypes.Elementary
   -- * Exp
   , CanExp(..), CanExpSameType, specCanExpReal
   -- * Log
-  , CanLog(..), CanLogSameType, specCanLogReal
+  , CanLog(..), CanLogSameType, CanLogCNSameType, specCanLogReal
   , powUsingExpLog
   -- * Sine and cosine
   , CanSinCos(..), CanSinCosSameType, specCanSinCosReal
@@ -35,7 +35,8 @@ import Test.Hspec
 import Test.QuickCheck
 
 import Numeric.CollectErrors
-  (CollectErrors, EnsureCollectErrors, CanEnsureCollectErrors)
+  (CollectErrors, EnsureCE, CanEnsureCE,
+   WithoutCN, EnsureCN, CanEnsureCN)
 import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
@@ -105,12 +106,12 @@ instance CanSqrt Double -- not exact, will not pass the tests
 
 instance
   (CanSqrt a
-  , CanEnsureCollectErrors es (SqrtType a)
+  , CanEnsureCE es (SqrtType a)
   , Monoid es)
   =>
   CanSqrt (CollectErrors es a)
   where
-  type SqrtType (CollectErrors es a) = EnsureCollectErrors es (SqrtType a)
+  type SqrtType (CollectErrors es a) = EnsureCE es (SqrtType a)
   sqrt = CN.lift1ensureCE sqrt
 
 
@@ -135,10 +136,11 @@ type CanExpX t =
    Field (ExpType t),
    CanTestPosNeg t,
    CanTestPosNeg (ExpType t),
-   HasEqCertainly (ExpType t) (ExpType t),
+   HasEqCertainlyCN (ExpType t) (ExpType t),
    HasOrderCertainly Integer t,
    HasOrderCertainly Integer (ExpType t),
-   Show t, Arbitrary t, Show (ExpType t))
+   Show t, Arbitrary t, Show (ExpType t),
+   Show (WithoutCN t), Show (WithoutCN (ExpType t)))
 
 {-|
   HSpec properties that each implementation of CanExp should satisfy.
@@ -157,7 +159,7 @@ specCanExpReal (T typeName :: T t) =
       property $ \ (x :: t) ->
         ((-100000) !<! x && x !<! 100000) ==>
           (exp x !>! 0) ==>
-            exp (-x) ?==?$ 1/(exp x)
+            (CN.ensureCN $ exp (-x)) ?==?$ 1/(exp x)
     it "exp(x+y) = exp(x)*exp(y)" $ do
       property $ \ (x :: t)  (y :: t) ->
         ((-100000) !<! x && x !<! 100000 && (-100000) !<! y && y !<! 100000) ==>
@@ -179,12 +181,12 @@ instance CanExp Double -- not exact, will not pass the tests
 
 instance
   (CanExp a
-  , CanEnsureCollectErrors es (ExpType a)
+  , CanEnsureCE es (ExpType a)
   , Monoid es)
   =>
   CanExp (CollectErrors es a)
   where
-  type ExpType (CollectErrors es a) = EnsureCollectErrors es (ExpType a)
+  type ExpType (CollectErrors es a) = EnsureCE es (ExpType a)
   exp = CN.lift1ensureCE exp
 
 {----  log -----}
@@ -201,12 +203,14 @@ class CanLog t where
   log = P.log
 
 type CanLogSameType t = (CanLog t, LogType t ~ t)
+type CanLogCNSameType t = (CanLog t, LogType t ~ EnsureCN t)
 
 type CanLogX t =
   (CanLog t,
    Field t,
    Ring (LogType t),
    HasOrderCertainly t Integer,
+   HasOrderCertainlyCN t Integer,
    HasEqCertainly (LogType t) (LogType t),
    Show t, Arbitrary t, Show (LogType t))
 
@@ -217,7 +221,8 @@ specCanLogReal ::
   (CanLogX t,
    CanLogX (DivType Integer t),
    CanExp t, CanLogX (ExpType t),
-   HasEqCertainly t (LogType (ExpType t)))
+   HasEqCertainly (LogType t) (EnsureCN (LogType (WithoutCN t))),
+   HasEqCertainlyCN t (LogType (ExpType t)))
   =>
   T t -> Spec
 specCanLogReal (T typeName :: T t) =
@@ -248,12 +253,12 @@ instance CanLog Double -- not exact, will not pass the tests
 
 instance
   (CanLog a
-  , CanEnsureCollectErrors es (LogType a)
+  , CanEnsureCE es (LogType a)
   , Monoid es)
   =>
   CanLog (CollectErrors es a)
   where
-  type LogType (CollectErrors es a) = EnsureCollectErrors es (LogType a)
+  type LogType (CollectErrors es a) = EnsureCE es (LogType a)
   log = CN.lift1ensureCE log
 
 instance CanPow Double Double where
@@ -277,13 +282,15 @@ powUsingExpLog ::
    CanMulSameType t1,
    HasIntegers t1,
    CanTestZero t1,
-   CanRecipSameType t1,
+   CanRecipCNSameType t1,
    CanTestInteger t2,
    CanTestPosNeg t2,
    CanMulAsymmetric (LogType t1) t2,
    CanLog t1,
    CanExp (MulType (LogType t1) t2),
-   ExpType (MulType (LogType t1) t2) ~ t1)
+   HasIntegers (WithoutCN t1),
+   CanEnsureCN t1,
+   ExpType (MulType (LogType t1) t2) ~ EnsureCN t1)
   =>
   t1 -> t2 -> ExpType (MulType (LogType t1) t2)
 powUsingExpLog x y
@@ -319,8 +326,9 @@ type CanSinCosX t =
   (CanSinCos t,
    OrderedCertainlyField t,
    OrderedCertainlyField (SinCosType t),
-   HasOrderCertainly (SinCosType t) t,
-   Show t, Arbitrary t, Show (SinCosType t))
+   HasOrderCertainlyCN (SinCosType t) t,
+   Show t, Arbitrary t, Show (SinCosType t),
+   Show (WithoutCN t), Arbitrary t, Show (WithoutCN (SinCosType t)))
 
 {-|
   HSpec properties that each implementation of CanSinCos should satisfy.
@@ -352,7 +360,7 @@ specCanSinCosReal (T typeName :: T t) =
     it "sin(x) < x < tan(x) for x in [0,pi/2]" $ do
       property $ \ (x :: t) ->
         x !>=! 0 && x !<=! 1.57 && (cos x) !>! 0 ==>
-          (sin x) ?<=?$ x .&&. x ?<=?$ (sin x)/(cos x)
+          (sin x) ?<=?$ x .&&. (CN.ensureCN x) ?<=?$ (sin x)/(cos x)
   where
   infix 4 ?==?$
   (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
@@ -370,12 +378,12 @@ instance CanSinCos Double -- not exact, will not pass the tests
 
 instance
   (CanSinCos a
-  , CanEnsureCollectErrors es (SinCosType a)
+  , CanEnsureCE es (SinCosType a)
   , Monoid es)
   =>
   CanSinCos (CollectErrors es a)
   where
-  type SinCosType (CollectErrors es a) = EnsureCollectErrors es (SinCosType a)
+  type SinCosType (CollectErrors es a) = EnsureCE es (SinCosType a)
   sin = CN.lift1ensureCE sin
   cos = CN.lift1ensureCE cos
 

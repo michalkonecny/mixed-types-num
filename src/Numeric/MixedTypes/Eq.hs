@@ -16,6 +16,7 @@ module Numeric.MixedTypes.Eq
   -- * Equality checks
   HasEq,  HasEqAsymmetric(..), (==), (/=)
   , HasEqCertainly, HasEqCertainlyAsymmetric
+  , HasEqCertainlyCE, HasEqCertainlyCN
   , notCertainlyDifferentFrom, certainlyEqualTo, certainlyNotEqualTo
   , (?==?), (!==!), (!/=!)
   -- ** Tests
@@ -40,7 +41,7 @@ import Data.Ratio
 import Test.Hspec
 import Test.QuickCheck as QC
 
-import Numeric.CollectErrors (CollectErrors, EnsureCollectErrors, CanEnsureCollectErrors)
+import Numeric.CollectErrors (CollectErrors, EnsureCE, CanEnsureCE, WithoutCE)
 import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
@@ -61,6 +62,18 @@ type HasEqCertainlyAsymmetric t1 t2 =
 
 type HasEqCertainly t1 t2 =
   (HasEq t1 t2, CanTestCertainly (EqCompareType t1 t2))
+
+type HasEqCertainlyCE es t1 t2 =
+  (HasEqCertainly t1 t2,
+   HasEqCertainly (WithoutCE es t1) (WithoutCE es t2),
+   CanTestCertainly (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))),
+   IsBool (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))),
+   CanEnsureCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2)),
+   CanEnsureCE es (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))),
+   WithoutCE es (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2)))
+     ~ (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))))
+
+type HasEqCertainlyCN t1 t2 = HasEqCertainlyCE CN.NumErrors t1 t2
 
 class (IsBool (EqCompareType a b)) => HasEqAsymmetric a b where
     type EqCompareType a b
@@ -233,14 +246,14 @@ instance (HasEqAsymmetric a b) => HasEqAsymmetric (Maybe a) (Maybe b) where
 
 instance
   (HasEqAsymmetric a b
-  , CanEnsureCollectErrors es (EqCompareType a b)
-  , IsBool (EnsureCollectErrors es (EqCompareType a b))
+  , CanEnsureCE es (EqCompareType a b)
+  , IsBool (EnsureCE es (EqCompareType a b))
   , Monoid es)
   =>
   HasEqAsymmetric (CollectErrors es a) (CollectErrors es  b)
   where
   type EqCompareType (CollectErrors es  a) (CollectErrors es  b) =
-    EnsureCollectErrors es (EqCompareType a b)
+    EnsureCE es (EqCompareType a b)
   equalTo = CN.lift2ensureCE equalTo
 
 $(declForTypes
@@ -249,26 +262,26 @@ $(declForTypes
 
     instance
       (HasEqAsymmetric $t b
-      , CanEnsureCollectErrors es (EqCompareType $t b)
-      , IsBool (EnsureCollectErrors es (EqCompareType $t b))
+      , CanEnsureCE es (EqCompareType $t b)
+      , IsBool (EnsureCE es (EqCompareType $t b))
       , Monoid es)
       =>
       HasEqAsymmetric $t (CollectErrors es  b)
       where
       type EqCompareType $t (CollectErrors es  b) =
-        EnsureCollectErrors es (EqCompareType $t b)
+        EnsureCE es (EqCompareType $t b)
       equalTo = CN.unlift2first equalTo
 
     instance
       (HasEqAsymmetric a $t
-      , CanEnsureCollectErrors es (EqCompareType a $t)
-      , IsBool (EnsureCollectErrors es (EqCompareType a $t))
+      , CanEnsureCE es (EqCompareType a $t)
+      , IsBool (EnsureCE es (EqCompareType a $t))
       , Monoid es)
       =>
       HasEqAsymmetric (CollectErrors es a) $t
       where
       type EqCompareType (CollectErrors es  a) $t =
-        EnsureCollectErrors es (EqCompareType a $t)
+        EnsureCE es (EqCompareType a $t)
       equalTo = CN.unlift2second equalTo
 
   |]))

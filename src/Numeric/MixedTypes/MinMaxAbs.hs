@@ -36,7 +36,7 @@ import qualified Data.List as List
 import Test.Hspec
 import Test.QuickCheck
 
-import Numeric.CollectErrors (CollectErrors, EnsureCollectErrors, CanEnsureCollectErrors)
+import Numeric.CollectErrors (CollectErrors, EnsureCE, CanEnsureCE)
 import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
@@ -210,13 +210,13 @@ instance (CanMinMaxAsymmetric a b) => CanMinMaxAsymmetric (Maybe a) (Maybe b) wh
 
 instance
   (CanMinMaxAsymmetric a b
-  , CanEnsureCollectErrors es (MinMaxType a b)
+  , CanEnsureCE es (MinMaxType a b)
   , Monoid es)
   =>
   CanMinMaxAsymmetric (CollectErrors es a) (CollectErrors es  b)
   where
   type MinMaxType (CollectErrors es a) (CollectErrors es b) =
-    EnsureCollectErrors es (MinMaxType a b)
+    EnsureCE es (MinMaxType a b)
   min = CN.lift2ensureCE min
   max = CN.lift2ensureCE max
 
@@ -226,25 +226,25 @@ $(declForTypes
 
     instance
       (CanMinMaxAsymmetric $t b
-      , CanEnsureCollectErrors es (MinMaxType $t b)
+      , CanEnsureCE es (MinMaxType $t b)
       , Monoid es)
       =>
       CanMinMaxAsymmetric $t (CollectErrors es  b)
       where
       type MinMaxType $t (CollectErrors es  b) =
-        EnsureCollectErrors es (MinMaxType $t b)
+        EnsureCE es (MinMaxType $t b)
       min = CN.unlift2first min
       max = CN.unlift2first max
 
     instance
       (CanMinMaxAsymmetric a $t
-      , CanEnsureCollectErrors es (MinMaxType a $t)
+      , CanEnsureCE es (MinMaxType a $t)
       , Monoid es)
       =>
       CanMinMaxAsymmetric (CollectErrors es a) $t
       where
       type MinMaxType (CollectErrors es  a) $t =
-        EnsureCollectErrors es (MinMaxType a $t)
+        EnsureCE es (MinMaxType a $t)
       min = CN.unlift2second min
       max = CN.unlift2second max
 
@@ -316,12 +316,12 @@ instance CanAbs Double
 
 instance
   (CanAbs a
-  , CanEnsureCollectErrors es (AbsType a)
+  , CanEnsureCE es (AbsType a)
   , Monoid es)
   =>
   CanAbs (CollectErrors es a)
   where
-  type AbsType (CollectErrors es a) = EnsureCollectErrors es (AbsType a)
+  type AbsType (CollectErrors es a) = EnsureCE es (AbsType a)
   abs = CN.lift1ensureCE abs
 
 type CanAbsX t =

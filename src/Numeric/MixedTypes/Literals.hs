@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-|
     Module      :  Numeric.MixedType.Literals
     Description :  Fixed-type numeric literals, conversions
@@ -54,6 +55,8 @@ module Numeric.MixedTypes.Literals
 )
 where
 
+import Utils.TH.DeclForTypes
+
 import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 import Text.Printf
@@ -65,6 +68,10 @@ import qualified Data.List as List
 import Test.Hspec
 import Test.QuickCheck
 -- import Control.Exception (evaluate)
+
+import Numeric.CollectErrors
+  (CollectErrors, EnsureCE, CanEnsureCE, WithoutCE)
+import qualified Numeric.CollectErrors as CN
 
 {-| Replacement for 'Prelude.fromInteger' using the RebindableSyntax extension.
     This version of fromInteger arranges that integer literals
@@ -178,9 +185,6 @@ instance ConvertibleExactly Integer Int
 instance ConvertibleExactly Int Rational
 instance ConvertibleExactly Integer Rational
 
-instance ConvertibleExactly Int Double
-instance ConvertibleExactly Integer Double
-instance ConvertibleExactly Rational Double
 instance ConvertibleExactly Double Double where
   safeConvertExactly d = Right d
 
@@ -240,3 +244,11 @@ convertSecond ::
   (a -> a -> c) {-^ same-type operation -} ->
   (a -> b -> c) {-^ mixed-type operation -}
 convertSecond = convertSecondUsing (\ _ b -> convertExactly b)
+
+$(declForTypes
+  [[t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
+  (\ t -> [d|
+
+    instance (ConvertibleExactly $t t, Monoid es) => ConvertibleExactly $t (CollectErrors es t) where
+      safeConvertExactly = fmap CN.noErrors . safeConvertExactly
+  |]))

@@ -16,6 +16,7 @@ module Numeric.MixedTypes.Ord
   -- * Comparisons in numeric order
   HasOrder, HasOrderAsymmetric(..), (>), (<), (<=), (>=)
   , HasOrderCertainlyAsymmetric, HasOrderCertainly
+  , HasOrderCertainlyCE, HasOrderCertainlyCN
   , (?<=?), (?<?), (?>=?), (?>?)
   , (!<=!), (!<!), (!>=!), (!>!)
   -- ** Tests
@@ -34,7 +35,8 @@ import Text.Printf
 import Test.Hspec
 import qualified Test.QuickCheck as QC
 
-import Numeric.CollectErrors (CollectErrors, EnsureCollectErrors, CanEnsureCollectErrors)
+import Numeric.CollectErrors
+  (CollectErrors, EnsureCE, CanEnsureCE, WithoutCE)
 import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
@@ -53,6 +55,18 @@ type HasOrder t1 t2 =
 
 type HasOrderCertainly t1 t2 =
   (HasOrder t1 t2, CanTestCertainly (OrderCompareType t1 t2))
+
+type HasOrderCertainlyCE es t1 t2 =
+  (HasOrderCertainly t1 t2,
+   HasOrderCertainly (WithoutCE es t1) (WithoutCE es t2),
+   CanTestCertainly (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2))),
+   IsBool (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2))),
+   CanEnsureCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2)),
+   CanEnsureCE es (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2))),
+   WithoutCE es (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2)))
+     ~ (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2))))
+
+type HasOrderCertainlyCN t1 t2 = HasOrderCertainlyCE CN.NumErrors t1 t2
 
 type HasOrderCertainlyAsymmetric t1 t2 =
   (HasOrderAsymmetric t1 t2, CanTestCertainly (OrderCompareType t1 t2))
@@ -200,14 +214,14 @@ instance HasOrderAsymmetric Double Int where
 
 instance
   (HasOrderAsymmetric a b
-  , CanEnsureCollectErrors es (OrderCompareType a b)
-  , IsBool (EnsureCollectErrors es (OrderCompareType a b))
+  , CanEnsureCE es (OrderCompareType a b)
+  , IsBool (EnsureCE es (OrderCompareType a b))
   , Monoid es)
   =>
   HasOrderAsymmetric (CollectErrors es a) (CollectErrors es  b)
   where
   type OrderCompareType (CollectErrors es a) (CollectErrors es b) =
-    EnsureCollectErrors es (OrderCompareType a b)
+    EnsureCE es (OrderCompareType a b)
   lessThan = CN.lift2ensureCE lessThan
   leq = CN.lift2ensureCE leq
   greaterThan = CN.lift2ensureCE greaterThan
@@ -219,14 +233,14 @@ $(declForTypes
 
     instance
       (HasOrderAsymmetric $t b
-      , CanEnsureCollectErrors es (OrderCompareType $t b)
-      , IsBool (EnsureCollectErrors es (OrderCompareType $t b))
+      , CanEnsureCE es (OrderCompareType $t b)
+      , IsBool (EnsureCE es (OrderCompareType $t b))
       , Monoid es)
       =>
       HasOrderAsymmetric $t (CollectErrors es  b)
       where
       type OrderCompareType $t (CollectErrors es  b) =
-        EnsureCollectErrors es (OrderCompareType $t b)
+        EnsureCE es (OrderCompareType $t b)
       lessThan = CN.unlift2first lessThan
       leq = CN.unlift2first leq
       greaterThan = CN.unlift2first greaterThan
@@ -234,14 +248,14 @@ $(declForTypes
 
     instance
       (HasOrderAsymmetric a $t
-      , CanEnsureCollectErrors es (OrderCompareType a $t)
-      , IsBool (EnsureCollectErrors es (OrderCompareType a $t))
+      , CanEnsureCE es (OrderCompareType a $t)
+      , IsBool (EnsureCE es (OrderCompareType a $t))
       , Monoid es)
       =>
       HasOrderAsymmetric (CollectErrors es a) $t
       where
       type OrderCompareType (CollectErrors es  a) $t =
-        EnsureCollectErrors es (OrderCompareType a $t)
+        EnsureCE es (OrderCompareType a $t)
       lessThan = CN.unlift2second lessThan
       leq = CN.unlift2second leq
       greaterThan = CN.unlift2second greaterThan
