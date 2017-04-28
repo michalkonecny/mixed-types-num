@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-|
     Module      :  Numeric.MixedType.AddSub
     Description :  Bottom-up typed addition and subtraction
@@ -25,6 +26,8 @@ module Numeric.MixedTypes.AddSub
 )
 where
 
+import Utils.TH.DeclForTypes
+
 import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 import Text.Printf
@@ -33,6 +36,9 @@ import qualified Data.List as List
 
 import Test.Hspec
 import Test.QuickCheck
+
+import Numeric.CollectErrors (CollectErrors, EnsureCollectErrors, CanEnsureCollectErrors)
+import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool (CanNeg(..))
@@ -61,6 +67,9 @@ infixl 6  +, -
 
 (+) :: (CanAddAsymmetric t1 t2) => t1 -> t2 -> AddType t1 t2
 (+) = add
+
+(-) :: (CanSub t1 t2) => t1 -> t2 -> SubType t1 t2
+(-) = sub
 
 type CanAddThis t1 t2 =
   (CanAdd t1 t2, AddType t1 t2 ~ t1)
@@ -217,6 +226,19 @@ instance (CanAddAsymmetric a b) => CanAddAsymmetric (Maybe a) (Maybe b) where
   add (Just x) (Just y) = Just (add x y)
   add _ _ = Nothing
 
+instance
+  (CanAddAsymmetric a b
+  , CanEnsureCollectErrors es (AddType a b)
+  , Monoid es)
+  =>
+  CanAddAsymmetric (CollectErrors es a) (CollectErrors es  b)
+  where
+  type AddType (CollectErrors es a) (CollectErrors es b) =
+    EnsureCollectErrors es (AddType a b)
+  add = CN.lift2ensureCE add
+
+-- TH for ground type instances at is the end of the file due to a bug in TH
+
 {---- Subtraction -----}
 
 {-|
@@ -236,9 +258,6 @@ class CanSub t1 t2 where
     =>
     t1 -> t2 -> SubType t1 t2
   a `sub` b = a + (negate b)
-
-(-) :: (CanSub t1 t2) => t1 -> t2 -> SubType t1 t2
-(-) = sub
 
 type CanSubThis t1 t2 =
   (CanSub t1 t2, SubType t1 t2 ~ t1)
@@ -353,3 +372,65 @@ instance (CanSub a b) => CanSub (Maybe a) (Maybe b) where
   type SubType (Maybe a) (Maybe b) = Maybe (SubType a b)
   sub (Just x) (Just y) = Just (sub x y)
   sub _ _ = Nothing
+
+
+instance
+  (CanSub a b
+  , CanEnsureCollectErrors es (SubType a b)
+  , Monoid es)
+  =>
+  CanSub (CollectErrors es a) (CollectErrors es  b)
+  where
+  type SubType (CollectErrors es a) (CollectErrors es b) =
+    EnsureCollectErrors es (SubType a b)
+  sub = CN.lift2ensureCE sub
+
+
+$(declForTypes
+  [[t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
+  (\ t -> [d|
+
+    instance
+      (CanSub $t b
+      , CanEnsureCollectErrors es (SubType $t b)
+      , Monoid es)
+      =>
+      CanSub $t (CollectErrors es  b)
+      where
+      type SubType $t (CollectErrors es  b) =
+        EnsureCollectErrors es (SubType $t b)
+      sub = CN.unlift2first sub
+
+    instance
+      (CanSub a $t
+      , CanEnsureCollectErrors es (SubType a $t)
+      , Monoid es)
+      =>
+      CanSub (CollectErrors es a) $t
+      where
+      type SubType (CollectErrors es  a) $t =
+        EnsureCollectErrors es (SubType a $t)
+      sub = CN.unlift2second sub
+
+    instance
+      (CanAddAsymmetric $t b
+      , CanEnsureCollectErrors es (AddType $t b)
+      , Monoid es)
+      =>
+      CanAddAsymmetric $t (CollectErrors es  b)
+      where
+      type AddType $t (CollectErrors es  b) =
+        EnsureCollectErrors es (AddType $t b)
+      add = CN.unlift2first add
+
+    instance
+      (CanAddAsymmetric a $t
+      , CanEnsureCollectErrors es (AddType a $t)
+      , Monoid es)
+      =>
+      CanAddAsymmetric (CollectErrors es a) $t
+      where
+      type AddType (CollectErrors es  a) $t =
+        EnsureCollectErrors es (AddType a $t)
+      add = CN.unlift2second add
+  |]))

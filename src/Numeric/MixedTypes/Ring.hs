@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-|
     Module      :  Numeric.MixedType.Ring
     Description :  Bottom-up typed multiplication and exponent
@@ -13,7 +14,7 @@
 module Numeric.MixedTypes.Ring
 (
   -- * Ring
-  CanAddSubMulBy, Ring, CertainlyEqRing, OrderedRing, OrderedCertainlyRing
+  CanAddPowMulBy, Ring, CertainlyEqRing, OrderedRing, OrderedCertainlyRing
   -- * Multiplication
   , CanMul, CanMulAsymmetric(..), CanMulBy, CanMulSameType
   , (*), product
@@ -28,6 +29,8 @@ module Numeric.MixedTypes.Ring
 )
 where
 
+import Utils.TH.DeclForTypes
+
 import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 import Text.Printf
@@ -36,6 +39,9 @@ import qualified Data.List as List
 
 import Test.Hspec
 import Test.QuickCheck
+
+import Numeric.CollectErrors (CollectErrors, EnsureCollectErrors, CanEnsureCollectErrors)
+import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -46,17 +52,17 @@ import Numeric.MixedTypes.AddSub
 
 {----- Ring -----}
 
-type CanAddSubMulBy t s =
+type CanAddPowMulBy t s =
   (CanAddThis t s, CanSubThis t s, CanMulBy t s)
 
 type Ring t =
   (CanNegSameType t, CanAddSameType t, CanSubSameType t, CanMulSameType t,
    CanPowBy t Integer, CanPowBy t Int,
    HasEq t t,
-   HasEq t Integer, CanAddSubMulBy t Integer,
-   CanSub Integer t, SubType Integer t ~ t,
-   HasEq t Int, CanAddSubMulBy t Int,
-   CanSub Int t, SubType Int t ~ t,
+   HasEq t Integer, CanAddPowMulBy t Integer,
+   CanPow Integer t, PowType Integer t ~ t,
+   HasEq t Int, CanAddPowMulBy t Int,
+   CanPow Int t, SubType Int t ~ t,
    ConvertibleExactly Integer t)
 
 type CertainlyEqRing t =
@@ -91,6 +97,17 @@ infixl 7  *
 
 (*) :: (CanMulAsymmetric t1 t2) => t1 -> t2 -> MulType t1 t2
 (*) = mul
+
+(^) :: (CanPow t1 t2) => t1 -> t2 -> PowType t1 t2
+(^) = pow
+
+{-| A synonym of `^` -}
+(^^) :: (CanPow t1 t2) => t1 -> t2 -> PowType t1 t2
+(^^) = (^)
+
+{-| A synonym of `^` -}
+(**) :: (CanPow t1 t2) => t1 -> t2 -> (PowType t1 t2)
+(**) = (^)
 
 type CanMulBy t1 t2 =
   (CanMul t1 t2, MulType t1 t2 ~ t1)
@@ -242,6 +259,17 @@ instance (CanMulAsymmetric a b) => CanMulAsymmetric (Maybe a) (Maybe b) where
   mul (Just x) (Just y) = Just (mul x y)
   mul _ _ = Nothing
 
+instance
+  (CanMulAsymmetric a b
+  , CanEnsureCollectErrors es (MulType a b)
+  , Monoid es)
+  =>
+  CanMulAsymmetric (CollectErrors es a) (CollectErrors es  b)
+  where
+  type MulType (CollectErrors es a) (CollectErrors es b) =
+    EnsureCollectErrors es (MulType a b)
+  mul = CN.lift2ensureCE mul
+
 {---- Exponentiation -----}
 
 {-|
@@ -272,17 +300,6 @@ powUsingMul x nPre
         let s = aux (m `div` 2) in s * s
       | otherwise =
         let s = aux ((m-1) `div` 2) in x * s * s
-
-(^) :: (CanPow t1 t2) => t1 -> t2 -> PowType t1 t2
-(^) = pow
-
-{-| A synonym of `^` -}
-(^^) :: (CanPow t1 t2) => t1 -> t2 -> PowType t1 t2
-(^^) = (^)
-
-{-| A synonym of `^` -}
-(**) :: (CanPow t1 t2) => t1 -> t2 -> (PowType t1 t2)
-(**) = (^)
 
 type CanPowBy t1 t2 =
   (CanPow t1 t2, PowType t1 t2 ~ t1)
@@ -352,3 +369,63 @@ instance (CanPow a b) => CanPow (Maybe a) (Maybe b) where
   type PowType (Maybe a) (Maybe b) = Maybe (PowType a b)
   pow (Just x) (Just y) = Just (pow x y)
   pow _ _ = Nothing
+
+instance
+  (CanPow a b
+  , CanEnsureCollectErrors es (PowType a b)
+  , Monoid es)
+  =>
+  CanPow (CollectErrors es a) (CollectErrors es  b)
+  where
+  type PowType (CollectErrors es a) (CollectErrors es b) =
+    EnsureCollectErrors es (PowType a b)
+  pow = CN.lift2ensureCE pow
+
+$(declForTypes
+  [[t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
+  (\ t -> [d|
+
+    instance
+      (CanPow $t b
+      , CanEnsureCollectErrors es (PowType $t b)
+      , Monoid es)
+      =>
+      CanPow $t (CollectErrors es  b)
+      where
+      type PowType $t (CollectErrors es  b) =
+        EnsureCollectErrors es (PowType $t b)
+      pow = CN.unlift2first pow
+
+    instance
+      (CanPow a $t
+      , CanEnsureCollectErrors es (PowType a $t)
+      , Monoid es)
+      =>
+      CanPow (CollectErrors es a) $t
+      where
+      type PowType (CollectErrors es  a) $t =
+        EnsureCollectErrors es (PowType a $t)
+      pow = CN.unlift2second pow
+
+    instance
+      (CanMulAsymmetric $t b
+      , CanEnsureCollectErrors es (MulType $t b)
+      , Monoid es)
+      =>
+      CanMulAsymmetric $t (CollectErrors es  b)
+      where
+      type MulType $t (CollectErrors es  b) =
+        EnsureCollectErrors es (MulType $t b)
+      mul = CN.unlift2first mul
+
+    instance
+      (CanMulAsymmetric a $t
+      , CanEnsureCollectErrors es (MulType a $t)
+      , Monoid es)
+      =>
+      CanMulAsymmetric (CollectErrors es a) $t
+      where
+      type MulType (CollectErrors es  a) $t =
+        EnsureCollectErrors es (MulType a $t)
+      mul = CN.unlift2second mul
+  |]))

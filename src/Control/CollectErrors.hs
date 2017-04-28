@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Control.CollectErrors
 (
 -- * Monad for collecting errors in expressions
@@ -15,6 +16,8 @@ where
 
 import Prelude
 import Data.Monoid
+
+import Language.Haskell.TH
 
 import Control.EnsureTypeOp
 
@@ -203,3 +206,28 @@ lift2ensureCE fn
 lift2ensureCE _
     (CollectErrors _ ae) (CollectErrors _ be) =
         CollectErrors Nothing (ae <> be)
+
+-- Templates for instances propagating CollectErrors through operations
+-- 
+-- makeInstanceForCollectErrors2 :: Name -> Q Type -> [Q Exp] -> Q Dec
+-- makeInstanceForCollectErrors2 opClass resultType operations =
+--   -- instanceD (return []) (conT opClass `appT` (conT ''CollectErrors `appT` (varT (mkName "es")))) []
+--   [d|
+--     instance
+--       (Monoid es) =>
+--       $(conT opClass `appT` (conT ''CollectErrors `appT` (varT (mkName "es"))))
+--       where
+--
+--   |]
+--
+-- instance
+--   (CanMinMaxAsymmetric a b
+--   , CanEnsureCollectErrors es (MinMaxType a b)
+--   , Monoid es)
+--   =>
+--   CanMinMaxAsymmetric (CollectErrors es a) (CollectErrors es  b)
+--   where
+--   type MinMaxType (CollectErrors es a) (CollectErrors es b) =
+--     EnsureCollectErrors es (MinMaxType a b)
+--   min = CN.lift2ensureCE min
+--   max = CN.lift2ensureCE max

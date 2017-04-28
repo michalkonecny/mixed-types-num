@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell #-}
+-- {-# LANGUAGE TemplateHaskell #-}
 {-|
     Module      :  Utils.TH.DeclForTypes
     Description :  Repeat declaration for multiple types
