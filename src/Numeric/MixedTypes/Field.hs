@@ -118,17 +118,17 @@ specCanDiv (T typeName1 :: T t1) (T typeName2 :: T t2) =
   describe (printf "CanDiv %s %s" typeName1 typeName2) $ do
     it "recip(recip x) = x" $ do
       property $ \ (x :: t1) ->
-        (isNonZero x && isNonZero (recip x)) ==>
+        (isCertainlyNonZero x && isCertainlyNonZero (recip x)) ==>
           recip (recip x) ?==?$ x
     it "x/1 = x" $ do
       property $ \ (x :: t1) -> let one = (convertExactly 1 :: t2) in (x / one) ?==?$ x
     it "x/x = 1" $ do
       property $ \ (x :: t1) ->
-        (isNonZero x) ==>
+        (isCertainlyNonZero x) ==>
           let one = (convertExactly 1 :: t1) in (x / x) ?==?$ one
     it "x/y = x*(1/y)" $ do
       property $ \ (x :: t1) (y :: t2) ->
-        (isNonZero y) ==>
+        (isCertainlyNonZero y) ==>
           let one = (convertExactly 1 :: t1) in (x / y) ?==?$ x * (one/y)
   where
   infix 4 ?==?$

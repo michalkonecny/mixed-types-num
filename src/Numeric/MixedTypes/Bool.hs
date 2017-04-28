@@ -125,8 +125,8 @@ instance (ConvertibleExactly Bool t, Monoid es) => ConvertibleExactly Bool (Coll
   safeConvertExactly = fmap CN.noErrors . safeConvertExactly
 
 instance (CanTestCertainly t, P.Eq es, Monoid es) => CanTestCertainly (CollectErrors es t) where
-  isCertainlyTrue ce = CN.ifError ce (const False) isCertainlyTrue
-  isCertainlyFalse ce = CN.ifError ce (const False) isCertainlyFalse
+  isCertainlyTrue ce = CN.getValueIfNoError ce isCertainlyTrue (const False)
+  isCertainlyFalse ce = CN.getValueIfNoError ce isCertainlyFalse (const False)
 
 
 {---- Negation ----}
@@ -148,7 +148,8 @@ class CanNeg t where
 not :: (CanNeg t) => t -> NegType t
 not = negate
 
-type CanNegSameType t = (CanNeg t, NegType t ~ t)
+type CanNegSameType t =
+  (CanNeg t, NegType t ~ t)
 
 {-| Compound type constraint useful for test definition. -}
 type CanTestCertainlyX t = (CanTestCertainly t, Show t, SCS.Serial IO t)
@@ -377,7 +378,8 @@ instance (CanAndOrAsymmetric Bool t2, Monoid es, CanEnsureCollectErrors es (AndO
 
   Examples: @Bool@, @Maybe Bool@, @Maybe (Maybe Bool)@, @CollectErrors Bool@
 -}
-type IsBool t = (HasBools t, CanNegSameType t, CanAndOrSameType t)
+type IsBool t =
+  (HasBools t, CanNegSameType t, CanAndOrSameType t)
 
 {-|
   HSpec properties that each implementation of IsBool should satisfy.

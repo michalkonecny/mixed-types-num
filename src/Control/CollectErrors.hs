@@ -1,9 +1,12 @@
 module Control.CollectErrors
 (
+-- * Monad for collecting errors in expressions
   CollectErrors(..)
-, noErrors, noValue, prependErrors, ifError
+, noErrors, noValue, prependErrors
+, getValueIfNoError, getValueOrThrowErrors --, caseErrors
 , lift1, lift2
 , unlift2first, unlift2second
+-- * Tools for avoiding @CollectErrors(CollectErrors t)@
 , ensureCollectErrors
 , CanEnsureCollectErrors, EnsureCollectErrors
 , lift1ensureCE, lift2ensureCE
@@ -20,7 +23,7 @@ import Control.EnsureTypeOp
   (potential) errors that have (maybe) occurred during the computation
   of a value.  A value may be missing, leaving only the error(s).
 
-  Such error collectoin allows one to write expressions with partial
+  Such error collection allows one to write expressions with partial
   functions (ie functions that fail for some inputs) instead of
   branching after each application of such function.
   Dealing with the errors can be moved outside the expression.
@@ -28,7 +31,11 @@ import Control.EnsureTypeOp
   to trace the source of the errors.
 -}
 data CollectErrors es v =
-  CollectErrors (Maybe v) es
+  CollectErrors
+  {
+    getMaybeValue :: (Maybe v)
+  , getErrors :: es
+  }
   deriving (Show)
 
 -- utilities:
@@ -45,11 +52,25 @@ noValue es = CollectErrors Nothing es
 prependErrors :: (Monoid es) => es -> CollectErrors es v -> CollectErrors es v
 prependErrors es1 (CollectErrors mv es2) = CollectErrors mv (es1 <> es2)
 
-ifError :: (Monoid es, Eq es) => (CollectErrors es v) -> (CollectErrors es v -> t) -> (v -> t) -> t
-ifError ce@(CollectErrors mv es) onError onValue =
-  case mv of
-    Just v | mempty == es -> onValue v
-    _ -> onError ce
+{-| A safe way to get a value out of the CollectErrors wrapper. -}
+getValueIfNoError :: (Monoid es, Eq es) => CollectErrors es v -> (v -> t) -> (es -> t) -> t
+getValueIfNoError ce withValue withErrors =
+  case (getMaybeValue ce, getErrors ce) of
+    (Just v, es) | es == mempty -> withValue v
+    (_, es) -> withErrors es
+
+{-| An unsafe way to get a value out of the CollectErrors wrapper. -}
+getValueOrThrowErrors :: (Show es, Monoid es, Eq es) => (CollectErrors es v) -> v
+getValueOrThrowErrors ce =
+  getValueIfNoError ce id (error . show)
+
+-- caseErrors :: [((CollectErrors es v) -> Bool, (CollectErrors es v) -> t)] -> t -> (CollectErrors es v) -> t
+-- caseErrors cases defaultT ce = aux cases
+--   where
+--   aux [] = defaultT
+--   aux ((cond, comp) : rest)
+--     | cond ce = comp ce
+--     | otherwise = aux rest
 
 {-|
   Add error collection support to an unary operation.

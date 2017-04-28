@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 {-|
     Module      :  Numeric.MixedType.Eq
     Description :  Bottom-up typed equality comparisons
@@ -21,12 +22,15 @@ module Numeric.MixedTypes.Eq
   , specHasEq, specHasEqNotMixed, HasEqX
   , specConversion
   -- ** Specific comparisons
+  , CanTestNaN(..)
   , CanTestFinite(..)
   , CanTestInteger(..)
   , CanTestZero(..), specCanTestZero
   , CanPickNonZero(..), specCanPickNonZero
 )
 where
+
+import Utils.TH.DeclForTypes
 
 import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
@@ -35,7 +39,9 @@ import Data.Ratio
 
 import Test.Hspec
 import Test.QuickCheck as QC
-import Control.Exception (evaluate)
+
+import Numeric.CollectErrors (CollectErrors, EnsureCollectErrors, CanEnsureCollectErrors)
+import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -225,22 +231,79 @@ instance (HasEqAsymmetric a b) => HasEqAsymmetric (Maybe a) (Maybe b) where
   equalTo (Just x) (Just y) = (x == y)
   equalTo _ _ = convertExactly False
 
+instance
+  (HasEqAsymmetric a b
+  , CanEnsureCollectErrors es (EqCompareType a b)
+  , IsBool (EnsureCollectErrors es (EqCompareType a b))
+  , Monoid es)
+  =>
+  HasEqAsymmetric (CollectErrors es a) (CollectErrors es  b)
+  where
+  type EqCompareType (CollectErrors es  a) (CollectErrors es  b) =
+    EnsureCollectErrors es (EqCompareType a b)
+  equalTo = CN.lift2ensureCE equalTo
+
+$(declForTypes
+  [[t| Bool |], [t| Maybe Bool |], [t| Integer |], [t| Int |], [t| Rational |]]
+  (\ t -> [d|
+
+    instance
+      (HasEqAsymmetric $t b
+      , CanEnsureCollectErrors es (EqCompareType $t b)
+      , IsBool (EnsureCollectErrors es (EqCompareType $t b))
+      , Monoid es)
+      =>
+      HasEqAsymmetric $t (CollectErrors es  b)
+      where
+      type EqCompareType $t (CollectErrors es  b) =
+        EnsureCollectErrors es (EqCompareType $t b)
+      equalTo = CN.unlift2first equalTo
+
+    instance
+      (HasEqAsymmetric a $t
+      , CanEnsureCollectErrors es (EqCompareType a $t)
+      , IsBool (EnsureCollectErrors es (EqCompareType a $t))
+      , Monoid es)
+      =>
+      HasEqAsymmetric (CollectErrors es a) $t
+      where
+      type EqCompareType (CollectErrors es  a) $t =
+        EnsureCollectErrors es (EqCompareType a $t)
+      equalTo = CN.unlift2second equalTo
+
+  |]))
+
+
 {---- Checking whether it is finite -----}
 
-class CanTestFinite t where
+class CanTestNaN t where
   isNaN :: t -> Bool
   default isNaN :: (P.RealFloat t) => t -> Bool
   isNaN = P.isNaN
+
+class CanTestFinite t where
   isInfinite :: t -> Bool
   default isInfinite :: (P.RealFloat t) => t -> Bool
   isInfinite = P.isInfinite
   isFinite :: t -> Bool
-  isFinite x = (not $ isNaN x) && (not $ isInfinite x)
+  default isFinite :: (P.RealFloat t) => t -> Bool
+  isFinite x = (not $ P.isNaN x) && (not $ P.isInfinite x)
 
+instance CanTestNaN Double
 instance CanTestFinite Double
-instance CanTestFinite Rational where
+
+instance CanTestNaN Rational where
   isNaN = const False
+instance CanTestFinite Rational where
   isInfinite = const False
+  isFinite = const True
+
+instance (CanTestNaN t, Monoid es, P.Eq es) => (CanTestNaN (CollectErrors es t)) where
+  isNaN ce = CN.getValueIfNoError ce isNaN (const False)
+
+instance (CanTestFinite t, Monoid es, P.Eq es) => (CanTestFinite (CollectErrors es t)) where
+  isInfinite ce = CN.getValueIfNoError ce isInfinite (const False)
+  isFinite ce = CN.getValueIfNoError ce isFinite (const False)
 
 {---- Checking whether it is an integer -----}
 
@@ -278,15 +341,19 @@ instance CanTestInteger Double where
       dF = P.floor d
       dC = P.ceiling d
 
+instance (CanTestInteger t, Monoid es, P.Eq es) => (CanTestInteger (CollectErrors es t)) where
+  certainlyNotInteger ce = CN.getValueIfNoError ce certainlyNotInteger (const False)
+  certainlyIntegerGetIt ce = CN.getValueIfNoError ce certainlyIntegerGetIt (const Nothing)
+
 {---- Checking whether it is zero -----}
 
 class CanTestZero t where
   isCertainlyZero :: t -> Bool
-  isNonZero :: t -> Bool
+  isCertainlyNonZero :: t -> Bool
   default isCertainlyZero :: (HasEqCertainly t Integer) => t -> Bool
   isCertainlyZero a = isCertainlyTrue (a == 0)
-  default isNonZero :: (HasEqCertainly t Integer) => t -> Bool
-  isNonZero a = isCertainlyTrue (a /= 0)
+  default isCertainlyNonZero :: (HasEqCertainly t Integer) => t -> Bool
+  isCertainlyNonZero a = isCertainlyTrue (a /= 0)
 
 {-|
   HSpec properties that each implementation of CanTestZero should satisfy.
@@ -300,16 +367,21 @@ specCanTestZero (T typeName :: T t) =
     it "converted non-zero Integer is not isCertainlyZero" $ do
       property $ \ (x :: Integer) ->
         x /= 0 ==> (not $ isCertainlyZero (convertExactly x :: t))
-    it "converted non-zero Integer is isNonZero" $ do
+    it "converted non-zero Integer is isCertainlyNonZero" $ do
       property $ \ (x :: Integer) ->
-        x /= 0 ==> (isNonZero (convertExactly x :: t))
-    it "converted 0.0 is not isNonZero" $ do
-      (isNonZero (convertExactly 0 :: t)) `shouldBe` False
+        x /= 0 ==> (isCertainlyNonZero (convertExactly x :: t))
+    it "converted 0.0 is not isCertainlyNonZero" $ do
+      (isCertainlyNonZero (convertExactly 0 :: t)) `shouldBe` False
 
 instance CanTestZero Int
 instance CanTestZero Integer
 instance CanTestZero Rational
 instance CanTestZero Double
+
+instance (CanTestZero t, Monoid es, P.Eq es) => (CanTestZero (CollectErrors es t)) where
+  isCertainlyZero ce = CN.getValueIfNoError ce isCertainlyZero (const False)
+  isCertainlyNonZero ce = CN.getValueIfNoError ce isCertainlyNonZero (const False)
+
 
 class CanPickNonZero t where
   {-|
@@ -323,17 +395,12 @@ class CanPickNonZero t where
     The default implementation is based on a `CanTestZero` instance
     and is not parallel.
    -}
-  pickNonZero :: [(t,s)] -> (t,s)
-  default pickNonZero :: (CanTestZero t, Show t) => [(t,s)] -> (t,s)
-  pickNonZero list =
-    case aux list of
-      Just result -> result
-      Nothing ->
-        error $ "pickNonZero: failed to find a non-zero element in "
-                  ++ show (map fst list)
+  pickNonZero :: [(t,s)] -> Maybe (t,s)
+  default pickNonZero :: (CanTestZero t, Show t) => [(t,s)] -> Maybe (t,s)
+  pickNonZero list = aux list
     where
       aux ((a,b):rest)
-        | isNonZero a = Just (a,b)
+        | isCertainlyNonZero a = Just (a,b)
         | otherwise = aux rest
       aux [] = Nothing
 
@@ -348,11 +415,15 @@ specCanPickNonZero (T typeName :: T t) =
   describe (printf "CanPickNonZero %s" typeName) $ do
     it "picks a non-zero element if there is one" $ do
       property $ \ (xs :: [(t, ())]) ->
-        or (map (isNonZero . fst) xs) -- if at least one is non-zero
-          ==> (isNonZero $ fst $ pickNonZero xs)
-    it "throws exception when all the elements are 0" $ do
-      (evaluate $ pickNonZero [(convertExactly i :: t, ()) | i <- [0,0,0]])
-        `shouldThrow` anyException
+        or (map (isCertainlyNonZero . fst) xs) -- if at least one is non-zero
+        ==>
+        (case pickNonZero xs of
+          Just (v, _) -> isCertainlyNonZero v
+          _ -> False)
+    it "returns Nothing when all the elements are 0" $ do
+      case pickNonZero [(convertExactly i :: t, ()) | i <- [0,0,0]] of
+        Nothing -> True
+        _ -> False
 
 instance CanPickNonZero Int
 instance CanPickNonZero Integer

@@ -28,6 +28,7 @@ library
   build-depends:
     base == 4.*
     , convertible >= 1.1.1.0 && < 1.2
+    , template-haskell
     , hspec >= 2.1 && < 2.5
     , hspec-smallcheck >= 0.3 && < 0.5
     , smallcheck == 1.1.*
@@ -46,6 +47,7 @@ library
     FlexibleInstances,
     UndecidableInstances
   exposed-modules:
+    Utils.TH.DeclForTypes
     Control.EnsureTypeOp
     Control.CollectErrors
     Numeric.CollectErrors
