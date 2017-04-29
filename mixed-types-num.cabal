@@ -1,5 +1,5 @@
 name:           mixed-types-num
-version:        0.1.0.1
+version:        0.2
 cabal-version:  >= 1.9.2
 build-type:     Simple
 homepage:       https://github.com/michalkonecny/mixed-types-num
@@ -77,7 +77,16 @@ test-suite spec
   hs-source-dirs:
       test
   main-is:
-      Spec.hs
+    Spec.hs
+  other-modules:
+    Numeric.MixedTypes.AddSubSpec
+    Numeric.MixedTypes.BoolSpec
+    Numeric.MixedTypes.EqOrdSpec
+    Numeric.MixedTypes.FieldSpec
+    Numeric.MixedTypes.LiteralsSpec
+    Numeric.MixedTypes.MinMaxAbsSpec
+    Numeric.MixedTypes.RingSpec
+    Numeric.MixedTypes.RoundSpec
   build-depends:
     base == 4.*
     , mixed-types-num
