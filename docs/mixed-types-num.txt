@@ -13,8 +13,155 @@
 @version 0.1.0.1
 
 
+-- | Template Haskell utilities
+module Utils.TH.DeclForTypes
+
+-- | A toy example of use:
+--   
+--   <pre>
+--   class HasTT t where
+--     type TT t
+--     getTT :: t -&gt; TT t
+--   
+--   $(declForTypes
+--     [[t| Integer |], [t| Int |], [t| Rational |]]
+--     ( t -&gt; [d|
+--       instance HasTT $t where
+--         type TT $t = ()
+--         getTT _ = ()
+--     |]))
+--   </pre>
+declForTypes :: [Q Type] -> (Q Type -> Q [Dec]) -> Q [Dec]
+
+
 -- | Prelude without operations that clash with MixedTypes
 module Numeric.MixedTypes.PreludeHiding
+
+module Control.EnsureTypeOp
+
+-- | A mechanism for applying a type operator to a type except when the
+--   type already has that operator.
+type EnsureTypeOp f a = f (RemoveTypeOp f a)
+
+-- | A mechanism for translating a value of a type <tt>a</tt> to a value of
+--   a type <tt>f a</tt> except when <tt>a = f b</tt> for some <tt>b</tt>,
+--   in which case the value is left as is.
+class CanEnsureTypeOp f a
+ensureTypeOp :: CanEnsureTypeOp f a => a -> EnsureTypeOp f a
+instance Control.EnsureTypeOp.CanEnsureTypeOp f (f a)
+
+module Control.CollectErrors
+
+-- | A wrapper around values which can accommodate a list of (potential)
+--   errors that have (maybe) occurred during the computation of a value. A
+--   value may be missing, leaving only the error(s).
+--   
+--   Such error collection allows one to write expressions with partial
+--   functions (ie functions that fail for some inputs) instead of
+--   branching after each application of such function. Dealing with the
+--   errors can be moved outside the expression. If the error data contain
+--   enough information, their list can be used to trace the source of the
+--   errors.
+data CollectErrors es v
+CollectErrors :: (Maybe v) -> es -> CollectErrors es v
+[getMaybeValue] :: CollectErrors es v -> (Maybe v)
+[getErrors] :: CollectErrors es v -> es
+
+-- | Wrap a pure value in a CollectErrors record
+noErrors :: (Monoid es) => v -> CollectErrors es v
+
+-- | Make CollectErrors record with no value, only errors.
+noValue :: es -> CollectErrors es v
+
+-- | Add further errors into a CollectErrors record.
+prependErrors :: (Monoid es) => es -> CollectErrors es v -> CollectErrors es v
+
+-- | A safe way to get a value out of the CollectErrors wrapper.
+getValueIfNoError :: (Monoid es, Eq es) => CollectErrors es v -> (v -> t) -> (es -> t) -> t
+
+-- | An unsafe way to get a value out of the CollectErrors wrapper.
+getValueOrThrowErrors :: (Show es, Monoid es, Eq es) => (CollectErrors es v) -> v
+
+-- | Add error collection support to an unary operation.
+lift1 :: (a -> b) -> (CollectErrors es a) -> (CollectErrors es b)
+
+-- | Add error collection support to a binary operation.
+lift2 :: (Monoid es) => (a -> b -> c) -> (CollectErrors es a) -> (CollectErrors es b) -> (CollectErrors es c)
+
+-- | An utility function for easily defining a binary function with only
+--   the second parameter collecting errors, if we have an analogous
+--   function that requires both parameters to collect errors.
+unlift2first :: (Monoid es) => ((CollectErrors es a) -> (CollectErrors es b) -> t) -> (a -> (CollectErrors es b) -> t)
+
+-- | An utility function for easily defining a binary function with only
+--   the first parameter collecting errors, if we have an analogous
+--   function that requires both parameters to collect errors.
+unlift2second :: (Monoid es) => ((CollectErrors es a) -> (CollectErrors es b) -> t) -> ((CollectErrors es a) -> b -> t)
+
+-- | Translate a value of a type <tt>a</tt> to a value of a type
+--   <tt>CollectErrors es a</tt> except when <tt>a</tt> already is a
+--   <tt>CollectErrors</tt> type, in which case the value is left as is.
+ensureCE :: (CanEnsureCE es v) => v -> EnsureCE es v
+type CanEnsureCE es v = CanEnsureTypeOp (CollectErrors es) v
+type EnsureCE es v = EnsureTypeOp (CollectErrors es) v
+
+-- | Apply CollectErrors to a type except when the type already is a
+--   CollectErrors type.
+--   
+--   Remove CollectErrors wrapper from a type if it is there.
+type WithoutCE es v = RemoveTypeOp (CollectErrors es) v
+
+-- | Add error collection support to a binary function whose result may
+--   already have collected errors.
+lift1ensureCE :: (Monoid es, CanEnsureCE es b) => (a -> b) -> (CollectErrors es a) -> (EnsureCE es b)
+
+-- | Add error collection support to a binary function whose result may
+--   already have collected errors.
+lift2ensureCE :: (Monoid es, CanEnsureCE es c) => (a -> b -> c) -> (CollectErrors es a) -> (CollectErrors es b) -> (EnsureCE es c)
+instance (GHC.Show.Show es, GHC.Show.Show v) => GHC.Show.Show (Control.CollectErrors.CollectErrors es v)
+instance GHC.Base.Functor (Control.CollectErrors.CollectErrors es)
+instance GHC.Base.Monoid es => GHC.Base.Applicative (Control.CollectErrors.CollectErrors es)
+instance GHC.Base.Monoid es => GHC.Base.Monad (Control.CollectErrors.CollectErrors es)
+instance (Test.QuickCheck.Arbitrary.Arbitrary t, GHC.Base.Monoid es) => Test.QuickCheck.Arbitrary.Arbitrary (Control.CollectErrors.CollectErrors es t)
+instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Types.Int
+instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Integer.Type.Integer
+instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Real.Rational
+instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Types.Char
+instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Types.Bool
+instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) [a]
+instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) (GHC.Base.Maybe a)
+instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) (Data.Either.Either e a)
+
+
+-- | A type of numeric errors to be collected.
+module Numeric.CollectErrors
+data ErrorCertaintyLevel
+ErrorCertain :: ErrorCertaintyLevel
+ErrorPotential :: ErrorCertaintyLevel
+data NumError
+DivByZero :: NumError
+OutOfRange :: String -> NumError
+NumError :: String -> NumError
+type NumErrors = [(ErrorCertaintyLevel, NumError)]
+type CollectNumErrors v = CollectErrors NumErrors v
+
+-- | Wrap a value in the <a>CollectNumErrors</a> wrapper.
+noNumErrors :: v -> CollectNumErrors v
+type WithoutCN v = WithoutCE NumErrors v
+type CanEnsureCN v = CanEnsureCE NumErrors v
+type EnsureCN v = EnsureCE NumErrors v
+ensureCN :: (CanEnsureCN v) => v -> EnsureCN v
+type CN v = CollectNumErrors v
+
+-- | Wrap a value in the <a>CollectNumErrors</a> wrapper.
+cn :: v -> CollectNumErrors v
+
+-- | An unsafe way to get a value out of the CollectNumErrors wrapper.
+unCN :: CollectNumErrors v -> v
+instance GHC.Classes.Eq Numeric.CollectErrors.ErrorCertaintyLevel
+instance GHC.Show.Show Numeric.CollectErrors.ErrorCertaintyLevel
+instance GHC.Classes.Eq Numeric.CollectErrors.NumError
+instance GHC.Show.Show Numeric.CollectErrors.NumError
 
 
 -- | This module defines fixed-type integer and rational literals. This is
@@ -56,15 +203,21 @@ fromRational :: Rational -> Rational
 ifThenElse :: Bool -> t -> t -> t
 type CanBeInteger t = ConvertibleExactly t Integer
 integer :: (CanBeInteger t) => t -> Integer
+integerCN :: (CanBeInteger t) => t -> CollectNumErrors Integer
 integers :: (CanBeInteger t) => [t] -> [Integer]
+integersCN :: (CanBeInteger t) => [t] -> CollectNumErrors [Integer]
 type HasIntegers t = ConvertibleExactly Integer t
 fromInteger_ :: (HasIntegers t) => Integer -> t
 type CanBeInt t = ConvertibleExactly t Int
 int :: (CanBeInt t) => t -> Int
+intCN :: (CanBeInt t) => t -> CollectNumErrors Int
 ints :: (CanBeInt t) => [t] -> [Int]
+intsCN :: (CanBeInt t) => [t] -> CollectNumErrors [Int]
 type CanBeRational t = ConvertibleExactly t Rational
 rational :: (CanBeRational t) => t -> Rational
+rationalCN :: (CanBeRational t) => t -> CollectNumErrors Rational
 rationals :: (CanBeRational t) => [t] -> [Rational]
+rationalsCN :: (CanBeRational t) => [t] -> CollectNumErrors [Rational]
 type HasRationals t = ConvertibleExactly Rational t
 fromRational_ :: (HasRationals t) => Rational -> t
 type CanBeDouble t = Convertible t Double
@@ -79,6 +232,7 @@ class ConvertibleExactly t1 t2 where safeConvertExactly = safeConvert
 safeConvertExactly :: ConvertibleExactly t1 t2 => t1 -> ConvertResult t2
 safeConvertExactly :: (ConvertibleExactly t1 t2, Convertible t1 t2) => t1 -> ConvertResult t2
 convertExactly :: (ConvertibleExactly t1 t2) => t1 -> t2
+convertExactlyCN :: (ConvertibleExactly t1 t2) => t1 -> CollectNumErrors t2
 
 -- | The result of a safe conversion via <a>safeConvert</a>.
 type ConvertResult a = Either ConvertError a
@@ -108,6 +262,10 @@ convertFirst :: (ConvertibleExactly a b) => (b -> b -> c) -> (a -> b -> c)
 convertSecond :: (ConvertibleExactly b a) => (a -> a -> c) -> (a -> b -> c)
 convertFirstUsing :: (a -> b -> b) -> (b -> b -> c) -> (a -> b -> c)
 convertSecondUsing :: (a -> b -> a) -> (a -> a -> c) -> (a -> b -> c)
+instance (Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Integer.Type.Integer t0, GHC.Base.Monoid es0) => Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Integer.Type.Integer (Control.CollectErrors.CollectErrors es0 t0)
+instance (Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Int t0, GHC.Base.Monoid es0) => Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Int (Control.CollectErrors.CollectErrors es0 t0)
+instance (Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Real.Rational t0, GHC.Base.Monoid es0) => Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Real.Rational (Control.CollectErrors.CollectErrors es0 t0)
+instance (Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Double t0, GHC.Base.Monoid es0) => Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Double (Control.CollectErrors.CollectErrors es0 t0)
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Integer.Type.Integer GHC.Integer.Type.Integer
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Int GHC.Integer.Type.Integer
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Int GHC.Types.Int
@@ -115,114 +273,7 @@ instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Real.Rational GHC.Re
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Integer.Type.Integer GHC.Types.Int
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Int GHC.Real.Rational
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Integer.Type.Integer GHC.Real.Rational
-instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Int GHC.Types.Double
-instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Integer.Type.Integer GHC.Types.Double
-instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Real.Rational GHC.Types.Double
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Double GHC.Types.Double
-
-module Control.EnsureTypeOp
-
--- | A mechanism for applying a type operator to a type except when the
---   type already has that operator.
-type EnsureTypeOp f a = f (RemoveTypeOp f a)
-
--- | A mechanism for translating a value of a type <tt>a</tt> to a value of
---   a type <tt>f a</tt> except when <tt>a = f b</tt> for some <tt>b</tt>,
---   in which case the value is left as is.
-class CanEnsureTypeOp f a
-ensureTypeOp :: CanEnsureTypeOp f a => a -> EnsureTypeOp f a
-instance Control.EnsureTypeOp.CanEnsureTypeOp f (f a)
-
-module Control.CollectErrors
-
--- | A wrapper around values which can accommodate a list of (potential)
---   errors that have (maybe) occurred during the computation of a value. A
---   value may be missing, leaving only the error(s).
---   
---   Such error collectoin allows one to write expressions with partial
---   functions (ie functions that fail for some inputs) instead of
---   branching after each application of such function. Dealing with the
---   errors can be moved outside the expression. If the error data contain
---   enough information, their list can be used to trace the source of the
---   errors.
-data CollectErrors es v
-CollectErrors :: (Maybe v) -> es -> CollectErrors es v
-
--- | Wrap a pure value in a CollectErrors record
-noErrors :: (Monoid es) => v -> CollectErrors es v
-
--- | Make CollectErrors record with no value, only errors.
-noValue :: es -> CollectErrors es v
-
--- | Add further errors into a CollectErrors record.
-prependErrors :: (Monoid es) => es -> CollectErrors es v -> CollectErrors es v
-ifError :: (Monoid es, Eq es) => (CollectErrors es v) -> (CollectErrors es v -> t) -> (v -> t) -> t
-
--- | Add error collection support to an unary operation.
-lift1 :: (a -> b) -> (CollectErrors es a) -> (CollectErrors es b)
-
--- | Add error collection support to a binary operation.
-lift2 :: (Monoid es) => (a -> b -> c) -> (CollectErrors es a) -> (CollectErrors es b) -> (CollectErrors es c)
-
--- | An utility function for easily defining a binary function with only
---   the second parameter collecting errors, if we have an analogous
---   function that requires both parameters to collect errors.
-unlift2first :: (Monoid es) => ((CollectErrors es a) -> (CollectErrors es b) -> t) -> (a -> (CollectErrors es b) -> t)
-
--- | An utility function for easily defining a binary function with only
---   the first parameter collecting errors, if we have an analogous
---   function that requires both parameters to collect errors.
-unlift2second :: (Monoid es) => ((CollectErrors es a) -> (CollectErrors es b) -> t) -> ((CollectErrors es a) -> b -> t)
-
--- | Translate a value of a type <tt>a</tt> to a value of a type
---   <tt>CollectErrors es a</tt> except when <tt>a</tt> already is a
---   <tt>CollectErrors</tt> type, in which case the value is left as is.
-ensureCollectErrors :: (CanEnsureCollectErrors es v) => v -> EnsureCollectErrors es v
-type CanEnsureCollectErrors es v = CanEnsureTypeOp (CollectErrors es) v
-
--- | Apply CollectErrors to a type except when the type already is a
---   CollectErrors type.
-type EnsureCollectErrors es v = EnsureTypeOp (CollectErrors es) v
-
--- | Add error collection support to a binary function whose result may
---   already have collected errors.
-lift1ensureCE :: (Monoid es, CanEnsureCollectErrors es b) => (a -> b) -> (CollectErrors es a) -> (EnsureCollectErrors es b)
-
--- | Add error collection support to a binary function whose result may
---   already have collected errors.
-lift2ensureCE :: (Monoid es, CanEnsureCollectErrors es c) => (a -> b -> c) -> (CollectErrors es a) -> (CollectErrors es b) -> (EnsureCollectErrors es c)
-instance (GHC.Show.Show es, GHC.Show.Show v) => GHC.Show.Show (Control.CollectErrors.CollectErrors es v)
-instance GHC.Base.Functor (Control.CollectErrors.CollectErrors es)
-instance GHC.Base.Monoid es => GHC.Base.Applicative (Control.CollectErrors.CollectErrors es)
-instance GHC.Base.Monoid es => GHC.Base.Monad (Control.CollectErrors.CollectErrors es)
-instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Types.Int
-instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Integer.Type.Integer
-instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Real.Rational
-instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Types.Char
-instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) GHC.Types.Bool
-instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) [a]
-instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) (GHC.Base.Maybe a)
-instance GHC.Base.Monoid es => Control.EnsureTypeOp.CanEnsureTypeOp (Control.CollectErrors.CollectErrors es) (Data.Either.Either e a)
-
-
--- | A type of numeric errors to be collected.
-module Numeric.CollectErrors
-data ErrorCertaintyLevel
-ErrorCertain :: ErrorCertaintyLevel
-ErrorPotential :: ErrorCertaintyLevel
-data NumError
-DivByZero :: NumError
-OutOfRange :: String -> NumError
-NumError :: String -> NumError
-type NumErrors = [(ErrorCertaintyLevel, NumError)]
-type CollectNumErrors v = CollectErrors NumErrors v
-noNumErrors :: v -> CollectNumErrors v
-type CanEnsureCollectNumErrors v = CanEnsureCollectErrors NumErrors v
-type EnsureCollectNumErrors v = EnsureCollectErrors NumErrors v
-instance GHC.Classes.Eq Numeric.CollectErrors.ErrorCertaintyLevel
-instance GHC.Show.Show Numeric.CollectErrors.ErrorCertaintyLevel
-instance GHC.Classes.Eq Numeric.CollectErrors.NumError
-instance GHC.Show.Show Numeric.CollectErrors.NumError
 
 
 module Numeric.MixedTypes.Bool
@@ -331,14 +382,14 @@ instance (Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Bool t, GHC.B
 instance (Numeric.MixedTypes.Bool.CanTestCertainly t, GHC.Classes.Eq es, GHC.Base.Monoid es) => Numeric.MixedTypes.Bool.CanTestCertainly (Control.CollectErrors.CollectErrors es t)
 instance Numeric.MixedTypes.Bool.CanNeg GHC.Types.Bool
 instance Numeric.MixedTypes.Bool.CanNeg t => Numeric.MixedTypes.Bool.CanNeg (GHC.Base.Maybe t)
-instance (Numeric.MixedTypes.Bool.CanNeg t, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCollectErrors es (Numeric.MixedTypes.Bool.NegType t)) => Numeric.MixedTypes.Bool.CanNeg (Control.CollectErrors.CollectErrors es t)
+instance (Numeric.MixedTypes.Bool.CanNeg t, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.Bool.NegType t)) => Numeric.MixedTypes.Bool.CanNeg (Control.CollectErrors.CollectErrors es t)
 instance Numeric.MixedTypes.Bool.CanAndOrAsymmetric GHC.Types.Bool GHC.Types.Bool
 instance (Numeric.MixedTypes.Bool.CanAndOrAsymmetric t1 t2, Numeric.MixedTypes.Bool.CanTestCertainly t1, Numeric.MixedTypes.Bool.CanTestCertainly t2, Numeric.MixedTypes.Bool.CanTestCertainly (Numeric.MixedTypes.Bool.AndOrType t1 t2)) => Numeric.MixedTypes.Bool.CanAndOrAsymmetric (GHC.Base.Maybe t1) (GHC.Base.Maybe t2)
 instance (Numeric.MixedTypes.Bool.CanAndOrAsymmetric GHC.Types.Bool t2, Numeric.MixedTypes.Bool.CanTestCertainly t2, Numeric.MixedTypes.Bool.CanTestCertainly (Numeric.MixedTypes.Bool.AndOrType GHC.Types.Bool t2)) => Numeric.MixedTypes.Bool.CanAndOrAsymmetric GHC.Types.Bool (GHC.Base.Maybe t2)
 instance (Numeric.MixedTypes.Bool.CanAndOrAsymmetric t1 GHC.Types.Bool, Numeric.MixedTypes.Bool.CanTestCertainly t1, Numeric.MixedTypes.Bool.CanTestCertainly (Numeric.MixedTypes.Bool.AndOrType t1 GHC.Types.Bool)) => Numeric.MixedTypes.Bool.CanAndOrAsymmetric (GHC.Base.Maybe t1) GHC.Types.Bool
-instance (Numeric.MixedTypes.Bool.CanAndOrAsymmetric t1 t2, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCollectErrors es (Numeric.MixedTypes.Bool.AndOrType t1 t2)) => Numeric.MixedTypes.Bool.CanAndOrAsymmetric (Control.CollectErrors.CollectErrors es t1) (Control.CollectErrors.CollectErrors es t2)
-instance (Numeric.MixedTypes.Bool.CanAndOrAsymmetric t1 GHC.Types.Bool, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCollectErrors es (Numeric.MixedTypes.Bool.AndOrType t1 GHC.Types.Bool)) => Numeric.MixedTypes.Bool.CanAndOrAsymmetric (Control.CollectErrors.CollectErrors es t1) GHC.Types.Bool
-instance (Numeric.MixedTypes.Bool.CanAndOrAsymmetric GHC.Types.Bool t2, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCollectErrors es (Numeric.MixedTypes.Bool.AndOrType GHC.Types.Bool t2)) => Numeric.MixedTypes.Bool.CanAndOrAsymmetric GHC.Types.Bool (Control.CollectErrors.CollectErrors es t2)
+instance (Numeric.MixedTypes.Bool.CanAndOrAsymmetric t1 t2, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.Bool.AndOrType t1 t2)) => Numeric.MixedTypes.Bool.CanAndOrAsymmetric (Control.CollectErrors.CollectErrors es t1) (Control.CollectErrors.CollectErrors es t2)
+instance (Numeric.MixedTypes.Bool.CanAndOrAsymmetric t1 GHC.Types.Bool, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.Bool.AndOrType t1 GHC.Types.Bool)) => Numeric.MixedTypes.Bool.CanAndOrAsymmetric (Control.CollectErrors.CollectErrors es t1) GHC.Types.Bool
+instance (Numeric.MixedTypes.Bool.CanAndOrAsymmetric GHC.Types.Bool t2, GHC.Base.Monoid es, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.Bool.AndOrType GHC.Types.Bool t2)) => Numeric.MixedTypes.Bool.CanAndOrAsymmetric GHC.Types.Bool (Control.CollectErrors.CollectErrors es t2)
 
 
 module Numeric.MixedTypes.Eq
@@ -357,6 +408,8 @@ infix 4 ==
 infix 4 /=
 type HasEqCertainly t1 t2 = (HasEq t1 t2, CanTestCertainly (EqCompareType t1 t2))
 type HasEqCertainlyAsymmetric t1 t2 = (HasEqAsymmetric t1 t2, CanTestCertainly (EqCompareType t1 t2))
+type HasEqCertainlyCE es t1 t2 = (HasEqCertainly t1 t2, HasEqCertainly (WithoutCE es t1) (WithoutCE es t2), CanTestCertainly (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))), IsBool (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))), CanEnsureCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2)), CanEnsureCE es (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))), WithoutCE es (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))) ~ (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))))
+type HasEqCertainlyCN t1 t2 = HasEqCertainlyCE NumErrors t1 t2
 notCertainlyDifferentFrom :: (HasEqCertainlyAsymmetric a b) => a -> b -> Bool
 certainlyEqualTo :: (HasEqCertainlyAsymmetric a b) => a -> b -> Bool
 certainlyNotEqualTo :: (HasEqCertainlyAsymmetric a b) => a -> b -> Bool
@@ -378,26 +431,28 @@ type HasEqX t1 t2 = (HasEqCertainly t1 t2, Show t1, Arbitrary t1, Show t2, Arbit
 
 -- | HSpec property of there-and-back conversion.
 specConversion :: (Arbitrary t1, Show t1, HasEqCertainly t1 t1) => T t1 -> T t2 -> (t1 -> t2) -> (t2 -> t1) -> Spec
-class CanTestFinite t where isNaN = isNaN isInfinite = isInfinite isFinite x = (not $ isNaN x) && (not $ isInfinite x)
-isNaN :: CanTestFinite t => t -> Bool
-isNaN :: (CanTestFinite t, RealFloat t) => t -> Bool
+class CanTestNaN t where isNaN = isNaN
+isNaN :: CanTestNaN t => t -> Bool
+isNaN :: (CanTestNaN t, RealFloat t) => t -> Bool
+class CanTestFinite t where isInfinite = isInfinite isFinite x = (not $ isNaN x) && (not $ isInfinite x)
 isInfinite :: CanTestFinite t => t -> Bool
 isInfinite :: (CanTestFinite t, RealFloat t) => t -> Bool
 isFinite :: CanTestFinite t => t -> Bool
+isFinite :: (CanTestFinite t, RealFloat t) => t -> Bool
 class CanTestInteger t where certainlyInteger s = case certainlyIntegerGetIt s of { Just _ -> True _ -> False }
 certainlyNotInteger :: CanTestInteger t => t -> Bool
 certainlyInteger :: CanTestInteger t => t -> Bool
 certainlyIntegerGetIt :: CanTestInteger t => t -> Maybe Integer
-class CanTestZero t where isCertainlyZero a = isCertainlyTrue (a == 0) isNonZero a = isCertainlyTrue (a /= 0)
+class CanTestZero t where isCertainlyZero a = isCertainlyTrue (a == 0) isCertainlyNonZero a = isCertainlyTrue (a /= 0)
 isCertainlyZero :: CanTestZero t => t -> Bool
-isNonZero :: CanTestZero t => t -> Bool
+isCertainlyNonZero :: CanTestZero t => t -> Bool
 isCertainlyZero :: (CanTestZero t, HasEqCertainly t Integer) => t -> Bool
-isNonZero :: (CanTestZero t, HasEqCertainly t Integer) => t -> Bool
+isCertainlyNonZero :: (CanTestZero t, HasEqCertainly t Integer) => t -> Bool
 
 -- | HSpec properties that each implementation of CanTestZero should
 --   satisfy.
 specCanTestZero :: (CanTestZero t, ConvertibleExactly Integer t) => T t -> Spec
-class CanPickNonZero t where pickNonZero list = case aux list of { Just result -> result Nothing -> error $ "pickNonZero: failed to find a non-zero element in " ++ show (map fst list) } where aux ((a, b) : rest) | isNonZero a = Just (a, b) | otherwise = aux rest aux [] = Nothing
+class CanPickNonZero t where pickNonZero list = aux list where aux ((a, b) : rest) | isCertainlyNonZero a = Just (a, b) | otherwise = aux rest aux [] = Nothing
 
 -- | Given a list <tt>[(a1,b1),(a2,b2),...]</tt> and assuming that at least
 --   one of <tt>a1,a2,...</tt> is non-zero, pick one of them and return the
@@ -408,7 +463,7 @@ class CanPickNonZero t where pickNonZero list = case aux list of { Just result -
 --   
 --   The default implementation is based on a <a>CanTestZero</a> instance
 --   and is not parallel.
-pickNonZero :: CanPickNonZero t => [(t, s)] -> (t, s)
+pickNonZero :: CanPickNonZero t => [(t, s)] -> Maybe (t, s)
 
 -- | Given a list <tt>[(a1,b1),(a2,b2),...]</tt> and assuming that at least
 --   one of <tt>a1,a2,...</tt> is non-zero, pick one of them and return the
@@ -419,11 +474,42 @@ pickNonZero :: CanPickNonZero t => [(t, s)] -> (t, s)
 --   
 --   The default implementation is based on a <a>CanTestZero</a> instance
 --   and is not parallel.
-pickNonZero :: (CanPickNonZero t, CanTestZero t, Show t) => [(t, s)] -> (t, s)
+pickNonZero :: (CanPickNonZero t, CanTestZero t, Show t) => [(t, s)] -> Maybe (t, s)
 
 -- | HSpec properties that each implementation of CanPickNonZero should
 --   satisfy.
 specCanPickNonZero :: (CanPickNonZero t, CanTestZero t, ConvertibleExactly Integer t, Show t, Arbitrary t) => T t -> Spec
+instance (Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Types.Bool b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType GHC.Types.Bool b0), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType GHC.Types.Bool b0)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Types.Bool (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Eq.HasEqAsymmetric a0 GHC.Types.Bool, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType a0 GHC.Types.Bool), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType a0 GHC.Types.Bool)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Eq.HasEqAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Bool
+instance (Numeric.MixedTypes.Eq.HasEqAsymmetric (GHC.Base.Maybe GHC.Types.Bool) b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType (GHC.Base.Maybe GHC.Types.Bool) b0), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType (GHC.Base.Maybe GHC.Types.Bool) b0)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Eq.HasEqAsymmetric (GHC.Base.Maybe GHC.Types.Bool) (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Eq.HasEqAsymmetric a0 (GHC.Base.Maybe GHC.Types.Bool), Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType a0 (GHC.Base.Maybe GHC.Types.Bool)), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType a0 (GHC.Base.Maybe GHC.Types.Bool))), GHC.Base.Monoid es0) => Numeric.MixedTypes.Eq.HasEqAsymmetric (Control.CollectErrors.CollectErrors es0 a0) (GHC.Base.Maybe GHC.Types.Bool)
+instance (Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Integer.Type.Integer b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType GHC.Integer.Type.Integer b0), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType GHC.Integer.Type.Integer b0)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Integer.Type.Integer (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Eq.HasEqAsymmetric a0 GHC.Integer.Type.Integer, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType a0 GHC.Integer.Type.Integer), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType a0 GHC.Integer.Type.Integer)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Eq.HasEqAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Integer.Type.Integer
+instance (Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Types.Int b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType GHC.Types.Int b0), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType GHC.Types.Int b0)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Types.Int (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Eq.HasEqAsymmetric a0 GHC.Types.Int, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType a0 GHC.Types.Int), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType a0 GHC.Types.Int)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Eq.HasEqAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Int
+instance (Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Real.Rational b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType GHC.Real.Rational b0), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType GHC.Real.Rational b0)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Real.Rational (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Eq.HasEqAsymmetric a0 GHC.Real.Rational, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType a0 GHC.Real.Rational), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType a0 GHC.Real.Rational)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Eq.HasEqAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Real.Rational
+instance (Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Types.Double b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType GHC.Types.Double b0), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType GHC.Types.Double b0)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Types.Double (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Eq.HasEqAsymmetric a0 GHC.Types.Double, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType a0 GHC.Types.Double), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Eq.EqCompareType a0 GHC.Types.Double)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Eq.HasEqAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Double
+instance Numeric.MixedTypes.Eq.CanTestNaN GHC.Types.Double
+instance Numeric.MixedTypes.Eq.CanTestFinite GHC.Types.Double
+instance Numeric.MixedTypes.Eq.CanTestNaN GHC.Real.Rational
+instance Numeric.MixedTypes.Eq.CanTestFinite GHC.Real.Rational
+instance (Numeric.MixedTypes.Eq.CanTestNaN t, GHC.Base.Monoid es, GHC.Classes.Eq es) => Numeric.MixedTypes.Eq.CanTestNaN (Control.CollectErrors.CollectErrors es t)
+instance (Numeric.MixedTypes.Eq.CanTestFinite t, GHC.Base.Monoid es, GHC.Classes.Eq es) => Numeric.MixedTypes.Eq.CanTestFinite (Control.CollectErrors.CollectErrors es t)
+instance Numeric.MixedTypes.Eq.CanTestInteger GHC.Integer.Type.Integer
+instance Numeric.MixedTypes.Eq.CanTestInteger GHC.Types.Int
+instance Numeric.MixedTypes.Eq.CanTestInteger GHC.Real.Rational
+instance Numeric.MixedTypes.Eq.CanTestInteger GHC.Types.Double
+instance (Numeric.MixedTypes.Eq.CanTestInteger t, GHC.Base.Monoid es, GHC.Classes.Eq es) => Numeric.MixedTypes.Eq.CanTestInteger (Control.CollectErrors.CollectErrors es t)
+instance Numeric.MixedTypes.Eq.CanTestZero GHC.Types.Int
+instance Numeric.MixedTypes.Eq.CanTestZero GHC.Integer.Type.Integer
+instance Numeric.MixedTypes.Eq.CanTestZero GHC.Real.Rational
+instance Numeric.MixedTypes.Eq.CanTestZero GHC.Types.Double
+instance (Numeric.MixedTypes.Eq.CanTestZero t, GHC.Base.Monoid es, GHC.Classes.Eq es) => Numeric.MixedTypes.Eq.CanTestZero (Control.CollectErrors.CollectErrors es t)
+instance Numeric.MixedTypes.Eq.CanPickNonZero GHC.Types.Int
+instance Numeric.MixedTypes.Eq.CanPickNonZero GHC.Integer.Type.Integer
+instance Numeric.MixedTypes.Eq.CanPickNonZero GHC.Real.Rational
 instance Numeric.MixedTypes.Eq.HasEqAsymmetric () ()
 instance Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Types.Bool GHC.Types.Bool
 instance Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Types.Char GHC.Types.Char
@@ -447,19 +533,7 @@ instance Numeric.MixedTypes.Eq.HasEqAsymmetric ((a1, a2, a3), a4) ((b1, b2, b3),
 instance Numeric.MixedTypes.Eq.HasEqAsymmetric ((a1, a2, a3, a4), a5) ((b1, b2, b3, b4), b5) => Numeric.MixedTypes.Eq.HasEqAsymmetric (a1, a2, a3, a4, a5) (b1, b2, b3, b4, b5)
 instance Numeric.MixedTypes.Eq.HasEqAsymmetric a b => Numeric.MixedTypes.Eq.HasEqAsymmetric [a] [b]
 instance Numeric.MixedTypes.Eq.HasEqAsymmetric a b => Numeric.MixedTypes.Eq.HasEqAsymmetric (GHC.Base.Maybe a) (GHC.Base.Maybe b)
-instance Numeric.MixedTypes.Eq.CanTestFinite GHC.Types.Double
-instance Numeric.MixedTypes.Eq.CanTestFinite GHC.Real.Rational
-instance Numeric.MixedTypes.Eq.CanTestInteger GHC.Integer.Type.Integer
-instance Numeric.MixedTypes.Eq.CanTestInteger GHC.Types.Int
-instance Numeric.MixedTypes.Eq.CanTestInteger GHC.Real.Rational
-instance Numeric.MixedTypes.Eq.CanTestInteger GHC.Types.Double
-instance Numeric.MixedTypes.Eq.CanTestZero GHC.Types.Int
-instance Numeric.MixedTypes.Eq.CanTestZero GHC.Integer.Type.Integer
-instance Numeric.MixedTypes.Eq.CanTestZero GHC.Real.Rational
-instance Numeric.MixedTypes.Eq.CanTestZero GHC.Types.Double
-instance Numeric.MixedTypes.Eq.CanPickNonZero GHC.Types.Int
-instance Numeric.MixedTypes.Eq.CanPickNonZero GHC.Integer.Type.Integer
-instance Numeric.MixedTypes.Eq.CanPickNonZero GHC.Real.Rational
+instance (Numeric.MixedTypes.Eq.HasEqAsymmetric a b, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.Eq.EqCompareType a b), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es (Numeric.MixedTypes.Eq.EqCompareType a b)), GHC.Base.Monoid es) => Numeric.MixedTypes.Eq.HasEqAsymmetric (Control.CollectErrors.CollectErrors es a) (Control.CollectErrors.CollectErrors es b)
 
 
 module Numeric.MixedTypes.Ord
@@ -486,6 +560,8 @@ infix 4 <=
 infix 4 >=
 type HasOrderCertainlyAsymmetric t1 t2 = (HasOrderAsymmetric t1 t2, CanTestCertainly (OrderCompareType t1 t2))
 type HasOrderCertainly t1 t2 = (HasOrder t1 t2, CanTestCertainly (OrderCompareType t1 t2))
+type HasOrderCertainlyCE es t1 t2 = (HasOrderCertainly t1 t2, HasOrderCertainly (WithoutCE es t1) (WithoutCE es t2), CanTestCertainly (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2))), IsBool (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2))), CanEnsureCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2)), CanEnsureCE es (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2))), WithoutCE es (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2))) ~ (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2))))
+type HasOrderCertainlyCN t1 t2 = HasOrderCertainlyCE NumErrors t1 t2
 (?<=?) :: (HasOrderCertainlyAsymmetric a b) => a -> b -> Bool
 infix 4 ?<=?
 (?<?) :: (HasOrderCertainlyAsymmetric a b) => a -> b -> Bool
@@ -522,6 +598,19 @@ isCertainlyPositive :: (CanTestPosNeg t, HasOrderCertainly t Integer) => t -> Bo
 isCertainlyNonNegative :: (CanTestPosNeg t, HasOrderCertainly t Integer) => t -> Bool
 isCertainlyNegative :: (CanTestPosNeg t, HasOrderCertainly t Integer) => t -> Bool
 isCertainlyNonPositive :: (CanTestPosNeg t, HasOrderCertainly t Integer) => t -> Bool
+instance (Numeric.MixedTypes.Ord.HasOrderAsymmetric GHC.Integer.Type.Integer b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ord.OrderCompareType GHC.Integer.Type.Integer b0), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Ord.OrderCompareType GHC.Integer.Type.Integer b0)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ord.HasOrderAsymmetric GHC.Integer.Type.Integer (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Ord.HasOrderAsymmetric a0 GHC.Integer.Type.Integer, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ord.OrderCompareType a0 GHC.Integer.Type.Integer), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Ord.OrderCompareType a0 GHC.Integer.Type.Integer)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ord.HasOrderAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Integer.Type.Integer
+instance (Numeric.MixedTypes.Ord.HasOrderAsymmetric GHC.Types.Int b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ord.OrderCompareType GHC.Types.Int b0), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Ord.OrderCompareType GHC.Types.Int b0)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ord.HasOrderAsymmetric GHC.Types.Int (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Ord.HasOrderAsymmetric a0 GHC.Types.Int, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ord.OrderCompareType a0 GHC.Types.Int), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Ord.OrderCompareType a0 GHC.Types.Int)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ord.HasOrderAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Int
+instance (Numeric.MixedTypes.Ord.HasOrderAsymmetric GHC.Real.Rational b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ord.OrderCompareType GHC.Real.Rational b0), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Ord.OrderCompareType GHC.Real.Rational b0)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ord.HasOrderAsymmetric GHC.Real.Rational (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Ord.HasOrderAsymmetric a0 GHC.Real.Rational, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ord.OrderCompareType a0 GHC.Real.Rational), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Ord.OrderCompareType a0 GHC.Real.Rational)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ord.HasOrderAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Real.Rational
+instance (Numeric.MixedTypes.Ord.HasOrderAsymmetric GHC.Types.Double b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ord.OrderCompareType GHC.Types.Double b0), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Ord.OrderCompareType GHC.Types.Double b0)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ord.HasOrderAsymmetric GHC.Types.Double (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Ord.HasOrderAsymmetric a0 GHC.Types.Double, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ord.OrderCompareType a0 GHC.Types.Double), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es0 (Numeric.MixedTypes.Ord.OrderCompareType a0 GHC.Types.Double)), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ord.HasOrderAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Double
+instance Numeric.MixedTypes.Ord.CanTestPosNeg GHC.Types.Int
+instance Numeric.MixedTypes.Ord.CanTestPosNeg GHC.Integer.Type.Integer
+instance Numeric.MixedTypes.Ord.CanTestPosNeg GHC.Real.Rational
+instance Numeric.MixedTypes.Ord.CanTestPosNeg GHC.Types.Double
+instance (Numeric.MixedTypes.Ord.CanTestPosNeg t, GHC.Base.Monoid es, GHC.Classes.Eq es) => Numeric.MixedTypes.Ord.CanTestPosNeg (Control.CollectErrors.CollectErrors es t)
 instance Numeric.MixedTypes.Ord.HasOrderAsymmetric GHC.Types.Int GHC.Types.Int
 instance Numeric.MixedTypes.Ord.HasOrderAsymmetric GHC.Integer.Type.Integer GHC.Integer.Type.Integer
 instance Numeric.MixedTypes.Ord.HasOrderAsymmetric GHC.Real.Rational GHC.Real.Rational
@@ -536,10 +625,7 @@ instance Numeric.MixedTypes.Ord.HasOrderAsymmetric GHC.Integer.Type.Integer GHC.
 instance Numeric.MixedTypes.Ord.HasOrderAsymmetric GHC.Types.Double GHC.Integer.Type.Integer
 instance Numeric.MixedTypes.Ord.HasOrderAsymmetric GHC.Types.Int GHC.Types.Double
 instance Numeric.MixedTypes.Ord.HasOrderAsymmetric GHC.Types.Double GHC.Types.Int
-instance Numeric.MixedTypes.Ord.CanTestPosNeg GHC.Types.Int
-instance Numeric.MixedTypes.Ord.CanTestPosNeg GHC.Integer.Type.Integer
-instance Numeric.MixedTypes.Ord.CanTestPosNeg GHC.Real.Rational
-instance Numeric.MixedTypes.Ord.CanTestPosNeg GHC.Types.Double
+instance (Numeric.MixedTypes.Ord.HasOrderAsymmetric a b, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.Ord.OrderCompareType a b), Numeric.MixedTypes.Bool.IsBool (Control.CollectErrors.EnsureCE es (Numeric.MixedTypes.Ord.OrderCompareType a b)), GHC.Base.Monoid es) => Numeric.MixedTypes.Ord.HasOrderAsymmetric (Control.CollectErrors.CollectErrors es a) (Control.CollectErrors.CollectErrors es b)
 
 
 module Numeric.MixedTypes.MinMaxAbs
@@ -589,6 +675,23 @@ specCanNegNum :: (CanNegX t, CanNegX (NegType t), HasEqCertainly t (NegType (Neg
 
 -- | HSpec properties that each implementation of CanAbs should satisfy.
 specCanAbs :: (CanAbsX t, CanAbsX (AbsType t)) => T t -> Spec
+instance (Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric GHC.Integer.Type.Integer b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.MinMaxAbs.MinMaxType GHC.Integer.Type.Integer b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric GHC.Integer.Type.Integer (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric a0 GHC.Integer.Type.Integer, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.MinMaxAbs.MinMaxType a0 GHC.Integer.Type.Integer), GHC.Base.Monoid es0) => Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Integer.Type.Integer
+instance (Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric GHC.Types.Int b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.MinMaxAbs.MinMaxType GHC.Types.Int b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric GHC.Types.Int (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric a0 GHC.Types.Int, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.MinMaxAbs.MinMaxType a0 GHC.Types.Int), GHC.Base.Monoid es0) => Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Int
+instance (Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric GHC.Real.Rational b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.MinMaxAbs.MinMaxType GHC.Real.Rational b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric GHC.Real.Rational (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric a0 GHC.Real.Rational, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.MinMaxAbs.MinMaxType a0 GHC.Real.Rational), GHC.Base.Monoid es0) => Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Real.Rational
+instance (Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric GHC.Types.Double b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.MinMaxAbs.MinMaxType GHC.Types.Double b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric GHC.Types.Double (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric a0 GHC.Types.Double, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.MinMaxAbs.MinMaxType a0 GHC.Types.Double), GHC.Base.Monoid es0) => Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Double
+instance Numeric.MixedTypes.Bool.CanNeg GHC.Types.Int
+instance Numeric.MixedTypes.Bool.CanNeg GHC.Integer.Type.Integer
+instance Numeric.MixedTypes.Bool.CanNeg GHC.Real.Rational
+instance Numeric.MixedTypes.Bool.CanNeg GHC.Types.Double
+instance Numeric.MixedTypes.MinMaxAbs.CanAbs GHC.Types.Int
+instance Numeric.MixedTypes.MinMaxAbs.CanAbs GHC.Integer.Type.Integer
+instance Numeric.MixedTypes.MinMaxAbs.CanAbs GHC.Real.Rational
+instance Numeric.MixedTypes.MinMaxAbs.CanAbs GHC.Types.Double
+instance (Numeric.MixedTypes.MinMaxAbs.CanAbs a, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.MinMaxAbs.AbsType a), GHC.Base.Monoid es) => Numeric.MixedTypes.MinMaxAbs.CanAbs (Control.CollectErrors.CollectErrors es a)
 instance Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric GHC.Types.Int GHC.Types.Int
 instance Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric GHC.Integer.Type.Integer GHC.Integer.Type.Integer
 instance Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric GHC.Real.Rational GHC.Real.Rational
@@ -601,14 +704,7 @@ instance Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric GHC.Integer.Type.Integ
 instance Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric GHC.Real.Rational GHC.Integer.Type.Integer
 instance Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric a b => Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric [a] [b]
 instance Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric a b => Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric (GHC.Base.Maybe a) (GHC.Base.Maybe b)
-instance Numeric.MixedTypes.Bool.CanNeg GHC.Types.Int
-instance Numeric.MixedTypes.Bool.CanNeg GHC.Integer.Type.Integer
-instance Numeric.MixedTypes.Bool.CanNeg GHC.Real.Rational
-instance Numeric.MixedTypes.Bool.CanNeg GHC.Types.Double
-instance Numeric.MixedTypes.MinMaxAbs.CanAbs GHC.Types.Int
-instance Numeric.MixedTypes.MinMaxAbs.CanAbs GHC.Integer.Type.Integer
-instance Numeric.MixedTypes.MinMaxAbs.CanAbs GHC.Real.Rational
-instance Numeric.MixedTypes.MinMaxAbs.CanAbs GHC.Types.Double
+instance (Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric a b, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.MinMaxAbs.MinMaxType a b), GHC.Base.Monoid es) => Numeric.MixedTypes.MinMaxAbs.CanMinMaxAsymmetric (Control.CollectErrors.CollectErrors es a) (Control.CollectErrors.CollectErrors es b)
 
 
 module Numeric.MixedTypes.AddSub
@@ -668,6 +764,22 @@ specCanSubNotMixed :: (CanSubX t t, CanSubX t (SubType t t), CanNeg t, CanAdd t 
 
 -- | Compound type constraint useful for test definition.
 type CanSubX t1 t2 = (CanSub t1 t2, HasEqCertainly t1 (SubType t1 t2), CanAddXX t1 t2, Show (SubType t1 t2))
+instance (Numeric.MixedTypes.AddSub.CanSub GHC.Integer.Type.Integer b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.AddSub.SubType GHC.Integer.Type.Integer b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.AddSub.CanSub GHC.Integer.Type.Integer (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.AddSub.CanSub a0 GHC.Integer.Type.Integer, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.AddSub.SubType a0 GHC.Integer.Type.Integer), GHC.Base.Monoid es0) => Numeric.MixedTypes.AddSub.CanSub (Control.CollectErrors.CollectErrors es0 a0) GHC.Integer.Type.Integer
+instance (Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Integer.Type.Integer b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.AddSub.AddType GHC.Integer.Type.Integer b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Integer.Type.Integer (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.AddSub.CanAddAsymmetric a0 GHC.Integer.Type.Integer, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.AddSub.AddType a0 GHC.Integer.Type.Integer), GHC.Base.Monoid es0) => Numeric.MixedTypes.AddSub.CanAddAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Integer.Type.Integer
+instance (Numeric.MixedTypes.AddSub.CanSub GHC.Types.Int b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.AddSub.SubType GHC.Types.Int b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.AddSub.CanSub GHC.Types.Int (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.AddSub.CanSub a0 GHC.Types.Int, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.AddSub.SubType a0 GHC.Types.Int), GHC.Base.Monoid es0) => Numeric.MixedTypes.AddSub.CanSub (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Int
+instance (Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Types.Int b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.AddSub.AddType GHC.Types.Int b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Types.Int (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.AddSub.CanAddAsymmetric a0 GHC.Types.Int, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.AddSub.AddType a0 GHC.Types.Int), GHC.Base.Monoid es0) => Numeric.MixedTypes.AddSub.CanAddAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Int
+instance (Numeric.MixedTypes.AddSub.CanSub GHC.Real.Rational b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.AddSub.SubType GHC.Real.Rational b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.AddSub.CanSub GHC.Real.Rational (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.AddSub.CanSub a0 GHC.Real.Rational, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.AddSub.SubType a0 GHC.Real.Rational), GHC.Base.Monoid es0) => Numeric.MixedTypes.AddSub.CanSub (Control.CollectErrors.CollectErrors es0 a0) GHC.Real.Rational
+instance (Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Real.Rational b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.AddSub.AddType GHC.Real.Rational b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Real.Rational (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.AddSub.CanAddAsymmetric a0 GHC.Real.Rational, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.AddSub.AddType a0 GHC.Real.Rational), GHC.Base.Monoid es0) => Numeric.MixedTypes.AddSub.CanAddAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Real.Rational
+instance (Numeric.MixedTypes.AddSub.CanSub GHC.Types.Double b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.AddSub.SubType GHC.Types.Double b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.AddSub.CanSub GHC.Types.Double (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.AddSub.CanSub a0 GHC.Types.Double, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.AddSub.SubType a0 GHC.Types.Double), GHC.Base.Monoid es0) => Numeric.MixedTypes.AddSub.CanSub (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Double
+instance (Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Types.Double b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.AddSub.AddType GHC.Types.Double b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Types.Double (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.AddSub.CanAddAsymmetric a0 GHC.Types.Double, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.AddSub.AddType a0 GHC.Types.Double), GHC.Base.Monoid es0) => Numeric.MixedTypes.AddSub.CanAddAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Double
 instance Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Types.Int GHC.Types.Int
 instance Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Integer.Type.Integer GHC.Integer.Type.Integer
 instance Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Real.Rational GHC.Real.Rational
@@ -686,6 +798,7 @@ instance Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Real.Rational GHC.Types.
 instance Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Types.Double GHC.Real.Rational
 instance Numeric.MixedTypes.AddSub.CanAddAsymmetric a b => Numeric.MixedTypes.AddSub.CanAddAsymmetric [a] [b]
 instance Numeric.MixedTypes.AddSub.CanAddAsymmetric a b => Numeric.MixedTypes.AddSub.CanAddAsymmetric (GHC.Base.Maybe a) (GHC.Base.Maybe b)
+instance (Numeric.MixedTypes.AddSub.CanAddAsymmetric a b, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.AddSub.AddType a b), GHC.Base.Monoid es) => Numeric.MixedTypes.AddSub.CanAddAsymmetric (Control.CollectErrors.CollectErrors es a) (Control.CollectErrors.CollectErrors es b)
 instance Numeric.MixedTypes.AddSub.CanSub GHC.Types.Int GHC.Types.Int
 instance Numeric.MixedTypes.AddSub.CanSub GHC.Integer.Type.Integer GHC.Integer.Type.Integer
 instance Numeric.MixedTypes.AddSub.CanSub GHC.Real.Rational GHC.Real.Rational
@@ -704,11 +817,46 @@ instance Numeric.MixedTypes.AddSub.CanSub GHC.Real.Rational GHC.Types.Double
 instance Numeric.MixedTypes.AddSub.CanSub GHC.Types.Double GHC.Real.Rational
 instance Numeric.MixedTypes.AddSub.CanSub a b => Numeric.MixedTypes.AddSub.CanSub [a] [b]
 instance Numeric.MixedTypes.AddSub.CanSub a b => Numeric.MixedTypes.AddSub.CanSub (GHC.Base.Maybe a) (GHC.Base.Maybe b)
+instance (Numeric.MixedTypes.AddSub.CanSub a b, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.AddSub.SubType a b), GHC.Base.Monoid es) => Numeric.MixedTypes.AddSub.CanSub (Control.CollectErrors.CollectErrors es a) (Control.CollectErrors.CollectErrors es b)
+
+
+module Numeric.MixedTypes.Round
+
+-- | A replacement for Prelude's <a>RealFrac</a> operations, such as round
+--   in which the result type is fixed to Integer.
+--   
+--   If <tt>RealFrac t</tt> and <tt>CanTestPosNeg t</tt>, then one can use
+--   the default implementation to mirror Prelude's <tt>round</tt>, etc.
+--   
+--   In other cases, it is sufficient to define <a>properFraction</a>.
+class CanRound t where properFraction = properFraction truncate = fst . properFraction round x | - 0.5 !<! r && r !<! 0.5 = n | r !<! - 0.5 = n - 1 | r !>! 0.5 = n + 1 | even n = n | r !<! 0.0 = n - 1 | r !>! 0.0 = n + 1 | otherwise = error "round default defn: Bad value" where (n, r) = properFraction x ceiling x | isCertainlyPositive r = n + 1 | otherwise = n where (n, r) = properFraction x floor x | isCertainlyNegative r = n - 1 | otherwise = n where (n, r) = properFraction x
+properFraction :: CanRound t => t -> (Integer, t)
+properFraction :: (CanRound t, RealFrac t) => t -> (Integer, t)
+truncate :: CanRound t => t -> Integer
+round :: CanRound t => t -> Integer
+round :: (CanRound t, HasOrderCertainly t Rational) => t -> Integer
+ceiling :: CanRound t => t -> Integer
+ceiling :: (CanRound t, CanTestPosNeg t) => t -> Integer
+floor :: CanRound t => t -> Integer
+floor :: (CanRound t, CanTestPosNeg t) => t -> Integer
+class HasIntegerBounds t where integerBounds x = (floor x, ceiling x)
+integerBounds :: HasIntegerBounds t => t -> (Integer, Integer)
+integerBounds :: (HasIntegerBounds t, CanRound t) => t -> (Integer, Integer)
+
+-- | HSpec properties that each implementation of CanRound should satisfy.
+specCanRound :: (CanRoundX t, HasIntegers t) => T t -> Spec
+
+-- | HSpec properties that each implementation of CanRound should satisfy.
+specHasIntegerBounds :: (HasIntegerBoundsX t) => T t -> Spec
+instance Numeric.MixedTypes.Round.CanRound GHC.Real.Rational
+instance Numeric.MixedTypes.Round.CanRound GHC.Types.Double
+instance Numeric.MixedTypes.Round.HasIntegerBounds GHC.Real.Rational
+instance Numeric.MixedTypes.Round.HasIntegerBounds GHC.Types.Double
 
 
 module Numeric.MixedTypes.Ring
 type CanAddSubMulBy t s = (CanAddThis t s, CanSubThis t s, CanMulBy t s)
-type Ring t = (CanNegSameType t, CanAddSameType t, CanSubSameType t, CanMulSameType t, CanPowBy t Integer, CanPowBy t Int, HasEq t t, HasEq t Integer, CanAddSubMulBy t Integer, CanSub Integer t, SubType Integer t ~ t, HasEq t Int, CanAddSubMulBy t Int, CanSub Int t, SubType Int t ~ t, ConvertibleExactly Integer t)
+type Ring t = (CanNegSameType t, CanAddSameType t, CanSubSameType t, CanMulSameType t, CanPowBy t Integer, CanPowBy t Int, HasEq t t, HasEq t Integer, CanAddSubMulBy t Integer, CanPow Integer t, PowType Integer t ~ t, HasEq t Int, CanAddSubMulBy t Int, CanPow Int t, PowType Int t ~ t, ConvertibleExactly Integer t)
 type CertainlyEqRing t = (Ring t, HasEqCertainly t t, HasEqCertainly t Int, HasEqCertainly t Integer)
 type OrderedRing t = (Ring t, HasOrder t t, HasOrder t Int, HasOrder t Integer)
 type OrderedCertainlyRing t = (CertainlyEqRing t, HasOrderCertainly t t, HasOrderCertainly t Int, HasOrderCertainly t Integer, CanTestPosNeg t)
@@ -745,13 +893,13 @@ type CanMulX t1 t2 = (CanMul t1 t2, Show t1, Arbitrary t1, Show t2, Arbitrary t2
 -- | A replacement for Prelude's binary <a>^</a> and <a>^^</a>. If <tt>Num
 --   t1</tt> and <tt>Integral t2</tt>, then one can use the default
 --   implementation to mirror Prelude's <tt>^</tt>.
-class CanPow t1 t2 where type PowType t1 t2 type PowType t1 t2 = t1 pow = (^) where {
+class CanPow t1 t2 where type PowType t1 t2 type PowType t1 t2 = t1 where {
     type family PowType t1 t2;
     type PowType t1 t2 = t1;
 }
 pow :: CanPow t1 t2 => t1 -> t2 -> PowType t1 t2
-pow :: (CanPow t1 t2, PowType t1 t2 ~ t1, Num t1, Integral t2) => t1 -> t2 -> t1
 type CanPowBy t1 t2 = (CanPow t1 t2, PowType t1 t2 ~ t1)
+type CanPowCNBy t1 t2 = (CanPow t1 t2, PowType t1 t2 ~ EnsureCN t1)
 (^) :: (CanPow t1 t2) => t1 -> t2 -> PowType t1 t2
 infixl 8 ^
 
@@ -768,6 +916,22 @@ specCanPow :: (CanPowX t1 t2, HasEqCertainly t1 (PowType t1 t2), ConvertibleExac
 
 -- | Compound type constraint useful for test definition.
 type CanPowX t1 t2 = (CanPow t1 t2, Show t1, Arbitrary t1, Show t2, Arbitrary t2, Show (PowType t1 t2))
+instance (Numeric.MixedTypes.Ring.CanPow GHC.Integer.Type.Integer b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ring.PowType GHC.Integer.Type.Integer b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ring.CanPow GHC.Integer.Type.Integer (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Ring.CanPow a0 GHC.Integer.Type.Integer, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ring.PowType a0 GHC.Integer.Type.Integer), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ring.CanPow (Control.CollectErrors.CollectErrors es0 a0) GHC.Integer.Type.Integer
+instance (Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Integer.Type.Integer b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ring.MulType GHC.Integer.Type.Integer b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Integer.Type.Integer (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Ring.CanMulAsymmetric a0 GHC.Integer.Type.Integer, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ring.MulType a0 GHC.Integer.Type.Integer), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ring.CanMulAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Integer.Type.Integer
+instance (Numeric.MixedTypes.Ring.CanPow GHC.Types.Int b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ring.PowType GHC.Types.Int b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ring.CanPow GHC.Types.Int (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Ring.CanPow a0 GHC.Types.Int, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ring.PowType a0 GHC.Types.Int), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ring.CanPow (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Int
+instance (Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Int b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ring.MulType GHC.Types.Int b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Int (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Ring.CanMulAsymmetric a0 GHC.Types.Int, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ring.MulType a0 GHC.Types.Int), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ring.CanMulAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Int
+instance (Numeric.MixedTypes.Ring.CanPow GHC.Real.Rational b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ring.PowType GHC.Real.Rational b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ring.CanPow GHC.Real.Rational (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Ring.CanPow a0 GHC.Real.Rational, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ring.PowType a0 GHC.Real.Rational), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ring.CanPow (Control.CollectErrors.CollectErrors es0 a0) GHC.Real.Rational
+instance (Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Real.Rational b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ring.MulType GHC.Real.Rational b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Real.Rational (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Ring.CanMulAsymmetric a0 GHC.Real.Rational, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ring.MulType a0 GHC.Real.Rational), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ring.CanMulAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Real.Rational
+instance (Numeric.MixedTypes.Ring.CanPow GHC.Types.Double b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ring.PowType GHC.Types.Double b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ring.CanPow GHC.Types.Double (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Ring.CanPow a0 GHC.Types.Double, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ring.PowType a0 GHC.Types.Double), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ring.CanPow (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Double
+instance (Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Double b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ring.MulType GHC.Types.Double b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Double (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Ring.CanMulAsymmetric a0 GHC.Types.Double, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Ring.MulType a0 GHC.Types.Double), GHC.Base.Monoid es0) => Numeric.MixedTypes.Ring.CanMulAsymmetric (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Double
 instance Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Int GHC.Types.Int
 instance Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Integer.Type.Integer GHC.Integer.Type.Integer
 instance Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Real.Rational GHC.Real.Rational
@@ -786,6 +950,7 @@ instance Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Real.Rational GHC.Types.Do
 instance Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Double GHC.Real.Rational
 instance Numeric.MixedTypes.Ring.CanMulAsymmetric a b => Numeric.MixedTypes.Ring.CanMulAsymmetric [a] [b]
 instance Numeric.MixedTypes.Ring.CanMulAsymmetric a b => Numeric.MixedTypes.Ring.CanMulAsymmetric (GHC.Base.Maybe a) (GHC.Base.Maybe b)
+instance (Numeric.MixedTypes.Ring.CanMulAsymmetric a b, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.Ring.MulType a b), GHC.Base.Monoid es) => Numeric.MixedTypes.Ring.CanMulAsymmetric (Control.CollectErrors.CollectErrors es a) (Control.CollectErrors.CollectErrors es b)
 instance Numeric.MixedTypes.Ring.CanPow GHC.Integer.Type.Integer GHC.Integer.Type.Integer
 instance Numeric.MixedTypes.Ring.CanPow GHC.Integer.Type.Integer GHC.Types.Int
 instance Numeric.MixedTypes.Ring.CanPow GHC.Types.Int GHC.Integer.Type.Integer
@@ -795,31 +960,34 @@ instance Numeric.MixedTypes.Ring.CanPow GHC.Real.Rational GHC.Integer.Type.Integ
 instance Numeric.MixedTypes.Ring.CanPow GHC.Types.Double GHC.Types.Int
 instance Numeric.MixedTypes.Ring.CanPow GHC.Types.Double GHC.Integer.Type.Integer
 instance Numeric.MixedTypes.Ring.CanPow a b => Numeric.MixedTypes.Ring.CanPow (GHC.Base.Maybe a) (GHC.Base.Maybe b)
+instance (Numeric.MixedTypes.Ring.CanPow a b, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.Ring.PowType a b), GHC.Base.Monoid es) => Numeric.MixedTypes.Ring.CanPow (Control.CollectErrors.CollectErrors es a) (Control.CollectErrors.CollectErrors es b)
 
 
 module Numeric.MixedTypes.Field
-type CanAddSubMulDivBy t s = (CanAddSubMulBy t s, CanDivBy t s)
-type Field t = (Ring t, CanDivSameType t, CanRecipSameType t, CanAddSubMulDivBy t Rational, CanAddSubMulDivBy t Integer, CanAddSubMulDivBy t Int)
-type CertainlyEqField t = (Field t, CertainlyEqRing t)
-type OrderedField t = (Field t, OrderedRing t, HasOrder t Rational)
-type OrderedCertainlyField t = (CertainlyEqField t, OrderedCertainlyRing t, HasOrderCertainly t Rational)
+type CanAddSubMulDivCNBy t s = (CanAddSubMulBy t s, CanDivCNBy t s)
+type Field t = (FieldPre t, FieldPre (WithoutCN t), CanEnsureCN t, FieldPre (EnsureCN t))
+type CertainlyEqField t = (CertainlyEqFieldPre t, CertainlyEqFieldPre (WithoutCN t), CanEnsureCN t, CertainlyEqFieldPre (EnsureCN t))
+type OrderedField t = (OrderedFieldPre t, OrderedFieldPre (WithoutCN t), CanEnsureCN t, OrderedFieldPre (EnsureCN t))
+type OrderedCertainlyField t = (OrderedCertainlyFieldPre t, OrderedCertainlyFieldPre (WithoutCN t), CanEnsureCN t, OrderedCertainlyFieldPre (EnsureCN t))
 
 -- | A replacement for Prelude's binary <a>/</a>. If <tt>t1 = t2</tt> and
 --   <tt>Fractional t1</tt>, then one can use the default implementation to
 --   mirror Prelude's <tt>/</tt>.
-class CanDiv t1 t2 where type DivType t1 t2 type DivType t1 t2 = t1 divide = (/) where {
+class CanDiv t1 t2 where type DivType t1 t2 where {
     type family DivType t1 t2;
-    type DivType t1 t2 = t1;
 }
 divide :: CanDiv t1 t2 => t1 -> t2 -> DivType t1 t2
-divide :: (CanDiv t1 t2, DivType t1 t2 ~ t1, t1 ~ t2, Fractional t1) => t1 -> t1 -> t1
 type CanDivBy t1 t2 = (CanDiv t1 t2, DivType t1 t2 ~ t1)
+type CanDivCNBy t1 t2 = (CanDiv t1 t2, DivType t1 t2 ~ EnsureCN t1)
 type CanDivSameType t = CanDivBy t t
+type CanDivCNSameType t = CanDivCNBy t t
 type CanRecip t = CanDiv Integer t
 type CanRecipSameType t = (CanDiv Integer t, DivType Integer t ~ t)
+type CanRecipCNSameType t = (CanDiv Integer t, DivType Integer t ~ EnsureCN t)
 (/) :: (CanDiv t1 t2) => t1 -> t2 -> DivType t1 t2
+infixl 7 /
 recip :: (CanRecip t) => t -> DivType Integer t
-powUsingMulRecip :: (CanBeInteger e, CanRecipSameType t, CanMulSameType t, ConvertibleExactly Integer t) => t -> e -> t
+powUsingMulRecip :: (CanBeInteger e, ConvertibleExactly Integer t, CanRecipCNSameType t, CanMulSameType t, CanEnsureCN t) => t -> e -> EnsureCN t
 
 -- | HSpec properties that each implementation of CanDiv should satisfy.
 specCanDiv :: (CanRecip t1, CanRecip (DivType Integer t1), Show (DivType Integer (DivType Integer t1)), HasEqCertainly t1 (DivType Integer (DivType Integer t1)), CanTestZero (DivType Integer t1), CanDivX t1 t2, CanTestZero t1, CanTestZero t2, CanDivX t1 t1, CanMulX t1 (DivType t1 t2), ConvertibleExactly Integer t2, ConvertibleExactly Integer t1) => T t1 -> T t2 -> Spec
@@ -829,6 +997,14 @@ specCanDivNotMixed :: (CanRecip t, CanRecip (DivType Integer t), Show (DivType I
 
 -- | Compound type constraint useful for test definition.
 type CanDivX t1 t2 = (CanDiv t1 t2, Show t1, Arbitrary t1, Show t2, Arbitrary t2, Show (DivType t1 t2), HasEqCertainly t1 (DivType t1 t2))
+instance (Numeric.MixedTypes.Field.CanDiv GHC.Integer.Type.Integer b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType GHC.Integer.Type.Integer b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.Field.CanDiv GHC.Integer.Type.Integer (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Field.CanDiv a0 GHC.Integer.Type.Integer, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType a0 GHC.Integer.Type.Integer), GHC.Base.Monoid es0) => Numeric.MixedTypes.Field.CanDiv (Control.CollectErrors.CollectErrors es0 a0) GHC.Integer.Type.Integer
+instance (Numeric.MixedTypes.Field.CanDiv GHC.Types.Int b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType GHC.Types.Int b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.Field.CanDiv GHC.Types.Int (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Field.CanDiv a0 GHC.Types.Int, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType a0 GHC.Types.Int), GHC.Base.Monoid es0) => Numeric.MixedTypes.Field.CanDiv (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Int
+instance (Numeric.MixedTypes.Field.CanDiv GHC.Real.Rational b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType GHC.Real.Rational b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.Field.CanDiv GHC.Real.Rational (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Field.CanDiv a0 GHC.Real.Rational, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType a0 GHC.Real.Rational), GHC.Base.Monoid es0) => Numeric.MixedTypes.Field.CanDiv (Control.CollectErrors.CollectErrors es0 a0) GHC.Real.Rational
+instance (Numeric.MixedTypes.Field.CanDiv GHC.Types.Double b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType GHC.Types.Double b0), GHC.Base.Monoid es0) => Numeric.MixedTypes.Field.CanDiv GHC.Types.Double (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Field.CanDiv a0 GHC.Types.Double, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType a0 GHC.Types.Double), GHC.Base.Monoid es0) => Numeric.MixedTypes.Field.CanDiv (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Double
 instance Numeric.MixedTypes.Field.CanDiv GHC.Types.Int GHC.Types.Int
 instance Numeric.MixedTypes.Field.CanDiv GHC.Integer.Type.Integer GHC.Integer.Type.Integer
 instance Numeric.MixedTypes.Field.CanDiv GHC.Real.Rational GHC.Real.Rational
@@ -847,6 +1023,7 @@ instance Numeric.MixedTypes.Field.CanDiv GHC.Real.Rational GHC.Types.Double
 instance Numeric.MixedTypes.Field.CanDiv GHC.Types.Double GHC.Real.Rational
 instance Numeric.MixedTypes.Field.CanDiv a b => Numeric.MixedTypes.Field.CanDiv [a] [b]
 instance Numeric.MixedTypes.Field.CanDiv a b => Numeric.MixedTypes.Field.CanDiv (GHC.Base.Maybe a) (GHC.Base.Maybe b)
+instance (Numeric.MixedTypes.Field.CanDiv a b, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.Field.DivType a b), GHC.Base.Monoid es) => Numeric.MixedTypes.Field.CanDiv (Control.CollectErrors.CollectErrors es a) (Control.CollectErrors.CollectErrors es b)
 
 
 module Numeric.MixedTypes.Elementary
@@ -861,6 +1038,7 @@ class CanSqrt t where type SqrtType t type SqrtType t = t sqrt = sqrt where {
 sqrt :: CanSqrt t => t -> SqrtType t
 sqrt :: (CanSqrt t, SqrtType t ~ t, Floating t) => t -> t
 type CanSqrtSameType t = (CanSqrt t, SqrtType t ~ t)
+type CanSqrtCNSameType t = (CanSqrt t, SqrtType t ~ EnsureCN t)
 
 -- | HSpec properties that each implementation of CanSqrt should satisfy.
 specCanSqrtReal :: (CanSqrtX t, CanPowX (SqrtType t) Integer, HasEqCertainly t (PowType (SqrtType t) Integer)) => T t -> Spec
@@ -889,10 +1067,11 @@ class CanLog t where type LogType t type LogType t = t log = log where {
 log :: CanLog t => t -> LogType t
 log :: (CanLog t, LogType t ~ t, Floating t) => t -> t
 type CanLogSameType t = (CanLog t, LogType t ~ t)
+type CanLogCNSameType t = (CanLog t, LogType t ~ EnsureCN t)
 
 -- | HSpec properties that each implementation of CanLog should satisfy.
-specCanLogReal :: (CanLogX t, CanLogX (DivType Integer t), CanExp t, CanLogX (ExpType t), HasEqCertainly t (LogType (ExpType t))) => T t -> Spec
-powUsingExpLog :: (CanTestPosNeg t1, CanMulSameType t1, HasIntegers t1, CanTestZero t1, CanRecipSameType t1, CanTestInteger t2, CanTestPosNeg t2, CanMulAsymmetric (LogType t1) t2, CanLog t1, CanExp (MulType (LogType t1) t2), ExpType (MulType (LogType t1) t2) ~ t1) => t1 -> t2 -> ExpType (MulType (LogType t1) t2)
+specCanLogReal :: (CanLogX t, CanLogX (DivType Integer t), CanExp t, CanLogX (ExpType t), HasEqCertainly (LogType t) (EnsureCN (LogType (WithoutCN t))), HasEqCertainlyCN t (LogType (ExpType t))) => T t -> Spec
+powUsingExpLog :: (CanTestPosNeg t1, CanMulSameType t1, HasIntegers t1, CanTestZero t1, CanRecipCNSameType t1, CanTestInteger t2, CanTestPosNeg t2, CanMulAsymmetric (LogType t1) t2, CanLog t1, CanExp (MulType (LogType t1) t2), HasIntegers (WithoutCN t1), CanEnsureCN t1, ExpType (MulType (LogType t1) t2) ~ EnsureCN t1) => t1 -> t2 -> ExpType (MulType (LogType t1) t2)
 
 -- | A replacement for Prelude's <a>cos</a> and <a>sin</a>. If <tt>Floating
 --   t</tt>, then one can use the default implementation to mirror
@@ -919,48 +1098,18 @@ specCanSinCosReal :: (CanSinCosX t) => T t -> Spec
 --   type that can represent it exactly.
 approxPi :: (Floating t) => t
 instance Numeric.MixedTypes.Elementary.CanSqrt GHC.Types.Double
+instance (Numeric.MixedTypes.Elementary.CanSqrt a, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.Elementary.SqrtType a), GHC.Base.Monoid es) => Numeric.MixedTypes.Elementary.CanSqrt (Control.CollectErrors.CollectErrors es a)
 instance Numeric.MixedTypes.Elementary.CanExp GHC.Types.Double
+instance (Numeric.MixedTypes.Elementary.CanExp a, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.Elementary.ExpType a), GHC.Base.Monoid es) => Numeric.MixedTypes.Elementary.CanExp (Control.CollectErrors.CollectErrors es a)
 instance Numeric.MixedTypes.Elementary.CanLog GHC.Types.Double
+instance (Numeric.MixedTypes.Elementary.CanLog a, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.Elementary.LogType a), GHC.Base.Monoid es) => Numeric.MixedTypes.Elementary.CanLog (Control.CollectErrors.CollectErrors es a)
 instance Numeric.MixedTypes.Ring.CanPow GHC.Types.Double GHC.Types.Double
 instance Numeric.MixedTypes.Ring.CanPow GHC.Types.Double GHC.Real.Rational
 instance Numeric.MixedTypes.Ring.CanPow GHC.Real.Rational GHC.Types.Double
 instance Numeric.MixedTypes.Ring.CanPow GHC.Integer.Type.Integer GHC.Types.Double
 instance Numeric.MixedTypes.Ring.CanPow GHC.Types.Int GHC.Types.Double
 instance Numeric.MixedTypes.Elementary.CanSinCos GHC.Types.Double
-
-
-module Numeric.MixedTypes.Round
-
--- | A replacement for Prelude's <a>RealFrac</a> operations, such as round
---   in which the result type is fixed to Integer.
---   
---   If <tt>RealFrac t</tt> and <tt>CanTestPosNeg t</tt>, then one can use
---   the default implementation to mirror Prelude's <tt>round</tt>, etc.
---   
---   In other cases, it is sufficient to define <a>properFraction</a>.
-class CanRound t where properFraction = properFraction truncate = fst . properFraction round x | - 0.5 !<! r && r !<! 0.5 = n | r !<! - 0.5 = n - 1 | r !>! 0.5 = n + 1 | even n = n | r !<! 0.0 = n - 1 | r !>! 0.0 = n + 1 | otherwise = error "round default defn: Bad value" where (n, r) = properFraction x ceiling x | isCertainlyPositive r = n + 1 | otherwise = n where (n, r) = properFraction x floor x | isCertainlyNegative r = n - 1 | otherwise = n where (n, r) = properFraction x
-properFraction :: CanRound t => t -> (Integer, t)
-properFraction :: (CanRound t, RealFrac t) => t -> (Integer, t)
-truncate :: CanRound t => t -> Integer
-round :: CanRound t => t -> Integer
-round :: (CanRound t, HasOrderCertainly t Rational) => t -> Integer
-ceiling :: CanRound t => t -> Integer
-ceiling :: (CanRound t, CanTestPosNeg t) => t -> Integer
-floor :: CanRound t => t -> Integer
-floor :: (CanRound t, CanTestPosNeg t) => t -> Integer
-class HasIntegerBounds t where integerBounds x = (floor x, ceiling x)
-integerBounds :: HasIntegerBounds t => t -> (Integer, Integer)
-integerBounds :: (HasIntegerBounds t, CanRound t) => t -> (Integer, Integer)
-
--- | HSpec properties that each implementation of CanRound should satisfy.
-specCanRound :: (CanRoundX t, HasIntegers t) => T t -> Spec
-
--- | HSpec properties that each implementation of CanRound should satisfy.
-specHasIntegerBounds :: (HasIntegerBoundsX t) => T t -> Spec
-instance Numeric.MixedTypes.Round.CanRound GHC.Real.Rational
-instance Numeric.MixedTypes.Round.CanRound GHC.Types.Double
-instance Numeric.MixedTypes.Round.HasIntegerBounds GHC.Real.Rational
-instance Numeric.MixedTypes.Round.HasIntegerBounds GHC.Types.Double
+instance (Numeric.MixedTypes.Elementary.CanSinCos a, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.Elementary.SinCosType a), GHC.Base.Monoid es) => Numeric.MixedTypes.Elementary.CanSinCos (Control.CollectErrors.CollectErrors es a)
 
 
 -- | <h1>Main purpose</h1>
