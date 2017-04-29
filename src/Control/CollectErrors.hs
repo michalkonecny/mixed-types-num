@@ -19,6 +19,8 @@ import Data.Monoid
 
 -- import Language.Haskell.TH
 
+import Test.QuickCheck
+
 import Control.EnsureTypeOp
 
 {-|
@@ -143,6 +145,8 @@ instance (Monoid es) => Monad (CollectErrors es) where
       CollectErrors _ es ->
         CollectErrors Nothing es
 
+instance (Arbitrary t, Monoid es) => Arbitrary (CollectErrors es t) where
+  arbitrary = noErrors <$> arbitrary
 
 type EnsureCE es v = EnsureTypeOp (CollectErrors es) v
 {-|

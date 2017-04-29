@@ -69,8 +69,7 @@ import Test.Hspec
 import Test.QuickCheck
 -- import Control.Exception (evaluate)
 
-import Numeric.CollectErrors
-  (CollectErrors, EnsureCE, CanEnsureCE, WithoutCE)
+import Numeric.CollectErrors (CollectErrors)
 import qualified Numeric.CollectErrors as CN
 
 {-| Replacement for 'Prelude.fromInteger' using the RebindableSyntax extension.

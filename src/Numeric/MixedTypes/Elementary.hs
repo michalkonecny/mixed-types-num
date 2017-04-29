@@ -13,7 +13,7 @@
 module Numeric.MixedTypes.Elementary
 (
   -- * Square root
-  CanSqrt(..), CanSqrtSameType, specCanSqrtReal
+  CanSqrt(..), CanSqrtSameType, CanSqrtCNSameType, specCanSqrtReal
   -- * Exp
   , CanExp(..), CanExpSameType, specCanExpReal
   -- * Log
@@ -62,6 +62,7 @@ class CanSqrt t where
   sqrt = P.sqrt
 
 type CanSqrtSameType t = (CanSqrt t, SqrtType t ~ t)
+type CanSqrtCNSameType t = (CanSqrt t, SqrtType t ~ EnsureCN t)
 
 type CanSqrtX t =
   (CanSqrt t,

@@ -18,4 +18,4 @@ import Test.Hspec
 spec :: Spec
 spec = do
   specCanRound tRational
-  specCanRound tDouble
+  -- specCanRound tDouble
