@@ -1018,9 +1018,13 @@ module Control.CollectErrors
 data CollectErrors es v
 CollectErrors :: (Maybe v) -> es -> CollectErrors es v
 
--- | Move a value into the
+-- | Wrap a pure value in a CollectErrors record
 noErrors :: (Monoid es) => v -> CollectErrors es v
+
+-- | Make CollectErrors record with no value, only errors.
 noValue :: es -> CollectErrors es v
+
+-- | Add further errors into a CollectErrors record.
 prependErrors :: (Monoid es) => es -> CollectErrors es v -> CollectErrors es v
 
 -- | Add error collection support to a binary function.
