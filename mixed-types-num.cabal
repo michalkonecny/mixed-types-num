@@ -60,6 +60,7 @@ library
     Numeric.MixedTypes.Ring
     Numeric.MixedTypes.Field
     Numeric.MixedTypes.Elementary
+    Numeric.MixedTypes.Complex
     Numeric.MixedTypes.Concept.CollectErrors
 
 test-suite spec

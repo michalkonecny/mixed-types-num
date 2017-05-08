@@ -132,3 +132,4 @@ import Numeric.MixedTypes.Round
 import Numeric.MixedTypes.Ring
 import Numeric.MixedTypes.Field
 import Numeric.MixedTypes.Elementary
+import Numeric.MixedTypes.Complex
