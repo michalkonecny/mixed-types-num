@@ -63,6 +63,7 @@ library
     Numeric.MixedTypes.Ring
     Numeric.MixedTypes.Field
     Numeric.MixedTypes.Elementary
+    Numeric.MixedTypes.Complex
 
 test-suite spec
   type:
