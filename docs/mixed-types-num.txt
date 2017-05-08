@@ -10,7 +10,7 @@
 --   
 --   See module <a>Numeric.MixedTypes</a> for further documentation.
 @package mixed-types-num
-@version 0.1.0.1
+@version 0.2
 
 
 -- | Template Haskell utilities
@@ -200,7 +200,8 @@ fromInteger :: Integer -> Integer
 fromRational :: Rational -> Rational
 
 -- | Restore if-then-else with RebindableSyntax
-ifThenElse :: Bool -> t -> t -> t
+class HasIfThenElse b t
+ifThenElse :: HasIfThenElse b t => b -> t -> t -> t
 type CanBeInteger t = ConvertibleExactly t Integer
 integer :: (CanBeInteger t) => t -> Integer
 integerCN :: (CanBeInteger t) => t -> CollectNumErrors Integer
@@ -266,6 +267,7 @@ instance (Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Integer.Type.Intege
 instance (Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Int t0, GHC.Base.Monoid es0) => Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Int (Control.CollectErrors.CollectErrors es0 t0)
 instance (Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Real.Rational t0, GHC.Base.Monoid es0) => Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Real.Rational (Control.CollectErrors.CollectErrors es0 t0)
 instance (Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Double t0, GHC.Base.Monoid es0) => Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Double (Control.CollectErrors.CollectErrors es0 t0)
+instance Numeric.MixedTypes.Literals.HasIfThenElse GHC.Types.Bool t
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Integer.Type.Integer GHC.Integer.Type.Integer
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Int GHC.Integer.Type.Integer
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Int GHC.Types.Int

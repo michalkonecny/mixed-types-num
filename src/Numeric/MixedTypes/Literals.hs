@@ -37,7 +37,8 @@ module Numeric.MixedTypes.Literals
 (
   -- * Fixed-type literals
   fromInteger, fromRational
-  , ifThenElse
+  -- * Generalised if-then-else
+  , HasIfThenElse(..)
   -- * Convenient conversions
   , CanBeInteger, integer, integerCN, integers, integersCN, HasIntegers, fromInteger_
   , CanBeInt, int, intCN, ints, intsCN
@@ -89,10 +90,13 @@ fromRational = id
 {-|
   Restore if-then-else with RebindableSyntax
 -}
-ifThenElse :: Bool -> t -> t -> t
-ifThenElse b e1 e2
-  | b = e1
-  | otherwise = e2
+class HasIfThenElse b t where
+  ifThenElse :: b -> t -> t -> t
+
+instance HasIfThenElse Bool t where
+  ifThenElse b e1 e2
+    | b = e1
+    | otherwise = e2
 
 _testIf1 :: String
 _testIf1 = if True then "yes" else "no"
