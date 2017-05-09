@@ -874,6 +874,7 @@ instance Numeric.MixedTypes.Field.CanDiv a GHC.Types.Int => Numeric.MixedTypes.F
 instance Numeric.MixedTypes.Field.CanDiv a GHC.Real.Rational => Numeric.MixedTypes.Field.CanDiv (Data.Complex.Complex a) GHC.Real.Rational
 instance Numeric.MixedTypes.Field.CanDiv a GHC.Types.Double => Numeric.MixedTypes.Field.CanDiv (Data.Complex.Complex a) GHC.Types.Double
 instance (Numeric.MixedTypes.Ring.CanMulAsymmetric t t, Numeric.MixedTypes.AddSub.CanAddSameType (Numeric.MixedTypes.Ring.MulType t t), Numeric.MixedTypes.Elementary.CanSqrt (Numeric.MixedTypes.Ring.MulType t t)) => Numeric.MixedTypes.MinMaxAbs.CanAbs (Data.Complex.Complex t)
+instance (Numeric.MixedTypes.Elementary.CanExp t, Numeric.MixedTypes.Elementary.CanSinCos t, Numeric.MixedTypes.Ring.CanMulAsymmetric (Numeric.MixedTypes.Elementary.ExpType t) (Numeric.MixedTypes.Elementary.SinCosType t)) => Numeric.MixedTypes.Elementary.CanExp (Data.Complex.Complex t)
 
 
 module Numeric.MixedTypes.Round
