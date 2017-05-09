@@ -109,7 +109,7 @@ instance (CanTestInteger t, CanTestZero t) => CanTestInteger (Complex t) where
 
 instance CanNeg t => CanNeg (Complex t) where
   type NegType (Complex t) = Complex (NegType t)
-  negate (a :+ i) = (-a) :+ (-i)
+  negate (a :+ i) = (negate a) :+ (negate i)
 
 instance (CanAddAsymmetric a b) => CanAddAsymmetric (Complex a) (Complex b) where
   type AddType (Complex a) (Complex b) = Complex (AddType a b)
