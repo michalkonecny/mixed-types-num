@@ -327,3 +327,15 @@ instance
   where
   type AbsType (Complex t) = SqrtType (MulType t t)
   abs (a :+ i) = sqrt (a*a + i*i)
+
+instance
+  (CanExp t
+  , CanSinCos t
+  , CanMulAsymmetric (ExpType t) (SinCosType t))
+  =>
+  CanExp (Complex t)
+  where
+  type ExpType (Complex t) = Complex (MulType (ExpType t) (SinCosType t))
+  exp (a :+ i) =
+    let ea = exp a in
+    (ea * cos i) :+ (ea * sin i)
