@@ -55,6 +55,14 @@ instance (ConvertibleExactly Rational t) => (ConvertibleExactly Rational (Comple
     zT <- safeConvertExactly 0.0
     return $ rT :+ zT
 
+instance (ConvertibleExactly t1 t2) => (ConvertibleExactly (Complex t1) (Complex t2))
+  where
+  safeConvertExactly (a1 :+ i1) =
+    do
+    a2 <- safeConvertExactly a1
+    i2 <- safeConvertExactly i1
+    return $ a2 :+ i2
+
 instance (HasEqAsymmetric a b) => HasEqAsymmetric (Complex a) (Complex b) where
   type EqCompareType (Complex a) (Complex b) = EqCompareType a b
   equalTo (a1 :+ i1) (a2 :+ i2) = (a1 == a2) && (i1 == i2)
