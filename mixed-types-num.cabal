@@ -83,3 +83,12 @@ test-suite spec
     , hspec >= 2.1 && < 2.5
     , hspec-smallcheck >= 0.3 && < 0.5
     , QuickCheck >= 2.7 && < 2.10
+  other-modules:
+    Numeric.MixedTypes.AddSubSpec
+    Numeric.MixedTypes.BoolSpec
+    Numeric.MixedTypes.EqOrdSpec
+    Numeric.MixedTypes.FieldSpec
+    Numeric.MixedTypes.LiteralsSpec
+    Numeric.MixedTypes.MinMaxAbsSpec
+    Numeric.MixedTypes.RingSpec
+    Numeric.MixedTypes.RoundSpec
