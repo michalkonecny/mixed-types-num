@@ -1119,6 +1119,7 @@ module Numeric.MixedTypes.Complex
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Integer.Type.Integer t => Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Integer.Type.Integer (Data.Complex.Complex t)
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Int t => Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Int (Data.Complex.Complex t)
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Real.Rational t => Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Real.Rational (Data.Complex.Complex t)
+instance Numeric.MixedTypes.Literals.ConvertibleExactly t1 t2 => Numeric.MixedTypes.Literals.ConvertibleExactly (Data.Complex.Complex t1) (Data.Complex.Complex t2)
 instance Numeric.MixedTypes.Eq.HasEqAsymmetric a b => Numeric.MixedTypes.Eq.HasEqAsymmetric (Data.Complex.Complex a) (Data.Complex.Complex b)
 instance Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Integer.Type.Integer b => Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Integer.Type.Integer (Data.Complex.Complex b)
 instance Numeric.MixedTypes.Eq.HasEqAsymmetric a GHC.Integer.Type.Integer => Numeric.MixedTypes.Eq.HasEqAsymmetric (Data.Complex.Complex a) GHC.Integer.Type.Integer
