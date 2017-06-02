@@ -59,13 +59,11 @@ type CanAddSubMulBy t s =
 
 type Ring t =
   (CanNegSameType t, CanAddSameType t, CanSubSameType t, CanMulSameType t,
-   CanPowBy t Integer, CanPowBy t Int,
+   CanPowCNBy t Integer, CanPowCNBy t Int,
    HasEq t t,
    HasEq t Integer, CanAddSubMulBy t Integer,
-   CanPow Integer t, PowType Integer t ~ t,
    HasEq t Int, CanAddSubMulBy t Int,
-   CanPow Int t, PowType Int t ~ t,
-   ConvertibleExactly Integer t)
+   HasIntegers t)
 
 type CertainlyEqRing t =
   (Ring t, HasEqCertainly t t, HasEqCertainly t Int, HasEqCertainly t Integer)
