@@ -105,9 +105,9 @@
 -}
 module Numeric.MixedTypes
 (
-  -- ** Re-exporting Prelude, hiding the operators we are changing
+  -- * Re-exporting Prelude, hiding the operators we are changing
   module Numeric.MixedTypes.PreludeHiding,
-  -- ** Modules with Prelude alternatives
+  -- * Modules with Prelude alternatives
   module Numeric.MixedTypes.Literals,
   module Numeric.MixedTypes.Bool,
   module Numeric.MixedTypes.Eq,
@@ -117,10 +117,18 @@ module Numeric.MixedTypes
   module Numeric.MixedTypes.Round,
   module Numeric.MixedTypes.Ring,
   module Numeric.MixedTypes.Field,
-  module Numeric.MixedTypes.Elementary
+  module Numeric.MixedTypes.Elementary,
+  -- * Key elements of "Numeric.CollectErrors"
+  ErrorCertaintyLevel(..), NumError(..), NumErrors
+  , CollectNumErrors, noNumErrors
+  , noValueNumErrorCertain, noValueNumErrorPotential
+  , WithoutCN, CanEnsureCN
+  , EnsureCN, ensureCN
+  , CN, cn, unCN, (⚡)
 )
 where
 
+import Numeric.CollectErrors
 import Numeric.MixedTypes.PreludeHiding
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -132,4 +140,4 @@ import Numeric.MixedTypes.Round
 import Numeric.MixedTypes.Ring
 import Numeric.MixedTypes.Field
 import Numeric.MixedTypes.Elementary
-import Numeric.MixedTypes.Complex
+import Numeric.MixedTypes.Complex ()

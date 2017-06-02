@@ -292,11 +292,16 @@ integerPowCN ::
   =>
   (b -> e -> r) -> b -> e -> EnsureCN r
 integerPowCN unsafeIntegerPow b n
-  | n !<! 0 = CN.noValue [(CN.ErrorCertain, CN.OutOfRange "illegal integer pow: negative exponent")]
-  | n !==! 0 && b !==! 0 = CN.noValue [(CN.ErrorCertain, CN.OutOfRange "illegal integer pow: 0^0")]
-  | n ?<? 0 = CN.noValue [(CN.ErrorPotential, CN.OutOfRange "illegal integer pow: negative exponent")]
-  | n ?==? 0 && b ?==? 0 = CN.noValue [(CN.ErrorPotential, CN.OutOfRange "illegal integer pow: 0^0")]
-  | otherwise = CN.ensureCN $ unsafeIntegerPow b n
+  | n !<! 0 =
+    CN.noValueNumErrorCertain $ CN.OutOfRange "illegal integer pow: negative exponent"
+  | n !==! 0 && b !==! 0 =
+    CN.noValueNumErrorCertain $ CN.OutOfRange "illegal integer pow: 0^0"
+  | n ?<? 0 =
+    CN.noValueNumErrorPotential $ CN.OutOfRange "illegal integer pow: negative exponent"
+  | n ?==? 0 && b ?==? 0 =
+    CN.noValueNumErrorPotential $ CN.OutOfRange "illegal integer pow: 0^0"
+  | otherwise =
+    CN.ensureCN $ unsafeIntegerPow b n
 
 powCN ::
   (HasOrderCertainly b Integer, HasOrderCertainly e Integer,
@@ -305,15 +310,20 @@ powCN ::
   =>
   (b -> e -> r) -> b -> e -> EnsureCN r
 powCN unsafePow b e
-  | b !==! 0 && e !<=! 0  = CN.noValue [(CN.ErrorCertain, CN.OutOfRange "illegal pow: 0^e with e <= 0")]
-  | b !<! 0 && certainlyNotInteger e = CN.noValue [(CN.ErrorCertain, CN.OutOfRange "illegal pow: b^e with b < 0 and e non-integer")]
-  | b ?==? 0 && e ?<=? 0 = CN.noValue [(CN.ErrorPotential, CN.OutOfRange "illegal pow: 0^e with e <= 0")]
-  | b ?<? 0 && not (certainlyInteger e) = CN.noValue [(CN.ErrorPotential, CN.OutOfRange "illegal pow: b^e with b < 0 and e non-integer")]
-  | otherwise = CN.ensureCN $ unsafePow b e
+  | b !==! 0 && e !<=! 0 =
+    CN.noValueNumErrorCertain $ CN.OutOfRange "illegal pow: 0^e with e <= 0"
+  | b !<! 0 && certainlyNotInteger e =
+    CN.noValueNumErrorCertain $ CN.OutOfRange "illegal pow: b^e with b < 0 and e non-integer"
+  | b ?==? 0 && e ?<=? 0 =
+    CN.noValueNumErrorPotential $ CN.OutOfRange "illegal pow: 0^e with e <= 0"
+  | b ?<? 0 && not (certainlyInteger e) =
+    CN.noValueNumErrorPotential $ CN.OutOfRange "illegal pow: b^e with b < 0 and e non-integer"
+  | otherwise =
+    CN.ensureCN $ unsafePow b e
 
 powUsingMul ::
   (CanBeInteger e,
-   CanMulSameType t, ConvertibleExactly Integer t)
+   CanMulSameType t, HasIntegers t)
    =>
    t -> e -> t
 powUsingMul x nPre

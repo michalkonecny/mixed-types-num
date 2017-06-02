@@ -193,7 +193,7 @@ convertExactlyCN :: (ConvertibleExactly t1 t2) => t1 -> CN.CollectNumErrors t2
 convertExactlyCN a =
   case safeConvertExactly a of
     Right v -> CN.noNumErrors v
-    Left err -> CN.noValue [(CN.ErrorCertain, CN.OutOfRange (show err))]
+    Left err -> CN.noValueNumErrorCertain $ CN.OutOfRange (show err)
 
 instance ConvertibleExactly Integer Integer -- use CVT instance by default
 instance ConvertibleExactly Int Integer

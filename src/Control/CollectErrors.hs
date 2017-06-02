@@ -49,7 +49,7 @@ data CollectErrors es v =
 noErrors :: (Monoid es) => v -> CollectErrors es v
 noErrors v = CollectErrors (Just v) mempty
 
-{-|  Make CollectErrors record with no value, only errors. -}
+{-|  Make a CollectErrors record with no value, only errors. -}
 noValue :: es -> CollectErrors es v
 noValue es = CollectErrors Nothing es
 

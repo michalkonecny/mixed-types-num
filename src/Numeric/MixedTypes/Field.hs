@@ -111,9 +111,9 @@ divideCN ::
   (t1 -> t2 -> t3) ->
   t1 -> t2 -> CollectNumErrors t3
 divideCN unsafeDivide a b
-  | isCertainlyZero b = CN.noValue [(CN.ErrorCertain, CN.DivByZero)]
+  | isCertainlyZero b = CN.noValueNumErrorCertain CN.DivByZero
   | isCertainlyNonZero b = CN.noNumErrors $ a `unsafeDivide` b
-  | otherwise = CN.noValue [(CN.ErrorPotential, CN.DivByZero)]
+  | otherwise = CN.noValueNumErrorPotential CN.DivByZero
 
 infixl 7  /
 
@@ -282,13 +282,13 @@ instance
   divide = CN.lift2ensureCE divide
 
 powUsingMulRecip ::
-  (CanBeInteger e, ConvertibleExactly Integer t,
+  (CanBeInteger e, HasIntegers t,
    CanRecipCNSameType t, CanMulSameType t, CanEnsureCN t)
    =>
    t -> e -> EnsureCN t
 powUsingMulRecip x nPre
   | n < 0 = recip $ powUsingMul x (negate n)
-  | otherwise = CN.ensureCE $ powUsingMul x n
+  | otherwise = CN.ensureCN $ powUsingMul x n
   where
     n = integer nPre
 

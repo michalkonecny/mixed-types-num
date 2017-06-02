@@ -18,10 +18,11 @@ module Numeric.CollectErrors
 , module Control.CollectErrors
   -- * Specialisation to numeric errors
 , CollectNumErrors, noNumErrors
+, noValueNumErrorCertain, noValueNumErrorPotential
 , WithoutCN, CanEnsureCN
 , EnsureCN, ensureCN
   -- ** More compact synonyms
-, CN, cn, unCN
+, CN, cn, unCN, (⚡)
 )
 where
 
@@ -45,6 +46,14 @@ type CollectNumErrors v = CollectErrors NumErrors v
 noNumErrors :: v -> CollectNumErrors v
 noNumErrors = pure
 
+{-| Construct an empty wrapper indicating that given error has certainly occurred. -}
+noValueNumErrorCertain :: NumError -> CollectNumErrors v
+noValueNumErrorCertain e = noValue [(ErrorCertain, e)]
+
+{-| Construct an empty wrapper indicating that given error may have occurred. -}
+noValueNumErrorPotential :: NumError -> CollectNumErrors v
+noValueNumErrorPotential e = noValue [(ErrorPotential, e)]
+
 type CanEnsureCN v = CanEnsureCE NumErrors v
 type EnsureCN v = EnsureCE NumErrors v
 type WithoutCN v = WithoutCE NumErrors v
@@ -63,3 +72,8 @@ cn = noNumErrors
 {-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
 unCN :: CollectNumErrors v -> v
 unCN = getValueOrThrowErrors
+
+
+{-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
+(⚡) :: CollectNumErrors v -> v
+(⚡) = getValueOrThrowErrors
