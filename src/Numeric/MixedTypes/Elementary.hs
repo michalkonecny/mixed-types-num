@@ -36,7 +36,7 @@ import Test.QuickCheck
 
 import Numeric.CollectErrors
   (CollectErrors, EnsureCE, CanEnsureCE,
-   WithoutCN, EnsureCN, CanEnsureCN)
+   WithoutCN, EnsureCN, CanEnsureCN, ensureCN)
 import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
@@ -279,31 +279,31 @@ instance CanPow Int Double where
   pow x y = (double x) ^ y
 
 powUsingExpLog ::
-  (CanTestPosNeg t1,
-   CanMulSameType t1,
-   HasIntegers t1,
-   CanTestZero t1,
-   CanRecipCNSameType t1,
-   CanTestInteger t2,
-   CanTestPosNeg t2,
-   CanMulAsymmetric (LogType t1) t2,
-   CanLog t1,
-   CanExp (MulType (LogType t1) t2),
-   HasIntegers (WithoutCN t1),
-   CanEnsureCN t1,
-   ExpType (MulType (LogType t1) t2) ~ EnsureCN t1)
+  (CanTestPosNeg t,
+   CanEnsureCN t,
+   CanEnsureCN (WithoutCN t),
+   WithoutCN t ~ WithoutCN (WithoutCN t),
+   CanLogCNSameType t,
+   CanMulSameType t,
+   CanMulSameType (WithoutCN t),
+   CanExpSameType (WithoutCN t),
+   CanTestInteger t,
+   HasIntegers t,
+   CanTestZero t,
+   CanRecipCNSameType t,
+   HasIntegers (WithoutCN t))
   =>
-  t1 -> t2 -> ExpType (MulType (LogType t1) t2)
-powUsingExpLog x y
-  | isCertainlyPositive x = exp ((log x) * y)
-  | otherwise =
-    case certainlyIntegerGetIt y of
-      Just n ->
-        powUsingMulRecip x n
-      Nothing ->
-        if isCertainlyZero x && isCertainlyPositive y then convertExactly 0
-          else
-            error $ "powUsingExpLog: potential illegal power a^b with negative a and non-integer b"
+  t -> t -> EnsureCN t
+powUsingExpLog x y =
+  case certainlyIntegerGetIt y of
+    Just n ->
+      powUsingMulRecip x n
+    Nothing
+      | isCertainlyZero x && isCertainlyPositive y -> convertExactly 0
+      | isCertainlyPositive x -> exp ((log x) * (ensureCN y))
+      | otherwise ->
+          CN.noValueNumErrorPotential $
+            CN.NumError "powUsingExpLog: illegal power a^b with negative a and non-integer b"
 
 {----  sine and cosine -----}
 
