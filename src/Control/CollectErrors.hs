@@ -4,7 +4,8 @@ module Control.CollectErrors
 -- * Monad for collecting errors in expressions
   CollectErrors(..)
 , noErrors, noValue, prependErrors
-, getValueIfNoError, getValueOrThrowErrors --, caseErrors
+, filterValuesWithoutError, getValueIfNoError, getValueOrThrowErrors
+, getConvertResult
 , lift1, lift2
 , unlift2first, unlift2second
 -- * Tools for avoiding @CollectErrors(CollectErrors t)@
@@ -16,6 +17,9 @@ where
 
 import Prelude
 import Data.Monoid
+
+import Data.Convertible
+import Data.Typeable
 
 -- import Language.Haskell.TH
 
@@ -57,6 +61,13 @@ noValue es = CollectErrors Nothing es
 prependErrors :: (Monoid es) => es -> CollectErrors es v -> CollectErrors es v
 prependErrors es1 (CollectErrors mv es2) = CollectErrors mv (es1 <> es2)
 
+filterValuesWithoutError :: (Monoid es, Eq es) => [CollectErrors es v] -> [v]
+filterValuesWithoutError [] = []
+filterValuesWithoutError (vCN : rest) =
+  getValueIfNoError vCN (: restDone) (const restDone)
+  where
+  restDone = filterValuesWithoutError rest
+
 {-| A safe way to get a value out of the CollectErrors wrapper. -}
 getValueIfNoError :: (Monoid es, Eq es) => CollectErrors es v -> (v -> t) -> (es -> t) -> t
 getValueIfNoError ce withValue withErrors =
@@ -76,6 +87,13 @@ getValueOrThrowErrors ce =
 --   aux ((cond, comp) : rest)
 --     | cond ce = comp ce
 --     | otherwise = aux rest
+
+getConvertResult ::
+  (Typeable t, Show t, Show es, Monoid es, Eq es)
+  =>
+  CollectErrors es t -> Either ConvertError t
+getConvertResult vCN =
+  getValueIfNoError vCN Right (\ es -> convError (show es) (getMaybeValue vCN))
 
 {-|
   Add error collection support to an unary operation.

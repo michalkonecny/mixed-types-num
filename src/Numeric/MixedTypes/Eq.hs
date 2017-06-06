@@ -44,6 +44,8 @@ import Test.QuickCheck as QC
 import Numeric.CollectErrors (CollectErrors, EnsureCE, CanEnsureCE, WithoutCE)
 import qualified Numeric.CollectErrors as CN
 
+import qualified Control.CollectErrors as CE
+
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
 
@@ -441,3 +443,10 @@ specCanPickNonZero (T typeName :: T t) =
 instance CanPickNonZero Int
 instance CanPickNonZero Integer
 instance CanPickNonZero Rational
+
+instance (CanPickNonZero a, P.Eq es, Monoid es) => (CanPickNonZero (CollectErrors es a)) where
+  pickNonZero =
+    fmap (\(v,s) -> (CE.noErrors v,s))
+    . pickNonZero
+    . CE.filterValuesWithoutError
+    . (map (\(vCN,s) -> fmap (\v -> (v,s)) vCN))
