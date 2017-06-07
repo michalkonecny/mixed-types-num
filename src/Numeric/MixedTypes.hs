@@ -123,7 +123,7 @@ module Numeric.MixedTypes
   , CollectNumErrors, noNumErrors
   , noValueNumErrorCertain, noValueNumErrorPotential
   , WithoutCN, CanEnsureCN
-  , EnsureCN, ensureCN
+  , EnsureCN, ensureCN, deEnsureCN
   , CN, cn, unCN, (⚡)
 )
 where

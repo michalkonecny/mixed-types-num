@@ -20,7 +20,7 @@ module Numeric.CollectErrors
 , CollectNumErrors, noNumErrors
 , noValueNumErrorCertain, noValueNumErrorPotential
 , WithoutCN, CanEnsureCN
-, EnsureCN, ensureCN
+, EnsureCN, ensureCN, deEnsureCN
   -- ** More compact synonyms
 , CN, cn, unCN, (⚡)
 )
@@ -58,8 +58,21 @@ type CanEnsureCN v = CanEnsureCE NumErrors v
 type EnsureCN v = EnsureCE NumErrors v
 type WithoutCN v = WithoutCE NumErrors v
 
+{-|
+  Translate a value of a type @a@
+  to a value of a type @CollectNumErrors a@ except when @a@
+  already is a @CollectNumErrors@ type, in which case the value is left as is.
+-}
 ensureCN :: (CanEnsureCN v) => v -> EnsureCN v
 ensureCN = ensureCE
+
+{-|
+  Translate a value of a type @EnsureCN es a@ to @a@,
+  throwing an exception if there was an error.
+  If @a@ is a @CollectNumErrors@ type, then this is just an identity.
+-}
+deEnsureCN :: (CanEnsureCN v) => EnsureCN v -> v
+deEnsureCN = deEnsureCE
 
 -- more compact synonyms:
 

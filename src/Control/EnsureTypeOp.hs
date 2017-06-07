@@ -18,9 +18,10 @@ type family RemoveTypeOp f a where
   to a value of a type @f a@ except when @a = f b@
   for some @b@, in which case the value is left as is.
 -}
-class
-  CanEnsureTypeOp f a where
+class CanEnsureTypeOp f a where
   ensureTypeOp :: a -> EnsureTypeOp f a
+  deEnsureTypeOp :: EnsureTypeOp f a -> a
 
 instance CanEnsureTypeOp f (f a) where
   ensureTypeOp = id
+  deEnsureTypeOp = id

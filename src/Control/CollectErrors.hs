@@ -8,8 +8,9 @@ module Control.CollectErrors
 , getConvertResult
 , lift1, lift2
 , unlift2first, unlift2second
+, SuitableForCE
 -- * Tools for avoiding @CollectErrors(CollectErrors t)@
-, ensureCE
+, ensureCE, deEnsureCE, defaultDeEnsureTypeOp
 , CanEnsureCE, EnsureCE, WithoutCE
 , lift1ensureCE, lift2ensureCE
 )
@@ -185,24 +186,45 @@ type WithoutCE es v = RemoveTypeOp (CollectErrors es) v
 ensureCE :: (CanEnsureCE es v) => v -> EnsureCE es v
 ensureCE = ensureTypeOp
 
+{-|
+  Translate a value of a type @EnsureCE es a@ to @a@,
+  throwing an exception if there was an error.
+  If @a@ is a @CollectErrors@ type, then this is just an identity.
+-}
+deEnsureCE :: (CanEnsureCE es v) => EnsureCE es v -> v
+deEnsureCE = deEnsureTypeOp
+
 type CanEnsureCE es v = CanEnsureTypeOp (CollectErrors es) v
 
-instance (Monoid es) => CanEnsureTypeOp (CollectErrors es) Int where
+type SuitableForCE es = (Monoid es, Show es, Eq es)
+
+defaultDeEnsureTypeOp :: (SuitableForCE es) => CollectErrors es t -> t
+defaultDeEnsureTypeOp vCE = getValueIfNoError vCE id (error . show)
+
+instance (SuitableForCE es) => CanEnsureTypeOp (CollectErrors es) Int where
   ensureTypeOp = noErrors
-instance (Monoid es) => CanEnsureTypeOp (CollectErrors es) Integer where
+  deEnsureTypeOp = defaultDeEnsureTypeOp
+instance (SuitableForCE es) => CanEnsureTypeOp (CollectErrors es) Integer where
   ensureTypeOp = noErrors
-instance (Monoid es) => CanEnsureTypeOp (CollectErrors es) Rational where
+  deEnsureTypeOp = defaultDeEnsureTypeOp
+instance (SuitableForCE es) => CanEnsureTypeOp (CollectErrors es) Rational where
   ensureTypeOp = noErrors
-instance (Monoid es) => CanEnsureTypeOp (CollectErrors es) Char where
+  deEnsureTypeOp = defaultDeEnsureTypeOp
+instance (SuitableForCE es) => CanEnsureTypeOp (CollectErrors es) Char where
   ensureTypeOp = noErrors
-instance (Monoid es) => CanEnsureTypeOp (CollectErrors es) Bool where
+  deEnsureTypeOp = defaultDeEnsureTypeOp
+instance (SuitableForCE es) => CanEnsureTypeOp (CollectErrors es) Bool where
   ensureTypeOp = noErrors
-instance (Monoid es) => CanEnsureTypeOp (CollectErrors es) [a] where
+  deEnsureTypeOp = defaultDeEnsureTypeOp
+instance (SuitableForCE es) => CanEnsureTypeOp (CollectErrors es) [a] where
   ensureTypeOp = noErrors
-instance (Monoid es) => CanEnsureTypeOp (CollectErrors es) (Maybe a) where
+  deEnsureTypeOp = defaultDeEnsureTypeOp
+instance (SuitableForCE es) => CanEnsureTypeOp (CollectErrors es) (Maybe a) where
   ensureTypeOp = noErrors
-instance (Monoid es) => CanEnsureTypeOp (CollectErrors es) (Either e a) where
+  deEnsureTypeOp = defaultDeEnsureTypeOp
+instance (SuitableForCE es) => CanEnsureTypeOp (CollectErrors es) (Either e a) where
   ensureTypeOp = noErrors
+  deEnsureTypeOp = defaultDeEnsureTypeOp
 
 {-|
   Add error collection support to a binary function whose
