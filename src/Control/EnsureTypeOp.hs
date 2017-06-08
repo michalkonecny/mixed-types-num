@@ -20,8 +20,8 @@ type family RemoveTypeOp f a where
 -}
 class CanEnsureTypeOp f a where
   ensureTypeOp :: a -> EnsureTypeOp f a
-  deEnsureTypeOp :: EnsureTypeOp f a -> a
+  deEnsureTypeOp :: EnsureTypeOp f a -> Maybe a
 
 instance CanEnsureTypeOp f (f a) where
   ensureTypeOp = id
-  deEnsureTypeOp = id
+  deEnsureTypeOp = Just

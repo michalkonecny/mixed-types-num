@@ -22,7 +22,7 @@ module Numeric.CollectErrors
 , WithoutCN, CanEnsureCN
 , EnsureCN, ensureCN, deEnsureCN
   -- ** More compact synonyms
-, CN, cn, unCN, (⚡)
+, CN, cn, unCN, (⚡), (~!)
 )
 where
 
@@ -71,7 +71,7 @@ ensureCN = ensureCE
   throwing an exception if there was an error.
   If @a@ is a @CollectNumErrors@ type, then this is just an identity.
 -}
-deEnsureCN :: (CanEnsureCN v) => EnsureCN v -> v
+deEnsureCN :: (CanEnsureCN v) => EnsureCN v -> Maybe v
 deEnsureCN = deEnsureCE
 
 -- more compact synonyms:
@@ -86,7 +86,10 @@ cn = noNumErrors
 unCN :: CollectNumErrors v -> v
 unCN = getValueOrThrowErrors
 
-
 {-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
 (⚡) :: CollectNumErrors v -> v
 (⚡) = getValueOrThrowErrors
+
+{-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
+(~!) :: CollectNumErrors v -> v
+(~!) = getValueOrThrowErrors

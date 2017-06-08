@@ -191,15 +191,15 @@ ensureCE = ensureTypeOp
   throwing an exception if there was an error.
   If @a@ is a @CollectErrors@ type, then this is just an identity.
 -}
-deEnsureCE :: (CanEnsureCE es v) => EnsureCE es v -> v
+deEnsureCE :: (CanEnsureCE es v) => EnsureCE es v -> Maybe v
 deEnsureCE = deEnsureTypeOp
 
 type CanEnsureCE es v = CanEnsureTypeOp (CollectErrors es) v
 
 type SuitableForCE es = (Monoid es, Show es, Eq es)
 
-defaultDeEnsureTypeOp :: (SuitableForCE es) => CollectErrors es t -> t
-defaultDeEnsureTypeOp vCE = getValueIfNoError vCE id (error . show)
+defaultDeEnsureTypeOp :: (SuitableForCE es) => CollectErrors es t -> Maybe t
+defaultDeEnsureTypeOp vCE = getValueIfNoError vCE Just (const Nothing)
 
 instance (SuitableForCE es) => CanEnsureTypeOp (CollectErrors es) Int where
   ensureTypeOp = noErrors
