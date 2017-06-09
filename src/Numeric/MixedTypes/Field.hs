@@ -38,7 +38,7 @@ import Test.QuickCheck
 
 import Numeric.CollectErrors
   (CollectErrors, EnsureCE, CanEnsureCE
-  , CollectNumErrors, WithoutCN, EnsureCN, CanEnsureCN)
+  , CollectNumErrors, WithoutCN, EnsureCN, CanEnsureCN, CanAddCN(..))
 import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
@@ -138,7 +138,7 @@ type CanDivSameType t =
   CanDivBy t t
 
 type CanDivCNBy t1 t2 =
-  (CanDiv t1 t2, DivType t1 t2 ~ EnsureCN t1)
+  (CanDiv t1 t2, DivType t1 t2 ~ AddCN t1)
 type CanDivCNSameType t =
   CanDivCNBy t t
 

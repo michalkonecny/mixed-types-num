@@ -23,6 +23,8 @@ module Numeric.CollectErrors
 , EnsureCN, ensureCN, deEnsureCN
   -- ** More compact synonyms
 , CN, cn, unCN, (⚡), (~!)
+  -- ** Adding CN into various types
+, CanAddCN(..)
 )
 where
 
@@ -40,7 +42,7 @@ data ErrorCertaintyLevel =
 
 type NumErrors = [(ErrorCertaintyLevel, NumError)]
 
-type CollectNumErrors v = CollectErrors NumErrors v
+type CollectNumErrors = CollectErrors NumErrors
 
 {-| Wrap a value in the 'CollectNumErrors' wrapper. -}
 noNumErrors :: v -> CollectNumErrors v
@@ -53,6 +55,27 @@ noValueNumErrorCertain e = noValue [(ErrorCertain, e)]
 {-| Construct an empty wrapper indicating that given error may have occurred. -}
 noValueNumErrorPotential :: NumError -> CollectNumErrors v
 noValueNumErrorPotential e = noValue [(ErrorPotential, e)]
+
+-- more compact synonyms:
+
+type CN = CollectNumErrors
+
+{-| Wrap a value in the 'CollectNumErrors' wrapper. -}
+cn :: v -> CollectNumErrors v
+cn = noNumErrors
+
+{-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
+unCN :: CollectNumErrors v -> v
+unCN = getValueOrThrowErrors
+
+{-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
+(⚡) :: CollectNumErrors v -> v
+(⚡) = getValueOrThrowErrors
+
+{-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
+(~!) :: CollectNumErrors v -> v
+(~!) = getValueOrThrowErrors
+
 
 type CanEnsureCN v = CanEnsureCE NumErrors v
 type EnsureCN v = EnsureCE NumErrors v
@@ -74,22 +97,31 @@ ensureCN = ensureCE
 deEnsureCN :: (CanEnsureCN v) => EnsureCN v -> Maybe v
 deEnsureCN = deEnsureCE
 
--- more compact synonyms:
+-- propagation of CN into various types
 
-type CN v = CollectNumErrors v
+{-|
+  This class and its associated type should be used
+  in general constraints such as CanDivCNSameType.
+-}
+class CanAddCN a where
+  {-| AddCN adds CN to a type, most often by wrapping the whole type
+    but sometimes inside, eg for Maybe t or Sequence t.  -}
+  type AddCN a
+  type AddCN a = CN a
+  addCN :: a -> AddCN a
+  default addCN :: (AddCN a ~ CN a) => a -> AddCN a
+  addCN = cn
+  deAddCN :: AddCN a -> Maybe a
+  default deAddCN :: (AddCN a ~ CN a) => AddCN a -> Maybe a
+  deAddCN vCN = getValueIfNoError vCN Just (const Nothing)
 
-{-| Wrap a value in the 'CollectNumErrors' wrapper. -}
-cn :: v -> CollectNumErrors v
-cn = noNumErrors
+instance CanAddCN Int
+instance CanAddCN Integer
+instance CanAddCN Rational
 
-{-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
-unCN :: CollectNumErrors v -> v
-unCN = getValueOrThrowErrors
-
-{-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
-(⚡) :: CollectNumErrors v -> v
-(⚡) = getValueOrThrowErrors
-
-{-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
-(~!) :: CollectNumErrors v -> v
-(~!) = getValueOrThrowErrors
+instance CanAddCN t => CanAddCN (Maybe t) where
+  type AddCN (Maybe t) = Maybe (AddCN t)
+  addCN (Just v) = Just (addCN v)
+  addCN Nothing = Nothing
+  deAddCN (Just vCN) = Just (deAddCN vCN)
+  deAddCN Nothing = Nothing

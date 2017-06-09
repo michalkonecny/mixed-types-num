@@ -124,6 +124,7 @@ module Numeric.MixedTypes
   , noValueNumErrorCertain, noValueNumErrorPotential
   , WithoutCN, CanEnsureCN
   , EnsureCN, ensureCN, deEnsureCN
+  , AddCN
   , CN, cn, unCN, (⚡), (~!)
 )
 where

@@ -42,7 +42,7 @@ import Test.QuickCheck
 
 import Numeric.CollectErrors
   (CollectErrors, EnsureCE, CanEnsureCE
-  , CollectNumErrors, EnsureCN, CanEnsureCN)
+  , CollectNumErrors, EnsureCN, CanEnsureCN, CanAddCN(..))
 import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
@@ -341,7 +341,7 @@ type CanPowBy t1 t2 =
   (CanPow t1 t2, PowType t1 t2 ~ t1)
 
 type CanPowCNBy t1 t2 =
-  (CanPow t1 t2, PowType t1 t2 ~ EnsureCN t1)
+  (CanPow t1 t2, PowType t1 t2 ~ AddCN t1)
 
 {-| Compound type constraint useful for test definition. -}
 type CanPowX t1 t2 =
