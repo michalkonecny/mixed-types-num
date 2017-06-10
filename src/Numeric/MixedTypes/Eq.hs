@@ -8,7 +8,6 @@
     Maintainer  :  mikkonecny@gmail.com
     Stability   :  experimental
     Portability :  portable
-
 -}
 
 module Numeric.MixedTypes.Eq
@@ -41,10 +40,8 @@ import Data.Ratio
 import Test.Hspec
 import Test.QuickCheck as QC
 
-import Numeric.CollectErrors (CollectErrors, EnsureCE, CanEnsureCE, WithoutCE)
-import qualified Numeric.CollectErrors as CN
-
-import qualified Control.CollectErrors as CE
+import Numeric.CollectErrors
+import Control.CollectErrors
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -67,15 +64,16 @@ type HasEqCertainly t1 t2 =
 
 type HasEqCertainlyCE es t1 t2 =
   (HasEqCertainly t1 t2,
-   HasEqCertainly (WithoutCE es t1) (WithoutCE es t2),
-   CanTestCertainly (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))),
-   IsBool (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))),
-   CanEnsureCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2)),
-   CanEnsureCE es (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))),
-   WithoutCE es (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2)))
-     ~ (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))))
+   HasEqCertainly (EnsureCE es t1) (EnsureCE es t2))
+  --  HasEqCertainly (WithoutCE es t1) (WithoutCE es t2),
+  --  CanTestCertainly (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))),
+  --  IsBool (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))),
+  --  CanEnsureCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2)),
+  --  CanEnsureCE es (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))),
+  --  WithoutCE es (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2)))
+  --    ~ (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))))
 
-type HasEqCertainlyCN t1 t2 = HasEqCertainlyCE CN.NumErrors t1 t2
+type HasEqCertainlyCN t1 t2 = HasEqCertainlyCE NumErrors t1 t2
 
 class (IsBool (EqCompareType a b)) => HasEqAsymmetric a b where
     type EqCompareType a b
@@ -250,13 +248,13 @@ instance
   (HasEqAsymmetric a b
   , CanEnsureCE es (EqCompareType a b)
   , IsBool (EnsureCE es (EqCompareType a b))
-  , Monoid es)
+  , SuitableForCE es)
   =>
   HasEqAsymmetric (CollectErrors es a) (CollectErrors es  b)
   where
   type EqCompareType (CollectErrors es  a) (CollectErrors es  b) =
     EnsureCE es (EqCompareType a b)
-  equalTo = CN.lift2ensureCE equalTo
+  equalTo = lift2CE equalTo
 
 $(declForTypes
   [[t| Bool |], [t| Maybe Bool |], [t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
@@ -266,25 +264,25 @@ $(declForTypes
       (HasEqAsymmetric $t b
       , CanEnsureCE es (EqCompareType $t b)
       , IsBool (EnsureCE es (EqCompareType $t b))
-      , Monoid es)
+      , SuitableForCE es)
       =>
       HasEqAsymmetric $t (CollectErrors es  b)
       where
       type EqCompareType $t (CollectErrors es  b) =
         EnsureCE es (EqCompareType $t b)
-      equalTo = CN.unlift2first equalTo
+      equalTo = lift2TLCE equalTo
 
     instance
       (HasEqAsymmetric a $t
       , CanEnsureCE es (EqCompareType a $t)
       , IsBool (EnsureCE es (EqCompareType a $t))
-      , Monoid es)
+      , SuitableForCE es)
       =>
       HasEqAsymmetric (CollectErrors es a) $t
       where
       type EqCompareType (CollectErrors es  a) $t =
         EnsureCE es (EqCompareType a $t)
-      equalTo = CN.unlift2second equalTo
+      equalTo = lift2TCE equalTo
 
   |]))
 
@@ -313,12 +311,12 @@ instance CanTestFinite Rational where
   isInfinite = const False
   isFinite = const True
 
-instance (CanTestNaN t, Monoid es, P.Eq es) => (CanTestNaN (CollectErrors es t)) where
-  isNaN ce = CN.getValueIfNoError ce isNaN (const False)
+instance (CanTestNaN t, SuitableForCE es) => (CanTestNaN (CollectErrors es t)) where
+  isNaN ce = getValueIfNoErrorCE ce isNaN (const False)
 
-instance (CanTestFinite t, Monoid es, P.Eq es) => (CanTestFinite (CollectErrors es t)) where
-  isInfinite ce = CN.getValueIfNoError ce isInfinite (const False)
-  isFinite ce = CN.getValueIfNoError ce isFinite (const False)
+instance (CanTestFinite t, SuitableForCE es) => (CanTestFinite (CollectErrors es t)) where
+  isInfinite ce = getValueIfNoErrorCE ce isInfinite (const False)
+  isFinite ce = getValueIfNoErrorCE ce isFinite (const False)
 
 {---- Checking whether it is an integer -----}
 
@@ -356,9 +354,9 @@ instance CanTestInteger Double where
       dF = P.floor d
       dC = P.ceiling d
 
-instance (CanTestInteger t, Monoid es, P.Eq es) => (CanTestInteger (CollectErrors es t)) where
-  certainlyNotInteger ce = CN.getValueIfNoError ce certainlyNotInteger (const False)
-  certainlyIntegerGetIt ce = CN.getValueIfNoError ce certainlyIntegerGetIt (const Nothing)
+instance (CanTestInteger t, SuitableForCE es) => (CanTestInteger (CollectErrors es t)) where
+  certainlyNotInteger ce = getValueIfNoErrorCE ce certainlyNotInteger (const False)
+  certainlyIntegerGetIt ce = getValueIfNoErrorCE ce certainlyIntegerGetIt (const Nothing)
 
 {---- Checking whether it is zero -----}
 
@@ -393,9 +391,9 @@ instance CanTestZero Integer
 instance CanTestZero Rational
 instance CanTestZero Double
 
-instance (CanTestZero t, Monoid es, P.Eq es) => (CanTestZero (CollectErrors es t)) where
-  isCertainlyZero ce = CN.getValueIfNoError ce isCertainlyZero (const False)
-  isCertainlyNonZero ce = CN.getValueIfNoError ce isCertainlyNonZero (const False)
+instance (CanTestZero t, SuitableForCE es) => (CanTestZero (CollectErrors es t)) where
+  isCertainlyZero ce = getValueIfNoErrorCE ce isCertainlyZero (const False)
+  isCertainlyNonZero ce = getValueIfNoErrorCE ce isCertainlyNonZero (const False)
 
 
 class CanPickNonZero t where
@@ -444,9 +442,9 @@ instance CanPickNonZero Int
 instance CanPickNonZero Integer
 instance CanPickNonZero Rational
 
-instance (CanPickNonZero a, P.Eq es, Monoid es) => (CanPickNonZero (CollectErrors es a)) where
+instance (CanPickNonZero a, SuitableForCE es) => (CanPickNonZero (CollectErrors es a)) where
   pickNonZero =
-    fmap (\(v,s) -> (CE.noErrors v,s))
+    fmap (\(v,s) -> (pure v,s))
     . pickNonZero
-    . CE.filterValuesWithoutError
+    . filterValuesWithoutErrorCE
     . (map (\(vCN,s) -> fmap (\v -> (v,s)) vCN))

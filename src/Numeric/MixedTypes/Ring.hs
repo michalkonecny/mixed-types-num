@@ -41,9 +41,7 @@ import Test.Hspec
 import Test.QuickCheck
 
 import Numeric.CollectErrors
-  (CollectErrors, EnsureCE, CanEnsureCE
-  , CollectNumErrors, EnsureCN, CanEnsureCN, CanAddCN(..))
-import qualified Numeric.CollectErrors as CN
+import Control.CollectErrors
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -262,13 +260,13 @@ instance (CanMulAsymmetric a b) => CanMulAsymmetric (Maybe a) (Maybe b) where
 instance
   (CanMulAsymmetric a b
   , CanEnsureCE es (MulType a b)
-  , Monoid es)
+  , SuitableForCE es)
   =>
   CanMulAsymmetric (CollectErrors es a) (CollectErrors es  b)
   where
   type MulType (CollectErrors es a) (CollectErrors es b) =
     EnsureCE es (MulType a b)
-  mul = CN.lift2ensureCE mul
+  mul = lift2CE mul
 
 {---- Exponentiation -----}
 
@@ -291,15 +289,17 @@ integerPowCN ::
   (b -> e -> r) -> b -> e -> EnsureCN r
 integerPowCN unsafeIntegerPow b n
   | n !<! 0 =
-    CN.noValueNumErrorCertain $ CN.OutOfRange "illegal integer pow: negative exponent"
+    noValueNumErrorCertainECN sample_v $ OutOfRange "illegal integer pow: negative exponent"
   | n !==! 0 && b !==! 0 =
-    CN.noValueNumErrorCertain $ CN.OutOfRange "illegal integer pow: 0^0"
+    noValueNumErrorCertainECN sample_v $ OutOfRange "illegal integer pow: 0^0"
   | n ?<? 0 =
-    CN.noValueNumErrorPotential $ CN.OutOfRange "illegal integer pow: negative exponent"
+    noValueNumErrorPotentialECN sample_v $ OutOfRange "illegal integer pow: negative exponent"
   | n ?==? 0 && b ?==? 0 =
-    CN.noValueNumErrorPotential $ CN.OutOfRange "illegal integer pow: 0^0"
+    noValueNumErrorPotentialECN sample_v $ OutOfRange "illegal integer pow: 0^0"
   | otherwise =
-    CN.ensureCN $ unsafeIntegerPow b n
+    ensureCN $ unsafeIntegerPow b n
+  where
+  sample_v = Just (unsafeIntegerPow b n)
 
 powCN ::
   (HasOrderCertainly b Integer, HasOrderCertainly e Integer,
@@ -309,15 +309,17 @@ powCN ::
   (b -> e -> r) -> b -> e -> EnsureCN r
 powCN unsafePow b e
   | b !==! 0 && e !<=! 0 =
-    CN.noValueNumErrorCertain $ CN.OutOfRange "illegal pow: 0^e with e <= 0"
+    noValueNumErrorCertainECN sample_v $ OutOfRange "illegal pow: 0^e with e <= 0"
   | b !<! 0 && certainlyNotInteger e =
-    CN.noValueNumErrorCertain $ CN.OutOfRange "illegal pow: b^e with b < 0 and e non-integer"
+    noValueNumErrorCertainECN sample_v $ OutOfRange "illegal pow: b^e with b < 0 and e non-integer"
   | b ?==? 0 && e ?<=? 0 =
-    CN.noValueNumErrorPotential $ CN.OutOfRange "illegal pow: 0^e with e <= 0"
+    noValueNumErrorPotentialECN sample_v $ OutOfRange "illegal pow: 0^e with e <= 0"
   | b ?<? 0 && not (certainlyInteger e) =
-    CN.noValueNumErrorPotential $ CN.OutOfRange "illegal pow: b^e with b < 0 and e non-integer"
+    noValueNumErrorPotentialECN sample_v $ OutOfRange "illegal pow: b^e with b < 0 and e non-integer"
   | otherwise =
-    CN.ensureCN $ unsafePow b e
+    ensureCN $ unsafePow b e
+  where
+  sample_v = Just (unsafePow b e)
 
 powUsingMul ::
   (CanBeInteger e,
@@ -341,7 +343,7 @@ type CanPowBy t1 t2 =
   (CanPow t1 t2, PowType t1 t2 ~ t1)
 
 type CanPowCNBy t1 t2 =
-  (CanPow t1 t2, PowType t1 t2 ~ AddCN t1)
+  (CanPow t1 t2, PowType t1 t2 ~ EnsureCN t1)
 
 {-| Compound type constraint useful for test definition. -}
 type CanPowX t1 t2 =
@@ -386,22 +388,22 @@ specCanPow (T typeName1 :: T t1) (T typeName2 :: T t2) =
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 instance CanPow Integer Integer where
-  type PowType Integer Integer = CollectNumErrors Integer
+  type PowType Integer Integer = CN Integer
   pow = integerPowCN (P.^)
 instance CanPow Integer Int where
-  type PowType Integer Int = CollectNumErrors Integer
+  type PowType Integer Int = CN Integer
   pow = integerPowCN (P.^)
 instance CanPow Int Integer where
-  type PowType Int Integer = CollectNumErrors Integer
+  type PowType Int Integer = CN Integer
   pow x n = pow (integer x) n
 instance CanPow Int Int where
-  type PowType Int Int = CollectNumErrors Integer
+  type PowType Int Int = CN Integer
   pow x n = pow (integer x) n
 instance CanPow Rational Int where
-  type PowType Rational Int = CollectNumErrors Rational
+  type PowType Rational Int = CN Rational
   pow = powCN (P.^^)
 instance CanPow Rational Integer where
-  type PowType Rational Integer = CollectNumErrors Rational
+  type PowType Rational Integer = CN Rational
   pow = powCN (P.^^)
 instance CanPow Double Int where pow = (P.^^)
 instance CanPow Double Integer where pow = (P.^^)
@@ -419,13 +421,13 @@ instance (CanPow a b) => CanPow (Maybe a) (Maybe b) where
 instance
   (CanPow a b
   , CanEnsureCE es (PowType a b)
-  , Monoid es)
+  , SuitableForCE es)
   =>
   CanPow (CollectErrors es a) (CollectErrors es  b)
   where
   type PowType (CollectErrors es a) (CollectErrors es b) =
     EnsureCE es (PowType a b)
-  pow = CN.lift2ensureCE pow
+  pow = lift2CE pow
 
 $(declForTypes
   [[t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
@@ -434,44 +436,44 @@ $(declForTypes
     instance
       (CanPow $t b
       , CanEnsureCE es (PowType $t b)
-      , Monoid es)
+      , SuitableForCE es)
       =>
       CanPow $t (CollectErrors es  b)
       where
       type PowType $t (CollectErrors es  b) =
         EnsureCE es (PowType $t b)
-      pow = CN.unlift2first pow
+      pow = lift2TLCE pow
 
     instance
       (CanPow a $t
       , CanEnsureCE es (PowType a $t)
-      , Monoid es)
+      , SuitableForCE es)
       =>
       CanPow (CollectErrors es a) $t
       where
       type PowType (CollectErrors es  a) $t =
         EnsureCE es (PowType a $t)
-      pow = CN.unlift2second pow
+      pow = lift2TCE pow
 
     instance
       (CanMulAsymmetric $t b
       , CanEnsureCE es (MulType $t b)
-      , Monoid es)
+      , SuitableForCE es)
       =>
       CanMulAsymmetric $t (CollectErrors es  b)
       where
       type MulType $t (CollectErrors es  b) =
         EnsureCE es (MulType $t b)
-      mul = CN.unlift2first mul
+      mul = lift2TLCE mul
 
     instance
       (CanMulAsymmetric a $t
       , CanEnsureCE es (MulType a $t)
-      , Monoid es)
+      , SuitableForCE es)
       =>
       CanMulAsymmetric (CollectErrors es a) $t
       where
       type MulType (CollectErrors es  a) $t =
         EnsureCE es (MulType a $t)
-      mul = CN.unlift2second mul
+      mul = lift2TCE mul
   |]))

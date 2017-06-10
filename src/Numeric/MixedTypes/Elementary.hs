@@ -35,9 +35,7 @@ import Test.Hspec
 import Test.QuickCheck
 
 import Numeric.CollectErrors
-  (CollectErrors, EnsureCE, CanEnsureCE,
-   WithoutCN, EnsureCN, CanEnsureCN, ensureCN)
-import qualified Numeric.CollectErrors as CN
+import Control.CollectErrors
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -108,12 +106,12 @@ instance CanSqrt Double -- not exact, will not pass the tests
 instance
   (CanSqrt a
   , CanEnsureCE es (SqrtType a)
-  , Monoid es)
+  , SuitableForCE es)
   =>
   CanSqrt (CollectErrors es a)
   where
   type SqrtType (CollectErrors es a) = EnsureCE es (SqrtType a)
-  sqrt = CN.lift1ensureCE sqrt
+  sqrt = lift1CE sqrt
 
 
 {----  exp -----}
@@ -141,7 +139,7 @@ type CanExpX t =
    HasOrderCertainly Integer t,
    HasOrderCertainly Integer (ExpType t),
    Show t, Arbitrary t, Show (ExpType t),
-   Show (WithoutCN t), Show (WithoutCN (ExpType t)))
+   Show (EnsureCN t), Show (EnsureCN (ExpType t)))
 
 {-|
   HSpec properties that each implementation of CanExp should satisfy.
@@ -160,7 +158,7 @@ specCanExpReal (T typeName :: T t) =
       property $ \ (x :: t) ->
         ((-100000) !<! x && x !<! 100000) ==>
           (exp x !>! 0) ==>
-            (CN.ensureCN $ exp (-x)) ?==?$ 1/(exp x)
+            (ensureCN $ exp (-x)) ?==?$ 1/(exp x)
     it "exp(x+y) = exp(x)*exp(y)" $ do
       property $ \ (x :: t)  (y :: t) ->
         ((-100000) !<! x && x !<! 100000 && (-100000) !<! y && y !<! 100000) ==>
@@ -183,12 +181,12 @@ instance CanExp Double -- not exact, will not pass the tests
 instance
   (CanExp a
   , CanEnsureCE es (ExpType a)
-  , Monoid es)
+  , SuitableForCE es)
   =>
   CanExp (CollectErrors es a)
   where
   type ExpType (CollectErrors es a) = EnsureCE es (ExpType a)
-  exp = CN.lift1ensureCE exp
+  exp = lift1CE exp
 
 {----  log -----}
 
@@ -222,7 +220,7 @@ specCanLogReal ::
   (CanLogX t,
    CanLogX (DivType Integer t),
    CanExp t, CanLogX (ExpType t),
-   HasEqCertainly (LogType t) (EnsureCN (LogType (WithoutCN t))),
+   HasEqCertainly (LogType t) (LogType (EnsureCN t)),
    HasEqCertainlyCN t (LogType (ExpType t)))
   =>
   T t -> Spec
@@ -255,12 +253,12 @@ instance CanLog Double -- not exact, will not pass the tests
 instance
   (CanLog a
   , CanEnsureCE es (LogType a)
-  , Monoid es)
+  , SuitableForCE es)
   =>
   CanLog (CollectErrors es a)
   where
   type LogType (CollectErrors es a) = EnsureCE es (LogType a)
-  log = CN.lift1ensureCE log
+  log = lift1CE log
 
 instance CanPow Double Double where
   pow = (P.**)
@@ -281,17 +279,17 @@ instance CanPow Int Double where
 powUsingExpLog ::
   (CanTestPosNeg t,
    CanEnsureCN t,
-   CanEnsureCN (WithoutCN t),
-   WithoutCN t ~ WithoutCN (WithoutCN t),
+   CanEnsureCN (EnsureCN t),
+   EnsureCN t ~ EnsureCN (EnsureCN t),
    CanLogCNSameType t,
    CanMulSameType t,
-   CanMulSameType (WithoutCN t),
-   CanExpSameType (WithoutCN t),
+   CanMulSameType (EnsureCN t),
+   CanExpSameType (EnsureCN t),
    CanTestInteger t,
    HasIntegers t,
    CanTestZero t,
    CanRecipCNSameType t,
-   HasIntegers (WithoutCN t))
+   HasIntegers (EnsureCN t))
   =>
   t -> t -> EnsureCN t
 powUsingExpLog x y =
@@ -302,8 +300,8 @@ powUsingExpLog x y =
       | isCertainlyZero x && isCertainlyPositive y -> convertExactly 0
       | isCertainlyPositive x -> exp ((log x) * (ensureCN y))
       | otherwise ->
-          CN.noValueNumErrorPotential $
-            CN.NumError "powUsingExpLog: illegal power a^b with negative a and non-integer b"
+          noValueNumErrorPotentialECN (Just x) $
+            NumError "powUsingExpLog: illegal power a^b with negative a and non-integer b"
 
 {----  sine and cosine -----}
 
@@ -329,7 +327,7 @@ type CanSinCosX t =
    OrderedCertainlyField (SinCosType t),
    HasOrderCertainlyCN (SinCosType t) t,
    Show t, Arbitrary t, Show (SinCosType t),
-   Show (WithoutCN t), Arbitrary t, Show (WithoutCN (SinCosType t)))
+   Show (EnsureCN t), Arbitrary t, Show (EnsureCN (SinCosType t)))
 
 {-|
   HSpec properties that each implementation of CanSinCos should satisfy.
@@ -361,7 +359,7 @@ specCanSinCosReal (T typeName :: T t) =
     it "sin(x) < x < tan(x) for x in [0,pi/2]" $ do
       property $ \ (x :: t) ->
         x !>=! 0 && x !<=! 1.57 && (cos x) !>! 0 ==>
-          (sin x) ?<=?$ x .&&. (CN.ensureCN x) ?<=?$ (sin x)/(cos x)
+          (sin x) ?<=?$ x .&&. (ensureCN x) ?<=?$ (sin x)/(cos x)
   where
   infix 4 ?==?$
   (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
@@ -380,13 +378,13 @@ instance CanSinCos Double -- not exact, will not pass the tests
 instance
   (CanSinCos a
   , CanEnsureCE es (SinCosType a)
-  , Monoid es)
+  , SuitableForCE es)
   =>
   CanSinCos (CollectErrors es a)
   where
   type SinCosType (CollectErrors es a) = EnsureCE es (SinCosType a)
-  sin = CN.lift1ensureCE sin
-  cos = CN.lift1ensureCE cos
+  sin = lift1CE sin
+  cos = lift1CE cos
 
 {-|
   Approximate pi, synonym for Prelude's `P.pi`.

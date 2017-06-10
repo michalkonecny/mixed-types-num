@@ -36,8 +36,7 @@ import Test.Hspec
 import qualified Test.QuickCheck as QC
 
 import Numeric.CollectErrors
-  (CollectErrors, EnsureCE, CanEnsureCE, WithoutCE)
-import qualified Numeric.CollectErrors as CN
+import Control.CollectErrors
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -58,15 +57,16 @@ type HasOrderCertainly t1 t2 =
 
 type HasOrderCertainlyCE es t1 t2 =
   (HasOrderCertainly t1 t2,
-   HasOrderCertainly (WithoutCE es t1) (WithoutCE es t2),
-   CanTestCertainly (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2))),
-   IsBool (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2))),
-   CanEnsureCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2)),
-   CanEnsureCE es (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2))),
-   WithoutCE es (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2)))
-     ~ (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2))))
+   HasOrderCertainly (EnsureCE es t1) (EnsureCE es t2))
+  --  ,
+  --  CanTestCertainly (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2))),
+  --  IsBool (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2))),
+  --  CanEnsureCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2)),
+  --  CanEnsureCE es (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2))),
+  --  WithoutCE es (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2)))
+  --    ~ (WithoutCE es (OrderCompareType (WithoutCE es t1) (WithoutCE es t2))))
 
-type HasOrderCertainlyCN t1 t2 = HasOrderCertainlyCE CN.NumErrors t1 t2
+type HasOrderCertainlyCN t1 t2 = HasOrderCertainlyCE NumErrors t1 t2
 
 type HasOrderCertainlyAsymmetric t1 t2 =
   (HasOrderAsymmetric t1 t2, CanTestCertainly (OrderCompareType t1 t2))
@@ -216,16 +216,16 @@ instance
   (HasOrderAsymmetric a b
   , CanEnsureCE es (OrderCompareType a b)
   , IsBool (EnsureCE es (OrderCompareType a b))
-  , Monoid es)
+  , SuitableForCE es)
   =>
   HasOrderAsymmetric (CollectErrors es a) (CollectErrors es  b)
   where
   type OrderCompareType (CollectErrors es a) (CollectErrors es b) =
     EnsureCE es (OrderCompareType a b)
-  lessThan = CN.lift2ensureCE lessThan
-  leq = CN.lift2ensureCE leq
-  greaterThan = CN.lift2ensureCE greaterThan
-  geq = CN.lift2ensureCE geq
+  lessThan = lift2CE lessThan
+  leq = lift2CE leq
+  greaterThan = lift2CE greaterThan
+  geq = lift2CE geq
 
 $(declForTypes
   [[t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
@@ -235,31 +235,31 @@ $(declForTypes
       (HasOrderAsymmetric $t b
       , CanEnsureCE es (OrderCompareType $t b)
       , IsBool (EnsureCE es (OrderCompareType $t b))
-      , Monoid es)
+      , SuitableForCE es)
       =>
       HasOrderAsymmetric $t (CollectErrors es  b)
       where
       type OrderCompareType $t (CollectErrors es  b) =
         EnsureCE es (OrderCompareType $t b)
-      lessThan = CN.unlift2first lessThan
-      leq = CN.unlift2first leq
-      greaterThan = CN.unlift2first greaterThan
-      geq = CN.unlift2first geq
+      lessThan = lift2TLCE lessThan
+      leq = lift2TLCE leq
+      greaterThan = lift2TLCE greaterThan
+      geq = lift2TLCE geq
 
     instance
       (HasOrderAsymmetric a $t
       , CanEnsureCE es (OrderCompareType a $t)
       , IsBool (EnsureCE es (OrderCompareType a $t))
-      , Monoid es)
+      , SuitableForCE es)
       =>
       HasOrderAsymmetric (CollectErrors es a) $t
       where
       type OrderCompareType (CollectErrors es  a) $t =
         EnsureCE es (OrderCompareType a $t)
-      lessThan = CN.unlift2second lessThan
-      leq = CN.unlift2second leq
-      greaterThan = CN.unlift2second greaterThan
-      geq = CN.unlift2second geq
+      lessThan = lift2TCE lessThan
+      leq = lift2TCE leq
+      greaterThan = lift2TCE greaterThan
+      geq = lift2TCE geq
 
   |]))
 
@@ -282,8 +282,8 @@ instance CanTestPosNeg Integer
 instance CanTestPosNeg Rational
 instance CanTestPosNeg Double
 
-instance (CanTestPosNeg t, Monoid es, P.Eq es) => (CanTestPosNeg (CollectErrors es t)) where
-  isCertainlyPositive ce = CN.getValueIfNoError ce isCertainlyPositive (const False)
-  isCertainlyNonNegative ce = CN.getValueIfNoError ce isCertainlyNonNegative (const False)
-  isCertainlyNegative ce = CN.getValueIfNoError ce isCertainlyNegative (const False)
-  isCertainlyNonPositive ce = CN.getValueIfNoError ce isCertainlyNonPositive (const False)
+instance (CanTestPosNeg t, SuitableForCE es) => (CanTestPosNeg (CollectErrors es t)) where
+  isCertainlyPositive ce = getValueIfNoErrorCE ce isCertainlyPositive (const False)
+  isCertainlyNonNegative ce = getValueIfNoErrorCE ce isCertainlyNonNegative (const False)
+  isCertainlyNegative ce = getValueIfNoErrorCE ce isCertainlyNegative (const False)
+  isCertainlyNonPositive ce = getValueIfNoErrorCE ce isCertainlyNonPositive (const False)

@@ -15,38 +15,52 @@
     have their result type derived from the parameter type(s),
     allowing, /e.g./:
 
-      * dividing an integer by an integer, giving a rational:
+      * dividing an integer by an integer, giving a rational, wrapped in the CN (ie Collecting NumErrors) monad:
 
-      @let n = 1 :: Integer in n/(n+1) :: Rational@
+      @let n = 1 :: Integer in n/(n+1) :: CN Rational@
 
-      @1/2 :: Rational@
+      @1/2 :: CN Rational@
 
-      (The type Rational would be derived automatically because
+      (The type @CN Rational@ would be derived automatically because
       integer literals are always of type @Integer@, not @Num t => t@.)
 
       * adding an integer and a rational, giving a rational:
 
-      @(length [x])+1/3 :: Rational@
+      @(length [x])+1/3 :: CN Rational@
+
+      The @CN@ monad is required because integer division can, in general, fail as it is a partial operation.
+      When one is certain the division is well defined, one can remove @CN@ using the @~!@ operator:
+
+      @((1/2)~!) :: Rational@
+
+      @((1/n)~!) :: Rational@
+
+      The last example will throw an exception when evaluated with @n=0@.
 
       * taking natural, integer and fractional power using the same operator:
 
-      @2^2 :: Integer@
+      @2^2 :: CN Integer@
 
-      @2.0^(-2) :: Rational@
+      @2.0^(-2) :: CN Rational@
 
       @(double 2)^(1/2) :: Double@
 
       The following examples require package <https://github.com/michalkonecny/aern2/aern2-real aern2-real>:
 
-      @2^(1/2) :: CauchyReal@
+      @2^(1/2) :: CauchyRealCN@
 
       @pi :: CauchyReal@
 
-      @sqrt 2 :: CauchyReal@
+      @sqrt 2 :: CauchyRealCN@
 
-      * comparing an integer with an (exact) real number, giving a @Maybe Bool@:
+      * comparing an integer with an (exact) real number, giving a seqeunce of @Maybe Bool@:
 
-      @... x :: CauchyReal ... if (isCertainlyTrue (x > 1)) then ...@
+      @if x < 0 then -x else x :: CauchyReal@
+
+      In the last example, @if@ is overloaded so that it works for conditions
+      of other types than @Bool@.  Here the condition has the type @Sequence (Maybe Bool)@.
+      The whole expression is the sequence of balls in which those balls for which the condition
+      is inconclusive are the union of the balls computed by both branches.
 
     = Type classes
 
@@ -118,14 +132,7 @@ module Numeric.MixedTypes
   module Numeric.MixedTypes.Ring,
   module Numeric.MixedTypes.Field,
   module Numeric.MixedTypes.Elementary,
-  -- * Key elements of "Numeric.CollectErrors"
-  ErrorCertaintyLevel(..), NumError(..), NumErrors
-  , CollectNumErrors, noNumErrors
-  , noValueNumErrorCertain, noValueNumErrorPotential
-  , WithoutCN, CanEnsureCN
-  , EnsureCN, ensureCN, deEnsureCN
-  , AddCN
-  , CN, cn, unCN, (⚡), (~!)
+  module Numeric.CollectErrors
 )
 where
 

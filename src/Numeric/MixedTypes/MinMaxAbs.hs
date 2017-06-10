@@ -36,8 +36,8 @@ import qualified Data.List as List
 import Test.Hspec
 import Test.QuickCheck
 
-import Numeric.CollectErrors (CollectErrors, EnsureCE, CanEnsureCE)
-import qualified Numeric.CollectErrors as CN
+-- import Numeric.CollectErrors
+import Control.CollectErrors
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -211,14 +211,14 @@ instance (CanMinMaxAsymmetric a b) => CanMinMaxAsymmetric (Maybe a) (Maybe b) wh
 instance
   (CanMinMaxAsymmetric a b
   , CanEnsureCE es (MinMaxType a b)
-  , Monoid es)
+  , SuitableForCE es)
   =>
   CanMinMaxAsymmetric (CollectErrors es a) (CollectErrors es  b)
   where
   type MinMaxType (CollectErrors es a) (CollectErrors es b) =
     EnsureCE es (MinMaxType a b)
-  min = CN.lift2ensureCE min
-  max = CN.lift2ensureCE max
+  min = lift2CE min
+  max = lift2CE max
 
 $(declForTypes
   [[t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
@@ -227,26 +227,26 @@ $(declForTypes
     instance
       (CanMinMaxAsymmetric $t b
       , CanEnsureCE es (MinMaxType $t b)
-      , Monoid es)
+      , SuitableForCE es)
       =>
       CanMinMaxAsymmetric $t (CollectErrors es  b)
       where
       type MinMaxType $t (CollectErrors es  b) =
         EnsureCE es (MinMaxType $t b)
-      min = CN.unlift2first min
-      max = CN.unlift2first max
+      min = lift2TLCE min
+      max = lift2TLCE max
 
     instance
       (CanMinMaxAsymmetric a $t
       , CanEnsureCE es (MinMaxType a $t)
-      , Monoid es)
+      , SuitableForCE es)
       =>
       CanMinMaxAsymmetric (CollectErrors es a) $t
       where
       type MinMaxType (CollectErrors es  a) $t =
         EnsureCE es (MinMaxType a $t)
-      min = CN.unlift2second min
-      max = CN.unlift2second max
+      min = lift2TCE min
+      max = lift2TCE max
 
   |]))
 
@@ -317,12 +317,12 @@ instance CanAbs Double
 instance
   (CanAbs a
   , CanEnsureCE es (AbsType a)
-  , Monoid es)
+  , SuitableForCE es)
   =>
   CanAbs (CollectErrors es a)
   where
   type AbsType (CollectErrors es a) = EnsureCE es (AbsType a)
-  abs = CN.lift1ensureCE abs
+  abs = lift1CE abs
 
 type CanAbsX t =
   (CanAbs t,

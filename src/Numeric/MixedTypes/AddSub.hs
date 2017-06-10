@@ -37,8 +37,8 @@ import qualified Data.List as List
 import Test.Hspec
 import Test.QuickCheck
 
-import Numeric.CollectErrors (CollectErrors, EnsureCE, CanEnsureCE)
-import qualified Numeric.CollectErrors as CN
+-- import Numeric.CollectErrors
+import Control.CollectErrors
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool (CanNeg(..))
@@ -228,14 +228,14 @@ instance (CanAddAsymmetric a b) => CanAddAsymmetric (Maybe a) (Maybe b) where
 
 instance
   (CanAddAsymmetric a b
-  , CanEnsureCE es (AddType a b)
-  , Monoid es)
+  , CanEnsureCE es   (AddType a b)
+  , SuitableForCE es)
   =>
   CanAddAsymmetric (CollectErrors es a) (CollectErrors es  b)
   where
   type AddType (CollectErrors es a) (CollectErrors es b) =
     EnsureCE es (AddType a b)
-  add = CN.lift2ensureCE add
+  add = lift2CE add
 
 -- TH for ground type instances at is the end of the file due to a bug in TH
 
@@ -377,13 +377,13 @@ instance (CanSub a b) => CanSub (Maybe a) (Maybe b) where
 instance
   (CanSub a b
   , CanEnsureCE es (SubType a b)
-  , Monoid es)
+  , SuitableForCE es)
   =>
   CanSub (CollectErrors es a) (CollectErrors es  b)
   where
   type SubType (CollectErrors es a) (CollectErrors es b) =
     EnsureCE es (SubType a b)
-  sub = CN.lift2ensureCE sub
+  sub = lift2CE sub
 
 
 $(declForTypes
@@ -393,44 +393,44 @@ $(declForTypes
     instance
       (CanSub $t b
       , CanEnsureCE es (SubType $t b)
-      , Monoid es)
+      , SuitableForCE es)
       =>
       CanSub $t (CollectErrors es  b)
       where
       type SubType $t (CollectErrors es  b) =
         EnsureCE es (SubType $t b)
-      sub = CN.unlift2first sub
+      sub = lift2TLCE sub
 
     instance
       (CanSub a $t
       , CanEnsureCE es (SubType a $t)
-      , Monoid es)
+      , SuitableForCE es)
       =>
       CanSub (CollectErrors es a) $t
       where
       type SubType (CollectErrors es  a) $t =
         EnsureCE es (SubType a $t)
-      sub = CN.unlift2second sub
+      sub = lift2TCE sub
 
     instance
       (CanAddAsymmetric $t b
       , CanEnsureCE es (AddType $t b)
-      , Monoid es)
+      , SuitableForCE es)
       =>
       CanAddAsymmetric $t (CollectErrors es  b)
       where
       type AddType $t (CollectErrors es  b) =
         EnsureCE es (AddType $t b)
-      add = CN.unlift2first add
+      add = lift2TLCE add
 
     instance
       (CanAddAsymmetric a $t
       , CanEnsureCE es (AddType a $t)
-      , Monoid es)
+      , SuitableForCE es)
       =>
       CanAddAsymmetric (CollectErrors es a) $t
       where
       type AddType (CollectErrors es  a) $t =
         EnsureCE es (AddType a $t)
-      add = CN.unlift2second add
+      add = lift2TCE add
   |]))

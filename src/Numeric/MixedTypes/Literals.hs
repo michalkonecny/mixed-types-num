@@ -72,8 +72,7 @@ import Test.QuickCheck
 -- import Control.Exception (evaluate)
 
 -- import Numeric.CollectErrors
-import Control.CollectErrors (CollectErrors)
-import qualified Control.CollectErrors as CE
+import Control.CollectErrors
 
 {-| Replacement for 'Prelude.fromInteger' using the RebindableSyntax extension.
     This version of fromInteger arranges that integer literals
@@ -193,6 +192,13 @@ instance ConvertibleExactly Integer Rational
 instance ConvertibleExactly Double Double where
   safeConvertExactly d = Right d
 
+instance
+  (ConvertibleExactly t1 t2, SuitableForCE es)
+  =>
+  ConvertibleExactly t1 (CollectErrors es t2)
+  where
+  safeConvertExactly = fmap pure . safeConvertExactly
+
 {-- we deliberately do not allow converions from Double to any other type --}
 
 {-- auxiliary type and functions for specifying type(s) to use in tests  --}
@@ -255,5 +261,5 @@ $(declForTypes
   (\ t -> [d|
 
     instance (ConvertibleExactly $t t, Monoid es) => ConvertibleExactly $t (CollectErrors es t) where
-      safeConvertExactly = fmap (\v -> CE.CollectErrors (Just v) mempty) . safeConvertExactly
+      safeConvertExactly = fmap (\v -> CollectErrors (Just v) mempty) . safeConvertExactly
   |]))

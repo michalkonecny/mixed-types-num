@@ -16,9 +16,10 @@ module Numeric.CollectErrors
   ErrorCertaintyLevel(..), NumError(..), NumErrors, sample_NumErrors
   -- * Specialisation to numeric errors
 , CN, CanEnsureCN, EnsureCN, EnsureNoCN
-, ensureCN, deEnsureCN, ensureNoCN, noValueCN
-, noValueNumErrorCertain, noValueNumErrorPotential
-, getMaybeValue, getErrors, prependErrors
+, ensureCN, deEnsureCN, ensureNoCN
+, noValueECN
+, noValueNumErrorCertainECN, noValueNumErrorPotentialECN
+, getMaybeValueECN, getErrorsECN, prependErrorsECN
   -- ** More compact synonyms
 , cn, deCN, (⚡), (~!)
 )
@@ -70,17 +71,33 @@ deEnsureCN = deEnsureCE sample_NumErrors
 ensureNoCN :: (CanEnsureCN v) => v -> Maybe (EnsureNoCN v)
 ensureNoCN = ensureNoCE sample_NumErrors
 
-noValueCN :: (CanEnsureCN v) => Maybe v -> NumErrors -> EnsureCN v
-noValueCN = noValue
+getErrorsECN ::
+  (CanEnsureCN v) =>
+  Maybe v {-^ sample only -} ->
+  EnsureCN v -> NumErrors
+getErrorsECN = getErrorsECE
+
+getMaybeValueECN ::
+  (CanEnsureCN v) =>
+  EnsureCN v -> Maybe v
+getMaybeValueECN = getMaybeValueECE sample_NumErrors
+
+noValueECN :: (CanEnsureCN v) => Maybe v -> NumErrors -> EnsureCN v
+noValueECN = noValueECE
 
 {-| Construct an empty wrapper indicating that given error has certainly occurred. -}
-noValueNumErrorCertain :: (CanEnsureCN v) => Maybe v -> NumError -> EnsureCN v
-noValueNumErrorCertain sample_v e = noValue sample_v [(ErrorCertain, e)]
+noValueNumErrorCertainECN :: (CanEnsureCN v) => Maybe v -> NumError -> EnsureCN v
+noValueNumErrorCertainECN sample_v e = noValueECE sample_v [(ErrorCertain, e)]
 
 {-| Construct an empty wrapper indicating that given error may have occurred. -}
-noValueNumErrorPotential :: (CanEnsureCN v) => Maybe v -> NumError -> EnsureCN v
-noValueNumErrorPotential sample_v e = noValue sample_v [(ErrorPotential, e)]
+noValueNumErrorPotentialECN :: (CanEnsureCN v) => Maybe v -> NumError -> EnsureCN v
+noValueNumErrorPotentialECN sample_v e = noValueECE sample_v [(ErrorPotential, e)]
 
+prependErrorsECN ::
+  (CanEnsureCN v) =>
+  Maybe v {-^ sample only -} ->
+  NumErrors -> EnsureCN v -> EnsureCN v
+prependErrorsECN = prependErrorsECE
 
 
 -- more compact synonyms:
@@ -95,8 +112,8 @@ deCN = deEnsureCN
 
 {-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
 (⚡) :: (CanEnsureCN v) => EnsureCN v -> v
-(⚡) = getValueOrThrowErrors sample_NumErrors
+(⚡) = getValueOrThrowErrorsECE sample_NumErrors
 
 {-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
 (~!) :: (CanEnsureCN v) => EnsureCN v -> v
-(~!) = getValueOrThrowErrors sample_NumErrors
+(~!) = getValueOrThrowErrorsECE sample_NumErrors
