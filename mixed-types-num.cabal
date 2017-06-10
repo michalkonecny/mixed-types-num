@@ -48,7 +48,6 @@ library
     UndecidableInstances
   exposed-modules:
     Utils.TH.DeclForTypes
-    Control.EnsureTypeOp
     Control.CollectErrors
     Numeric.CollectErrors
     Numeric.MixedTypes

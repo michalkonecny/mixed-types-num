@@ -40,11 +40,11 @@ module Numeric.MixedTypes.Literals
   -- * Generalised if-then-else
   , HasIfThenElse(..)
   -- * Convenient conversions
-  , CanBeInteger, integer, integerCN, integers, integersCN, HasIntegers, fromInteger_
-  , CanBeInt, int, intCN, ints, intsCN
-  , CanBeRational, rational, rationalCN, rationals, rationalsCN, HasRationals, fromRational_
+  , CanBeInteger, integer, integers, HasIntegers, fromInteger_
+  , CanBeInt, int, ints
+  , CanBeRational, rational, rationals, HasRationals, fromRational_
   , CanBeDouble, double, doubles
-  , ConvertibleExactly(..), convertExactly, convertExactlyCN
+  , ConvertibleExactly(..), convertExactly
   , ConvertResult, ConvertError, convError
   -- * Generic list index
   , (!!), specCanBeInteger, printArgsIfFails2
@@ -71,8 +71,9 @@ import Test.Hspec
 import Test.QuickCheck
 -- import Control.Exception (evaluate)
 
-import Numeric.CollectErrors (CollectErrors, CollectNumErrors)
-import qualified Numeric.CollectErrors as CN
+-- import Numeric.CollectErrors
+import Control.CollectErrors (CollectErrors)
+import qualified Control.CollectErrors as CE
 
 {-| Replacement for 'Prelude.fromInteger' using the RebindableSyntax extension.
     This version of fromInteger arranges that integer literals
@@ -106,12 +107,8 @@ _testIf1 = if True then "yes" else "no"
 type CanBeInteger t = ConvertibleExactly t Integer
 integer :: (CanBeInteger t) => t -> Integer
 integer = convertExactly
-integerCN :: (CanBeInteger t) => t -> CollectNumErrors Integer
-integerCN = convertExactlyCN
 integers :: (CanBeInteger t) => [t] -> [Integer]
 integers = map convertExactly
-integersCN :: (CanBeInteger t) => [t] -> CollectNumErrors [Integer]
-integersCN = sequence . map convertExactlyCN
 
 type HasIntegers t = ConvertibleExactly Integer t
 fromInteger_ :: (HasIntegers t) => Integer -> t
@@ -148,20 +145,12 @@ int :: (CanBeInt t) => t -> Int
 int = convertExactly
 ints :: (CanBeInt t) => [t] -> [Int]
 ints = map convertExactly
-intCN :: (CanBeInt t) => t -> CollectNumErrors Int
-intCN = convertExactlyCN
-intsCN :: (CanBeInt t) => [t] -> CollectNumErrors [Int]
-intsCN = sequence . map convertExactlyCN
 
 type CanBeRational t = ConvertibleExactly t Rational
 rational :: (CanBeRational t) => t -> Rational
 rational = convertExactly
 rationals :: (CanBeRational t) => [t] -> [Rational]
 rationals = map convertExactly
-rationalCN :: (CanBeRational t) => t -> CollectNumErrors Rational
-rationalCN = convertExactlyCN
-rationalsCN :: (CanBeRational t) => [t] -> CollectNumErrors [Rational]
-rationalsCN = sequence . map convertExactlyCN
 
 type HasRationals t = ConvertibleExactly Rational t
 fromRational_ :: (HasRationals t) => Rational -> t
@@ -188,12 +177,6 @@ convertExactly a =
   case safeConvertExactly a of
     Right v -> v
     Left err -> error (show err)
-
-convertExactlyCN :: (ConvertibleExactly t1 t2) => t1 -> CN.CollectNumErrors t2
-convertExactlyCN a =
-  case safeConvertExactly a of
-    Right v -> CN.noNumErrors v
-    Left err -> CN.noValueNumErrorCertain $ CN.OutOfRange (show err)
 
 instance ConvertibleExactly Integer Integer -- use CVT instance by default
 instance ConvertibleExactly Int Integer
@@ -272,5 +255,5 @@ $(declForTypes
   (\ t -> [d|
 
     instance (ConvertibleExactly $t t, Monoid es) => ConvertibleExactly $t (CollectErrors es t) where
-      safeConvertExactly = fmap CN.noErrors . safeConvertExactly
+      safeConvertExactly = fmap (\v -> CE.CollectErrors (Just v) mempty) . safeConvertExactly
   |]))

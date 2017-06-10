@@ -36,8 +36,8 @@ import Text.Printf
 import qualified Data.List as List
 
 import Numeric.CollectErrors
-  (CollectErrors, EnsureCE, CanEnsureCE)
-import qualified Numeric.CollectErrors as CN
+import Control.CollectErrors (CollectErrors, CanEnsureCE, EnsureCE)
+import qualified Control.CollectErrors as CE
 
 import Numeric.MixedTypes.Literals
 
@@ -122,12 +122,11 @@ instance (CanTestCertainly t) => CanTestCertainly (Maybe t) where
   isCertainlyFalse (Just b) = isCertainlyFalse b
   isCertainlyFalse _ = False
 
-instance (ConvertibleExactly Bool t, Monoid es) => ConvertibleExactly Bool (CollectErrors es t) where
-  safeConvertExactly = fmap CN.noErrors . safeConvertExactly
-
-instance (CanTestCertainly t, P.Eq es, Monoid es) => CanTestCertainly (CollectErrors es t) where
-  isCertainlyTrue ce = CN.getValueIfNoError ce isCertainlyTrue (const False)
-  isCertainlyFalse ce = CN.getValueIfNoError ce isCertainlyFalse (const False)
+instance (CanTestCertainly t, CE.SuitableForCE es) => CanTestCertainly (CollectErrors es t) where
+  isCertainlyTrue ce =
+    CE.getValueIfNoError ce isCertainlyTrue (const False)
+  isCertainlyFalse ce =
+    CE.getValueIfNoError ce isCertainlyFalse (const False)
 
 
 {---- Negation ----}
@@ -188,11 +187,11 @@ _testNeg1 :: Maybe Bool
 _testNeg1 = not (Just True)
 
 instance
-  (CanNeg t, Monoid es, CanEnsureCE es (NegType t))
+  (CanNeg t, CE.SuitableForCE es, CE.CanEnsureCE es (NegType t))
   =>
   CanNeg (CollectErrors es t) where
-  type NegType (CollectErrors es t) = EnsureCE es (NegType t)
-  negate = CN.lift1ensureCE negate
+  type NegType (CollectErrors es t) = CE.EnsureCE es (NegType t)
+  negate = CE.lift1 negate
 
 {---- And/Or ----}
 
@@ -355,22 +354,22 @@ instance (CanAndOrAsymmetric t1 t2, Monoid es, CanEnsureCE es (AndOrType t1 t2))
   CanAndOrAsymmetric (CollectErrors es t1) (CollectErrors es t2)
   where
   type AndOrType (CollectErrors es t1) (CollectErrors es t2) = EnsureCE es (AndOrType t1 t2)
-  and2 = CN.lift2ensureCE and2
-  or2 = CN.lift2ensureCE or2
+  and2 = CE.lift2 and2
+  or2 = CE.lift2 or2
 
 instance (CanAndOrAsymmetric t1 Bool, Monoid es, CanEnsureCE es (AndOrType t1 Bool)) =>
   CanAndOrAsymmetric (CollectErrors es t1) Bool
   where
   type AndOrType (CollectErrors es t1) Bool = EnsureCE es (AndOrType t1 Bool)
-  and2 = CN.unlift2second and2
-  or2 = CN.unlift2second or2
+  and2 = CE.unlift2second and2
+  or2 = CE.unlift2second or2
 
 instance (CanAndOrAsymmetric Bool t2, Monoid es, CanEnsureCE es (AndOrType Bool t2)) =>
   CanAndOrAsymmetric Bool (CollectErrors es t2)
   where
   type AndOrType Bool (CollectErrors es t2) = EnsureCE es (AndOrType Bool t2)
-  and2 = CN.unlift2first and2
-  or2 = CN.unlift2first or2
+  and2 = CE.unlift2first and2
+  or2 = CE.unlift2first or2
 
 {-|
   A type constraint synonym that stipulates that the type behaves very
