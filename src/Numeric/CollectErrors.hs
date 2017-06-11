@@ -25,7 +25,7 @@ module Numeric.CollectErrors
 )
 where
 
-import Prelude
+import Prelude (Show(..), Eq(..), String, Maybe(..))
 
 import Control.CollectErrors
 
@@ -111,9 +111,9 @@ deCN :: (CanEnsureCN v) => EnsureCN v -> Maybe v
 deCN = deEnsureCN
 
 {-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
-(⚡) :: (CanEnsureCN v) => EnsureCN v -> v
-(⚡) = getValueOrThrowErrorsECE sample_NumErrors
+(⚡) :: CN v -> v
+(⚡) = getValueOrThrowErrorsCE
 
 {-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
-(~!) :: (CanEnsureCN v) => EnsureCN v -> v
-(~!) = getValueOrThrowErrorsECE sample_NumErrors
+(~!) :: CN v -> v
+(~!) = getValueOrThrowErrorsCE

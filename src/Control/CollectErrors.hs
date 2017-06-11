@@ -14,6 +14,12 @@ module Control.CollectErrors
 where
 
 import Prelude
+  (Functor(..), Applicative(..), Monad(..), (<$>), ($)
+  , id, error, const, otherwise, flip
+  , Int, Integer, Rational, Double, Bool, Char
+  , Maybe(..), Either(..)
+  , Show(..), Eq(..), (.))
+import Text.Printf
 import Data.Monoid
 import Data.Maybe (fromJust)
 
@@ -40,9 +46,14 @@ data CollectErrors es v =
   CollectErrors
     { getMaybeValueCE :: Maybe v
     , getErrorsCE :: es }
-  deriving (Show)
 
 type SuitableForCE es = (Monoid es, Eq es, Show es)
+
+instance (Show v, SuitableForCE es) => (Show (CollectErrors es v)) where
+  show (CollectErrors mv es) =
+    case mv of
+      Just v | es == mempty -> show v
+      _ -> printf "{%s}" (show es)
 
 noValueCE :: Maybe v -> es -> CollectErrors es v
 noValueCE _sample_v es = CollectErrors Nothing es
@@ -237,6 +248,7 @@ instance
 instance (SuitableForCE es) => CanEnsureCE es Int
 instance (SuitableForCE es) => CanEnsureCE es Integer
 instance (SuitableForCE es) => CanEnsureCE es Rational
+instance (SuitableForCE es) => CanEnsureCE es Double
 instance (SuitableForCE es) => CanEnsureCE es Bool
 instance (SuitableForCE es) => CanEnsureCE es Char
 instance (SuitableForCE es) => CanEnsureCE es ()

@@ -18,7 +18,7 @@ module Utils.TH.DeclForTypes
 )
 where
 
-import Prelude
+import Prelude (concat, sequence, map, ($), Monad(..))
 
 import Language.Haskell.TH
 

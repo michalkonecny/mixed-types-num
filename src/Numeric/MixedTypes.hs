@@ -28,7 +28,12 @@
 
       @(length [x])+1/3 :: CN Rational@
 
-      The @CN@ monad is required because integer division can, in general, fail as it is a partial operation.
+      The @CN@ monad is required because integer division can, in general, fail as it is a partial operation:
+
+      @> 1/0 :: CN Rational@
+
+      @{[(ErrorCertain,DivByZero)]} @
+
       When one is certain the division is well defined, one can remove @CN@ using the @~!@ operator:
 
       @((1/2)~!) :: Rational@
@@ -43,7 +48,7 @@
 
       @2.0^(-2) :: CN Rational@
 
-      @(double 2)^(1/2) :: Double@
+      @(double 2)^(1/2) :: CN Double@
 
       The following examples require package <https://github.com/michalkonecny/aern2/aern2-real aern2-real>:
 
