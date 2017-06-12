@@ -192,13 +192,6 @@ instance ConvertibleExactly Integer Rational
 instance ConvertibleExactly Double Double where
   safeConvertExactly d = Right d
 
-instance
-  (ConvertibleExactly t1 t2, SuitableForCE es)
-  =>
-  ConvertibleExactly t1 (CollectErrors es t2)
-  where
-  safeConvertExactly = fmap pure . safeConvertExactly
-
 {-- we deliberately do not allow converions from Double to any other type --}
 
 {-- auxiliary type and functions for specifying type(s) to use in tests  --}
@@ -256,8 +249,16 @@ convertSecond ::
   (a -> b -> c) {-^ mixed-type operation -}
 convertSecond = convertSecondUsing (\ _ b -> convertExactly b)
 
+-- instance
+--   (ConvertibleExactly t1 t2, SuitableForCE es)
+--   =>
+--   ConvertibleExactly t1 (CollectErrors es t2)
+--   where
+--   safeConvertExactly = fmap pure . safeConvertExactly
+--
+
 $(declForTypes
-  [[t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
+  [[t| Bool |], [t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
   (\ t -> [d|
 
     instance (ConvertibleExactly $t t, Monoid es) => ConvertibleExactly $t (CollectErrors es t) where
