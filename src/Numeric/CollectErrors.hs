@@ -17,6 +17,9 @@ module Numeric.CollectErrors
   -- * Specialisation to numeric errors
 , CN, CanEnsureCN, EnsureCN, EnsureNoCN
 , ensureCN, deEnsureCN, ensureNoCN
+, noValueCN
+, noValueNumErrorCertainCN, noValueNumErrorPotentialCN
+, getMaybeValueCN, getErrorsCN, prependErrorsCN
 , noValueECN
 , noValueNumErrorCertainECN, noValueNumErrorPotentialECN
 , getMaybeValueECN, getErrorsECN, prependErrorsECN
@@ -99,6 +102,25 @@ prependErrorsECN ::
   NumErrors -> EnsureCN v -> EnsureCN v
 prependErrorsECN = prependErrorsECE
 
+getErrorsCN :: CN v -> NumErrors
+getErrorsCN = getErrorsCE
+
+getMaybeValueCN :: CN v -> Maybe v
+getMaybeValueCN = getMaybeValueCE
+
+noValueCN :: NumErrors -> CN v
+noValueCN = noValueCE
+
+{-| Construct an empty wrapper indicating that given error has certainly occurred. -}
+noValueNumErrorCertainCN :: NumError -> CN v
+noValueNumErrorCertainCN e = noValueCN [(ErrorCertain, e)]
+
+{-| Construct an empty wrapper indicating that given error may have occurred. -}
+noValueNumErrorPotentialCN :: NumError -> CN v
+noValueNumErrorPotentialCN e = noValueCN [(ErrorPotential, e)]
+
+prependErrorsCN :: NumErrors -> CN v -> CN v
+prependErrorsCN = prependErrorsCE
 
 -- more compact synonyms:
 

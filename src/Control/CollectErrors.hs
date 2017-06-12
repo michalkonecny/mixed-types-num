@@ -55,10 +55,11 @@ instance (Show v, SuitableForCE es) => (Show (CollectErrors es v)) where
       Just v | es == mempty -> show v
       _ -> printf "{%s}" (show es)
 
-noValueCE :: Maybe v -> es -> CollectErrors es v
-noValueCE _sample_v es = CollectErrors Nothing es
-prependErrorsCE :: (Monoid es) => Maybe v -> es -> CollectErrors es v -> CollectErrors es v
-prependErrorsCE _sample_v es1 (CollectErrors mv es2) = CollectErrors mv (es1 <> es2)
+noValueCE :: es -> CollectErrors es v
+noValueCE es = CollectErrors Nothing es
+
+prependErrorsCE :: (Monoid es) => es -> CollectErrors es v -> CollectErrors es v
+prependErrorsCE es1 (CollectErrors mv es2) = CollectErrors mv (es1 <> es2)
 
 ce2ConvertResult ::
   (Typeable t, Show t, SuitableForCE es)
@@ -185,7 +186,7 @@ class (Monoid es) => CanEnsureCE es a where
     =>
     Maybe a ->
     es -> CollectErrors es a
-  noValueECE = noValueCE
+  noValueECE _ = noValueCE
 
   getMaybeValueECE ::
     Maybe es {-^ sample only -} ->
@@ -218,7 +219,7 @@ class (Monoid es) => CanEnsureCE es a where
     =>
     Maybe a ->
     es -> EnsureCE es a -> EnsureCE es a
-  prependErrorsECE = prependErrorsCE
+  prependErrorsECE _ = prependErrorsCE
 
 -- instance for CollectErrors a:
 
