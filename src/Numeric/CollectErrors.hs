@@ -22,13 +22,12 @@ module Numeric.CollectErrors
 , getMaybeValueCN, getErrorsCN, prependErrorsCN
 , noValueECN
 , noValueNumErrorCertainECN, noValueNumErrorPotentialECN
-, getMaybeValueECN, getErrorsECN, prependErrorsECN
   -- ** More compact synonyms
 , cn, deCN, (⚡), (~!)
 )
 where
 
-import Prelude (Show(..), Eq(..), String, Maybe(..), (++))
+import Prelude (Show(..), Eq(..), String, Maybe(..), Either(..), (++))
 
 import Control.CollectErrors
 
@@ -72,7 +71,7 @@ ensureCN = ensureCE sample_NumErrors
   throwing an exception if there was an error.
   If @a@ is a @CollectNumErrors@ type, then this is just an identity.
 -}
-deEnsureCN :: (CanEnsureCN v) => EnsureCN v -> Maybe v
+deEnsureCN :: (CanEnsureCN v) => EnsureCN v -> Either NumErrors v
 deEnsureCN = deEnsureCE sample_NumErrors
 
 {-|
@@ -80,19 +79,8 @@ deEnsureCN = deEnsureCE sample_NumErrors
   to a value of a type @CollectNumErrors a@ except when @a@
   already is a @CollectNumErrors@ type, in which case the value is left as is.
 -}
-ensureNoCN :: (CanEnsureCN v) => v -> Maybe (EnsureNoCN v)
+ensureNoCN :: (CanEnsureCN v) => v -> Either NumErrors (EnsureNoCN v)
 ensureNoCN = ensureNoCE sample_NumErrors
-
-getErrorsECN ::
-  (CanEnsureCN v) =>
-  Maybe v {-^ sample only -} ->
-  EnsureCN v -> NumErrors
-getErrorsECN = getErrorsECE
-
-getMaybeValueECN ::
-  (CanEnsureCN v) =>
-  EnsureCN v -> Maybe v
-getMaybeValueECN = getMaybeValueECE sample_NumErrors
 
 noValueECN :: (CanEnsureCN v) => Maybe v -> NumErrors -> EnsureCN v
 noValueECN = noValueECE
@@ -104,12 +92,6 @@ noValueNumErrorCertainECN sample_v e = noValueECE sample_v [(ErrorCertain, e)]
 {-| Construct an empty wrapper indicating that given error may have occurred. -}
 noValueNumErrorPotentialECN :: (CanEnsureCN v) => Maybe v -> NumError -> EnsureCN v
 noValueNumErrorPotentialECN sample_v e = noValueECE sample_v [(ErrorPotential, e)]
-
-prependErrorsECN ::
-  (CanEnsureCN v) =>
-  Maybe v {-^ sample only -} ->
-  NumErrors -> EnsureCN v -> EnsureCN v
-prependErrorsECN = prependErrorsECE
 
 getErrorsCN :: CN v -> NumErrors
 getErrorsCN = getErrorsCE
@@ -138,7 +120,7 @@ cn :: (CanEnsureCN v) => v -> EnsureCN v
 cn = ensureCN
 
 {-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
-deCN :: (CanEnsureCN v) => EnsureCN v -> Maybe v
+deCN :: (CanEnsureCN v) => EnsureCN v -> Either NumErrors v
 deCN = deEnsureCN
 
 {-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}

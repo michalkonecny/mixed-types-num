@@ -15,10 +15,10 @@ where
 
 import Prelude
   (Functor(..), Applicative(..), Monad(..), (<$>), ($)
-  , id, error, const, otherwise, flip
+  , id, error, const, flip
   , Int, Integer, Rational, Double, Bool, Char
   , Maybe(..), Either(..)
-  , Show(..), Eq(..), (++))
+  , Show(..), Eq(..))
 import Text.Printf
 import Data.Monoid
 import Data.Maybe (fromJust)
@@ -148,25 +148,26 @@ class (Monoid es) => CanEnsureCE es a where
 
   deEnsureCE ::
     Maybe es {-^ sample only -} ->
-    EnsureCE es a -> Maybe a
+    EnsureCE es a -> Either es a
 
   default deEnsureCE ::
     (EnsureCE es a ~ CollectErrors es a, Eq es) =>
     Maybe es {-^ sample only -} ->
-    EnsureCE es a -> Maybe a
-  deEnsureCE _ (CollectErrors mv es)
-    | es == mempty = mv
-    | otherwise = Nothing
+    EnsureCE es a -> Either es a
+  deEnsureCE _ (CollectErrors mv es) =
+    case mv of
+      Just v | es == mempty -> Right v
+      _ -> Left es
 
   ensureNoCE ::
     Maybe es {-^ sample only -} ->
-    a -> Maybe (EnsureNoCE es a)
+    a -> Either es (EnsureNoCE es a)
 
   default ensureNoCE ::
     (EnsureNoCE es a ~ a, Eq es) =>
     Maybe es {-^ sample only -} ->
-    a -> Maybe (EnsureNoCE es a)
-  ensureNoCE _ = Just
+    a -> Either es (EnsureNoCE es a)
+  ensureNoCE _ = Right
 
   {-|  Make CollectErrors record with no value, only errors. -}
   noValueECE ::
@@ -180,39 +181,6 @@ class (Monoid es) => CanEnsureCE es a where
     es -> CollectErrors es a
   noValueECE _ = noValueCE
 
-  getMaybeValueECE ::
-    Maybe es {-^ sample only -} ->
-    EnsureCE es a -> Maybe a
-
-  default getMaybeValueECE ::
-    (EnsureCE es a ~ CollectErrors es a)
-    =>
-    Maybe es ->
-    EnsureCE es a -> Maybe a
-  getMaybeValueECE _ = getMaybeValueCE
-
-  getErrorsECE ::
-    Maybe a {-^ sample only -} ->
-    EnsureCE es a -> es
-
-  default getErrorsECE ::
-    (EnsureCE es a ~ CollectErrors es a)
-    =>
-    Maybe a ->
-    EnsureCE es a -> es
-  getErrorsECE _ = getErrorsCE
-
-  {-|  Add further errors into an EnsureCE value. -}
-  prependErrorsECE ::
-    Maybe a {-^ sample only -} ->
-    es -> EnsureCE es a -> EnsureCE es a
-  default prependErrorsECE ::
-    (EnsureCE es a ~ CollectErrors es a)
-    =>
-    Maybe a ->
-    es -> EnsureCE es a -> EnsureCE es a
-  prependErrorsECE _ = prependErrorsCE
-
 -- instance for CollectErrors a:
 
 instance
@@ -224,17 +192,13 @@ instance
   type EnsureNoCE es (CollectErrors es a) = a
 
   ensureCE _sample_es = id
-  deEnsureCE _sample_es = Just
-  ensureNoCE _sample_es (CollectErrors mv es)
-    | es == mempty = mv
-    | otherwise = Nothing
+  deEnsureCE _sample_es = Right
+  ensureNoCE _sample_es (CollectErrors mv es) =
+    case mv of
+    Just v | es == mempty -> Right v
+    _ -> Left es
 
   noValueECE _sample_vCE es = CollectErrors Nothing es
-
-  getMaybeValueECE _sample_se vCE = Just vCE
-  getErrorsECE _sample_vCE (CollectErrors _ es) = es
-  prependErrorsECE _sample_vCE es1 (CollectErrors mv es2) = CollectErrors mv $ es1 <> es2
-
 
 -- instances for ground types, using the default implementations:
 
@@ -258,15 +222,11 @@ instance
 
   ensureCE sample_es = fmap (ensureCE sample_es)
   deEnsureCE sample_es (Just vCE) = fmap Just (deEnsureCE sample_es vCE)
-  deEnsureCE _sample_es Nothing = Just Nothing
-  ensureNoCE sample_es = fmap (ensureNoCE sample_es)
+  deEnsureCE _sample_es Nothing = Right Nothing
+  ensureNoCE sample_es (Just vCE) = fmap Just (ensureNoCE sample_es vCE)
+  ensureNoCE _sample_es Nothing = Right Nothing
 
   noValueECE sample_vCE es = Just (noValueECE (fromJust sample_vCE) es)
-
-  getMaybeValueECE sample_es = fmap (getMaybeValueECE sample_es)
-  getErrorsECE sample_mv (Just v) = getErrorsECE (fromJust sample_mv) v
-  getErrorsECE _sample_mv Nothing = mempty
-  prependErrorsECE sample_vCE es1 = fmap (prependErrorsECE (fromJust sample_vCE) es1)
 
 -- instance (Monoid es) => CanEnsureCE es [a] where
 -- instance (Monoid es) => CanEnsureCE es (Either e a) where
@@ -279,8 +239,8 @@ getValueOrThrowErrorsNCE ::
   v -> (EnsureNoCE es v)
 getValueOrThrowErrorsNCE sample_es v =
   case ensureNoCE sample_es v of
-    Just vNCE -> vNCE
-    _ -> error ("no value found in " ++ show v)
+    Right vNCE -> vNCE
+    Left es -> error (show es)
 
 {-|
   Add error collection support to an unary function whose
@@ -294,7 +254,7 @@ lift1CE ::
   (CollectErrors es a) -> (EnsureCE es c)
 lift1CE (fn :: a -> c) aCE =
   case (ensureNoCE sample_es aCE) of
-    (Just a) -> ensureCE sample_es $ fn a
+    Right a -> ensureCE sample_es $ fn a
     _ -> noValueECE sample_c a_es
   where
   sample_es = Just a_es
@@ -313,7 +273,7 @@ lift2CE ::
   (CollectErrors es a) -> (CollectErrors es b) -> (EnsureCE es c)
 lift2CE (fn :: a -> b -> c) aCE bCE =
   case (ensureNoCE sample_es aCE, ensureNoCE sample_es bCE) of
-    (Just a, Just b) -> ensureCE sample_es $ fn a b
+    (Right a, Right b) -> ensureCE sample_es $ fn a b
     _ -> noValueECE sample_c (a_es <> b_es)
   where
   sample_es = Just a_es
@@ -334,7 +294,7 @@ lift2TCE ::
   (CollectErrors es a) -> b -> (EnsureCE es c)
 lift2TCE (fn :: a -> b -> c) aCE b =
   case (ensureNoCE sample_es aCE) of
-    (Just a) -> ensureCE sample_es $ fn a b
+    (Right a) -> ensureCE sample_es $ fn a b
     _ -> noValueECE sample_c a_es
   where
   sample_es = Just a_es
