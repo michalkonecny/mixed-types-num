@@ -4,11 +4,11 @@ module Control.CollectErrors
 -- * Monad for collecting errors in expressions
   CollectErrors(..), SuitableForCE
 , noValueCE, prependErrorsCE
-, filterValuesWithoutErrorCE, getValueIfNoErrorCE, getValueOrThrowErrorsCE
+, filterValuesWithoutErrorCE, getValueIfNoErrorCE
 , ce2ConvertResult
 -- * Tools for avoiding @CollectErrors(CollectErrors t)@ and putting CE inside containers
 , CanEnsureCE(..)
-, filterValuesWithoutErrorECE, getValueIfNoErrorECE, getValueOrThrowErrorsECE
+, getValueOrThrowErrorsNCE
 , lift1CE, lift2CE, lift2TCE, lift2TLCE
 )
 where
@@ -18,7 +18,7 @@ import Prelude
   , id, error, const, otherwise, flip
   , Int, Integer, Rational, Double, Bool, Char
   , Maybe(..), Either(..)
-  , Show(..), Eq(..), (.))
+  , Show(..), Eq(..), (++))
 import Text.Printf
 import Data.Monoid
 import Data.Maybe (fromJust)
@@ -69,14 +69,6 @@ ce2ConvertResult (CollectErrors mv es) =
   case mv of
     Just v | es == mempty -> Right v
     _ -> convError (show es) mv
-
-{-| An unsafe way to get a value out of the CollectErrors wrapper. -}
-getValueOrThrowErrorsCE ::
-  (SuitableForCE es)
-  =>
-  (CollectErrors es v) -> v
-getValueOrThrowErrorsCE vCE =
-  getValueIfNoErrorCE vCE id (error . show)
 
 {-| A safe way to get a value out of the CollectErrors wrapper. -}
 getValueIfNoErrorCE ::
@@ -279,37 +271,16 @@ instance
 -- instance (Monoid es) => CanEnsureCE es [a] where
 -- instance (Monoid es) => CanEnsureCE es (Either e a) where
 
-{-| An unsafe way to get a value out of the EnsureEC wrapper. -}
-getValueOrThrowErrorsECE ::
-  (SuitableForCE es, CanEnsureCE es v)
+{-| An unsafe way to get a value out of an CollectErrors wrapper. -}
+getValueOrThrowErrorsNCE ::
+  (SuitableForCE es, CanEnsureCE es v, Show v)
   =>
   Maybe es {-^ sample only -} ->
-  (EnsureCE es v) -> v
-getValueOrThrowErrorsECE sample_es vCE =
-  getValueIfNoErrorECE sample_es vCE id (error . show)
-
-{-| A safe way to get a value out of the EnsureEC wrapper. -}
-getValueIfNoErrorECE ::
-  (SuitableForCE es, CanEnsureCE es v)
-  =>
-  Maybe es {-^ sample only -} ->
-  EnsureCE es v -> (v -> t) -> (es -> t) -> t
-getValueIfNoErrorECE sample_es vCE withValue withErrors =
-  let mv = deEnsureCE sample_es vCE in
-  case mv of
-    Just v -> withValue v
-    _ -> withErrors (getErrorsECE mv vCE)
-
-filterValuesWithoutErrorECE ::
-  (SuitableForCE es, CanEnsureCE es v)
-  =>
-  Maybe es {-^ sample only -} ->
-  [EnsureCE es v] -> [v]
-filterValuesWithoutErrorECE _ [] = []
-filterValuesWithoutErrorECE sample_es (vCE : rest) =
-  getValueIfNoErrorECE sample_es vCE (: restDone) (const restDone)
-  where
-  restDone = filterValuesWithoutErrorECE sample_es rest
+  v -> (EnsureNoCE es v)
+getValueOrThrowErrorsNCE sample_es v =
+  case ensureNoCE sample_es v of
+    Just vNCE -> vNCE
+    _ -> error ("no value found in " ++ show v)
 
 {-|
   Add error collection support to an unary function whose
@@ -382,28 +353,3 @@ lift2TLCE ::
   (a -> b -> c) ->
   a -> (CollectErrors es b) -> (EnsureCE es c)
 lift2TLCE f = flip $ lift2TCE (flip f)
-
--- Templates for instances propagating CollectErrors through operations
---
--- makeInstanceForCollectErrors2 :: Name -> Q Type -> [Q Exp] -> Q Dec
--- makeInstanceForCollectErrors2 opClass resultType operations =
---   -- instanceD (return []) (conT opClass `appT` (conT ''CollectErrors `appT` (varT (mkName "es")))) []
---   [d|
---     instance
---       (Monoid es) =>
---       $(conT opClass `appT` (conT ''CollectErrors `appT` (varT (mkName "es"))))
---       where
---
---   |]
---
--- instance
---   (CanMinMaxAsymmetric a b
---   , CanEnsureCE es (MinMaxType a b)
---   , Monoid es)
---   =>
---   CanMinMaxAsymmetric (CollectErrors es a) (CollectErrors es  b)
---   where
---   type MinMaxType (CollectErrors es a) (CollectErrors es b) =
---     EnsureCE es (MinMaxType a b)
---   min = CN.lift2ensureCE min
---   max = CN.lift2ensureCE max

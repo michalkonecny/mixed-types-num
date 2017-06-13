@@ -133,9 +133,9 @@ deCN :: (CanEnsureCN v) => EnsureCN v -> Maybe v
 deCN = deEnsureCN
 
 {-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
-(⚡) :: CN v -> v
-(⚡) = getValueOrThrowErrorsCE
+(⚡) :: (CanEnsureCN v, Show v) => v -> EnsureNoCN v
+(⚡) = getValueOrThrowErrorsNCE sample_NumErrors
 
 {-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
-(~!) :: CN v -> v
-(~!) = getValueOrThrowErrorsCE
+(~!) :: (CanEnsureCN v, Show v) => v -> EnsureNoCN v
+(~!) = getValueOrThrowErrorsNCE sample_NumErrors
