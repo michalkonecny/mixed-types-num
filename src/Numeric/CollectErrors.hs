@@ -28,17 +28,26 @@ module Numeric.CollectErrors
 )
 where
 
-import Prelude (Show(..), Eq(..), String, Maybe(..))
+import Prelude (Show(..), Eq(..), String, Maybe(..), (++))
 
 import Control.CollectErrors
 
 data NumError =
     DivByZero | OutOfRange String | NumError String
-    deriving (Show, Eq)
+    deriving (Eq)
+
+instance Show NumError where
+  show DivByZero = "division by 0"
+  show (OutOfRange s) = "out of range: " ++ s
+  show (NumError s) = "numeric error: " ++ s
 
 data ErrorCertaintyLevel =
   ErrorCertain | ErrorPotential
-    deriving (Show, Eq)
+  deriving (Eq)
+
+instance Show ErrorCertaintyLevel where
+  show ErrorCertain = "ERROR"
+  show ErrorPotential = "POTENTIAL ERROR"
 
 type NumErrors = [(ErrorCertaintyLevel, NumError)]
 
