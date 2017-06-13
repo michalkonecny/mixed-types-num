@@ -135,6 +135,10 @@ class HasIntegerBounds t where
 
 instance HasIntegerBounds Rational
 instance HasIntegerBounds Double
+instance HasIntegerBounds Integer where
+  integerBounds n = (n,n)
+instance HasIntegerBounds Int where
+  integerBounds n = (n',n') where n' = integer n
 
 type HasIntegerBoundsX t =
   (HasIntegerBounds t,
