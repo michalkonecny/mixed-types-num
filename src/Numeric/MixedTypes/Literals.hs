@@ -189,6 +189,22 @@ instance ConvertibleExactly Integer Int
 instance ConvertibleExactly Int Rational
 instance ConvertibleExactly Integer Rational
 
+instance ConvertibleExactly Integer Double where
+  safeConvertExactly n =
+    do
+    d <- safeConvert n
+    case P.properFraction d of
+      (m, fr) | m P.== n P.&& fr P.== (double 0) -> return d
+      _ -> convError "Integer could not be exactly converted to Double" n
+
+instance ConvertibleExactly Int Double where
+  safeConvertExactly n =
+    do
+    d <- safeConvert n
+    case P.properFraction d of
+      (m, fr) | m P.== n P.&& fr P.== (double 0) -> return d
+      _ -> convError "Int could not be exactly converted to Double" n
+
 instance ConvertibleExactly Double Double where
   safeConvertExactly d = Right d
 
