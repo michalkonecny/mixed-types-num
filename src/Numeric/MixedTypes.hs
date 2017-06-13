@@ -137,10 +137,12 @@ module Numeric.MixedTypes
   module Numeric.MixedTypes.Ring,
   module Numeric.MixedTypes.Field,
   module Numeric.MixedTypes.Elementary,
-  module Numeric.CollectErrors
+  module Numeric.CollectErrors,
+  module Utils.TH.DeclForTypes
 )
 where
 
+import Utils.TH.DeclForTypes
 import Numeric.CollectErrors
 import Numeric.MixedTypes.PreludeHiding
 import Numeric.MixedTypes.Literals
