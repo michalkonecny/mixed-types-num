@@ -265,16 +265,16 @@ instance CanPow Double Double where
   -- pow = powUsingExpLog
 instance CanPow Double Rational where
   type PowType Double Rational = Double
-  pow x y = x ^ (double y)
+  pow b e = b ^ (double e)
 instance CanPow Rational Double where
   type PowType Rational Double = Double
-  pow x y = (double x) ^ y
+  pow b e = (double b) ^ e
 instance CanPow Integer Double where
   type PowType Integer Double = Double
-  pow x y = (double x) ^ y
+  pow b e = (double b) ^ e
 instance CanPow Int Double where
   type PowType Int Double = Double
-  pow x y = (double x) ^ y
+  pow b e = (double b) ^ e
 
 powUsingExpLog ::
   (CanTestPosNeg t,
@@ -292,16 +292,17 @@ powUsingExpLog ::
    HasIntegers (EnsureCN t))
   =>
   t -> t -> EnsureCN t
-powUsingExpLog x y =
-  case certainlyIntegerGetIt y of
+powUsingExpLog b e =
+  case certainlyIntegerGetIt e of
     Just n ->
-      powUsingMulRecip x n
+      powUsingMulRecip b n
     Nothing
-      | isCertainlyZero x && isCertainlyPositive y -> convertExactly 0
-      | isCertainlyPositive x -> exp ((log x) * (ensureCN y))
-      | otherwise ->
-          noValueNumErrorPotentialECN (Just x) $
-            NumError "powUsingExpLog: illegal power a^b with negative a and non-integer b"
+      | isCertainlyZero b && isCertainlyPositive e -> convertExactly 0
+      | isCertainlyNonNegative b -> exp ((log b) * (ensureCN e))
+      | isCertainlyNegative b && certainlyNotInteger e -> noValueNumErrorCertainECN (Just b) err
+      | otherwise -> noValueNumErrorPotentialECN (Just b) err
+  where
+  err = NumError "powUsingExpLog: illegal power a^b with negative a and non-integer b"
 
 {----  sine and cosine -----}
 
