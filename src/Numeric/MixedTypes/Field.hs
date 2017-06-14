@@ -18,7 +18,7 @@ module Numeric.MixedTypes.Field
   -- * Division
   , CanDiv(..), CanDivBy, CanDivCNBy, CanDivSameType, CanDivCNSameType
   , CanRecip, CanRecipSameType, CanRecipCNSameType
-  , (/), recip
+  , (/), (/!), recip
   , powUsingMulRecip
   -- ** Tests
   , specCanDiv, specCanDivNotMixed, CanDivX
@@ -111,10 +111,14 @@ divideCN unsafeDivide a b
   where
   sample_v = Just $ unsafeDivide a b
 
-infixl 7  /
+infixl 7  /,/!
 
 (/) :: (CanDiv t1 t2) => t1 -> t2 -> DivType t1 t2
 (/) = divide
+
+(/!) :: (CanDiv t1 t2, Show (DivType t1 t2), CanEnsureCN (DivType t1 t2)) =>
+  t1 -> t2 -> EnsureNoCN (DivType t1 t2)
+a /! b = (~!) (a/b)
 
 type CanRecip t =
   (CanDiv Integer t)

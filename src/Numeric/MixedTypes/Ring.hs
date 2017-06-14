@@ -22,7 +22,7 @@ module Numeric.MixedTypes.Ring
   , specCanMul, specCanMulNotMixed, specCanMulSameType, CanMulX
   -- * Exponentiation
   , CanPow(..), CanPowBy, CanPowCNBy
-  , (^), (^^), (**)
+  , (^), (^!)
   , powUsingMul
   -- ** Tests
   , specCanPow, CanPowX
@@ -90,7 +90,7 @@ class CanMulAsymmetric t1 t2 where
   default mul :: (MulType t1 t2 ~ t1, t1~t2, P.Num t1) => t1 -> t1 -> t1
   mul = (P.*)
 
-infixl 8  ^, ^^
+infixl 8  ^, ^!
 infixl 7  *
 
 (*) :: (CanMulAsymmetric t1 t2) => t1 -> t2 -> MulType t1 t2
@@ -99,13 +99,10 @@ infixl 7  *
 (^) :: (CanPow t1 t2) => t1 -> t2 -> PowType t1 t2
 (^) = pow
 
-{-| A synonym of `^` -}
-(^^) :: (CanPow t1 t2) => t1 -> t2 -> PowType t1 t2
-(^^) = (^)
-
-{-| A synonym of `^` -}
-(**) :: (CanPow t1 t2) => t1 -> t2 -> (PowType t1 t2)
-(**) = (^)
+{-| Like `^` but throwing an exception if the power is undefined. -}
+(^!) :: (CanPow t1 t2, Show (PowType t1 t2), CanEnsureCN (PowType t1 t2)) =>
+  t1 -> t2 -> EnsureNoCN (PowType t1 t2)
+a ^! b = (~!) (a ^ b)
 
 type CanMulBy t1 t2 =
   (CanMul t1 t2, MulType t1 t2 ~ t1)
