@@ -1,5 +1,5 @@
 {-|
-    Module      :  Numeric.MixedType
+    Module      :  MixedTypesNumPrelude
     Description :  Bottom-up typed numeric expressions
     Copyright   :  (c) Michal Konecny, Pieter Collins
     License     :  BSD3
@@ -122,7 +122,7 @@
     This module facilitates a single-line import for the package
     mixed-types-num.  See the re-exported modules for further details.
 -}
-module Numeric.MixedTypes
+module MixedTypesNumPrelude
 (
   -- * Re-exporting Prelude, hiding the operators we are changing
   module Numeric.MixedTypes.PreludeHiding,

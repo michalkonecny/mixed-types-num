@@ -50,7 +50,6 @@ library
     Utils.TH.DeclForTypes
     Control.CollectErrors
     Numeric.CollectErrors
-    Numeric.MixedTypes
     Numeric.MixedTypes.PreludeHiding
     Numeric.MixedTypes.Literals
     Numeric.MixedTypes.Bool
@@ -63,6 +62,7 @@ library
     Numeric.MixedTypes.Field
     Numeric.MixedTypes.Elementary
     Numeric.MixedTypes.Complex
+    MixedTypesNumPrelude
 
 test-suite spec
   type:
