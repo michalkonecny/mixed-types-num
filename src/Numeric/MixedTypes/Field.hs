@@ -96,8 +96,16 @@ type OrderedCertainlyField t =
   then one can use the default implementation to mirror Prelude's @/@.
 -}
 class CanDiv t1 t2 where
+  type DivTypeNoCN t1 t2
+  divideNoCN :: t1 -> t2 -> DivTypeNoCN t1 t2
   type DivType t1 t2
+  type DivType t1 t2 = EnsureCN (DivTypeNoCN t1 t2)
   divide :: t1 -> t2 -> DivType t1 t2
+  default divide ::
+    (CanTestZero t2, CanEnsureCN (DivTypeNoCN t1 t2))
+    =>
+    t1 -> t2 -> EnsureCN (DivTypeNoCN t1 t2)
+  divide = divideCN divideNoCN
 
 divideCN ::
   (CanTestZero t2, CanEnsureCN t3)
@@ -116,9 +124,8 @@ infixl 7  /,/!
 (/) :: (CanDiv t1 t2) => t1 -> t2 -> DivType t1 t2
 (/) = divide
 
-(/!) :: (CanDiv t1 t2, Show (DivType t1 t2), CanEnsureCN (DivType t1 t2)) =>
-  t1 -> t2 -> EnsureNoCN (DivType t1 t2)
-a /! b = (~!) (a/b)
+(/!) :: (CanDiv t1 t2) => t1 -> t2 -> DivTypeNoCN t1 t2
+(/!) = divideNoCN
 
 type CanRecip t =
   (CanDiv Integer t)
@@ -204,63 +211,63 @@ specCanDivNotMixed ::
 specCanDivNotMixed t = specCanDiv t t
 
 instance CanDiv Int Int where
-  type DivType Int Int = CN Rational
-  divide a b = divideCN (P./) (rational a) (rational b)
+  type DivTypeNoCN Int Int = Rational
+  divideNoCN a b = (P./) (rational a) (rational b)
 
 instance CanDiv Integer Integer where
-  type DivType Integer Integer = CN Rational
-  divide a b = divideCN (P./) (rational a) (rational b)
+  type DivTypeNoCN Integer Integer = Rational
+  divideNoCN a b = (P./) (rational a) (rational b)
 instance CanDiv Rational Rational where
-  type DivType Rational Rational = CN Rational
-  divide = divideCN (P./)
+  type DivTypeNoCN Rational Rational = Rational
+  divideNoCN = (P./)
+
+instance CanDiv Int Integer where
+  type DivTypeNoCN Int Integer = Rational
+  divideNoCN a b = (P./) (rational a) (rational b)
+instance CanDiv Integer Int where
+  type DivTypeNoCN Integer Int = Rational
+  divideNoCN a b = (P./) (rational a) (rational b)
+
+instance CanDiv Int Rational where
+  type DivTypeNoCN Int Rational = Rational
+  divideNoCN = convertFirst divideNoCN
+instance CanDiv Rational Int where
+  type DivTypeNoCN Rational Int = Rational
+  divideNoCN = convertSecond divideNoCN
+
+instance CanDiv Integer Rational where
+  type DivTypeNoCN Integer Rational = Rational
+  divideNoCN = convertFirst divideNoCN
+instance CanDiv Rational Integer where
+  type DivTypeNoCN Rational Integer = Rational
+  divideNoCN = convertSecond divideNoCN
 
 instance CanDiv Double Double where
+  type DivTypeNoCN Double Double = Double
+  divideNoCN = (P./)
   type DivType Double Double = Double
   divide = (P./)
 
-instance CanDiv Int Integer where
-  type DivType Int Integer = CN Rational
-  divide a b = divideCN (P./) (rational a) (rational b)
-instance CanDiv Integer Int where
-  type DivType Integer Int = CN Rational
-  divide a b = divideCN (P./) (rational a) (rational b)
+$(declForTypes
+  [[t| Integer |], [t| Int |], [t| Rational |]]
+  (\ t -> [d|
 
-instance CanDiv Int Rational where
-  type DivType Int Rational = CN Rational
-  divide = convertFirst divide
-instance CanDiv Rational Int where
-  type DivType Rational Int = CN Rational
-  divide = convertSecond divide
-
-instance CanDiv Integer Rational where
-  type DivType Integer Rational = CN Rational
-  divide = convertFirst divide
-instance CanDiv Rational Integer where
-  type DivType Rational Integer = CN Rational
-  divide = convertSecond divide
-
-instance CanDiv Int Double where
-  type DivType Int Double = Double
-  divide n d = divide (double n) d
-instance CanDiv Double Int where
-  type DivType Double Int = Double
-  divide d n = divide d (double n)
-
-instance CanDiv Integer Double where
-  type DivType Integer Double = Double
-  divide n d = divide (double n) d
-instance CanDiv Double Integer where
-  type DivType Double Integer = Double
-  divide d n = divide d (double n)
-
-instance CanDiv Rational Double where
-  type DivType Rational Double = Double
-  divide n d = divide (double n) d
-instance CanDiv Double Rational where
-  type DivType Double Rational = Double
-  divide d n = divide d (double n)
+    instance CanDiv $t Double where
+      type DivType $t Double = Double
+      divide n d = divide (double n) d
+      type DivTypeNoCN $t Double = Double
+      divideNoCN n d = divide (double n) d
+    instance CanDiv Double $t where
+      type DivType Double $t = Double
+      divide d n = divide d (double n)
+      type DivTypeNoCN Double $t = Double
+      divideNoCN d n = divide d (double n)
+  |]))
 
 instance (CanDiv a b) => CanDiv [a] [b] where
+  type DivTypeNoCN [a] [b] = [DivTypeNoCN a b]
+  divideNoCN (x:xs) (y:ys) = (divideNoCN x y) : (divideNoCN xs ys)
+  divideNoCN _ _ = []
   type DivType [a] [b] = [DivType a b]
   divide (x:xs) (y:ys) = (divide x y) : (divide xs ys)
   divide _ _ = []
@@ -269,10 +276,14 @@ instance (CanDiv a b) => CanDiv (Maybe a) (Maybe b) where
   type DivType (Maybe a) (Maybe b) = Maybe (DivType a b)
   divide (Just x) (Just y) = Just (divide x y)
   divide _ _ = Nothing
+  type DivTypeNoCN (Maybe a) (Maybe b) = Maybe (DivTypeNoCN a b)
+  divideNoCN (Just x) (Just y) = Just (divideNoCN x y)
+  divideNoCN _ _ = Nothing
 
 instance
   (CanDiv a b
   , CanEnsureCE es (DivType a b)
+  , CanEnsureCE es (DivTypeNoCN a b)
   , SuitableForCE es)
   =>
   CanDiv (CollectErrors es a) (CollectErrors es  b)
@@ -280,6 +291,9 @@ instance
   type DivType (CollectErrors es a) (CollectErrors es b) =
     EnsureCE es (DivType a b)
   divide = lift2CE divide
+  type DivTypeNoCN (CollectErrors es a) (CollectErrors es b) =
+    EnsureCE es (DivTypeNoCN a b)
+  divideNoCN = lift2CE divideNoCN
 
 powUsingMulRecip ::
   (CanBeInteger e, HasIntegers t,
@@ -299,6 +313,7 @@ $(declForTypes
     instance
       (CanDiv $t b
       , CanEnsureCE es (DivType $t b)
+      , CanEnsureCE es (DivTypeNoCN $t b)
       , SuitableForCE es)
       =>
       CanDiv $t (CollectErrors es  b)
@@ -306,10 +321,14 @@ $(declForTypes
       type DivType $t (CollectErrors es  b) =
         EnsureCE es (DivType $t b)
       divide = lift2TLCE divide
+      type DivTypeNoCN $t (CollectErrors es  b) =
+        EnsureCE es (DivTypeNoCN $t b)
+      divideNoCN = lift2TLCE divideNoCN
 
     instance
       (CanDiv a $t
       , CanEnsureCE es (DivType a $t)
+      , CanEnsureCE es (DivTypeNoCN a $t)
       , SuitableForCE es)
       =>
       CanDiv (CollectErrors es a) $t
@@ -317,4 +336,7 @@ $(declForTypes
       type DivType (CollectErrors es  a) $t =
         EnsureCE es (DivType a $t)
       divide = lift2TCE divide
+      type DivTypeNoCN (CollectErrors es  a) $t =
+        EnsureCE es (DivTypeNoCN a $t)
+      divideNoCN = lift2TCE divideNoCN
   |]))
