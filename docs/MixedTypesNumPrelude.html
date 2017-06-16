@@ -4,13 +4,46 @@ window.onload = function () {pageLoad();setSynopsis("mini_MixedTypesNumPrelude.h
 </script></head><body><div id="package-header"><ul class="links" id="page-menu"><li><a href="src/MixedTypesNumPrelude.html">Source</a></li><li><a href="index.html">Contents</a></li><li><a href="doc-index.html">Index</a></li></ul><p class="caption">mixed-types-num-0.2: Alternative Prelude with numeric and logic expressions typed bottom-up</p></div><div id="content"><div id="module-header"><table class="info"><tr><th valign="top">Copyright</th><td>(c) Michal Konecny Pieter Collins</td></tr><tr><th>License</th><td>BSD3</td></tr><tr><th>Maintainer</th><td>mikkonecny@gmail.com</td></tr><tr><th>Stability</th><td>experimental</td></tr><tr><th>Portability</th><td>portable</td></tr><tr><th>Safe Haskell</th><td>None</td></tr><tr><th>Language</th><td>Haskell98</td></tr></table><p class="caption">MixedTypesNumPrelude</p></div><div id="table-of-contents"><p class="caption">Contents</p><ul><li><a href="#g:1">Re-exporting Prelude, hiding the operators we are changing</a></li><li><a href="#g:2">Modules with Prelude alternatives</a></li></ul></div><div id="description"><p class="caption">Description</p><div class="doc"><h1>Main purpose</h1><p>This package provides a version of Prelude where
     unary and binary operations such as <code>not</code>, <code>+</code>, <code>==</code>
     have their result type derived from the parameter type(s),
-    allowing, <em>e.g.</em>:</p><ul><li>dividing an integer by an integer, giving a rational, wrapped in the CN (ie Collecting NumErrors) monad:</li></ul><pre>let n = 1 :: Integer in n/(n+1) :: CN Rational</pre><pre>1/2 :: CN Rational</pre><p>(The type <code>CN Rational</code> would be derived automatically because
-      integer literals are always of type <code>Integer</code>, not <code>Num t =&gt; t</code>.)</p><ul><li>adding an integer and a rational, giving a rational:</li></ul><pre>(length [x])+1/3 :: CN Rational</pre><p>The <code>CN</code> monad is required because integer division can, in general, fail as it is a partial operation:</p><pre>&gt; 1/0 :: CN Rational</pre><pre>{[(ErrorCertain,DivByZero)]}</pre><p>When one is certain the division is well defined, one can remove <code>CN</code> using the <code>~!</code> operator:</p><pre>((1/2)~!) :: Rational</pre><pre>((1/n)~!) :: Rational</pre><p>The last example will throw an exception when evaluated with <code>n=0</code>.</p><ul><li>taking natural, integer and fractional power using the same operator:</li></ul><pre>2^2 :: CN Integer</pre><pre>2.0^(-2) :: CN Rational</pre><pre>(double 2)^(1/2) :: CN Double</pre><p>The following examples require package <a href="https://github.com/michalkonecny/aern2/aern2-real">aern2-real</a>:</p><pre>2^(1/2) :: CauchyRealCN</pre><pre>pi :: CauchyReal</pre><pre>sqrt 2 :: CauchyRealCN</pre><ul><li>comparing an integer with an (exact) real number, giving a seqeunce of <code>Maybe Bool</code>:</li></ul><pre>if x &lt; 0 then -x else x :: CauchyReal</pre><p>In the last example, <code>if</code> is overloaded so that it works for conditions
+    allowing, <em>e.g.</em>:</p><ul><li>Dividing an integer by an integer, giving a rational, wrapped in the CN (ie Collecting NumErrors) monad:</li></ul><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>:t let n = 1 :: Integer in n/(n+1)
+</code></strong>CN Rational
+</pre><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>:t 1/2
+</code></strong>CN Rational
+</pre><p>(Integer literals are always of type <code>Integer</code>, not <code>Num t =&gt; t</code>.)</p><ul><li>Adding an integer and a rational, giving a rational:</li></ul><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>:t (length [x])+1/3
+</code></strong>CN Rational
+</pre><p>The <code>CN</code> monad is required because integer division can, in general, fail as it is a partial operation:</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>1/0
+</code></strong>{[(ERROR,division by 0)]}
+</pre><p>Note that when evaluating <code>1/0</code>, it evaluates to the error value printed above.
+      This is not an exception, but a special value.</p><p>When one is certain the division is well defined, one can remove <code>CN</code> in several ways:</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>:t (1%2)  -- using Data.Ratio.(%), works only for integers
+</code></strong>Rational
+</pre><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>:t (1/!2)  -- this works for non-integer division too
+</code></strong>Rational
+</pre><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>:t (~!) (1/2) -- ~! removes CN from any type
+</code></strong>Rational
+</pre><p>The operator (/!) stands for division which throws an exception is the
+      denominator is 0.  It &quot;propagates&quot; any potential errors
+      from the sub-expressions:</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>:t 1/!(1 - 1/n)
+</code></strong>CN Rational
+</pre><p>The last example will throw an error exception when evaluated with <code>n=1</code>
+      but it will not thrown any excetion when <code>n=0</code></p><ul><li>taking natural, integer and fractional power using the same operator:</li></ul><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>:t 2^2
+</code></strong>CN Integer
+</pre><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>:t 2.0^(-2)
+</code></strong>CN Rational
+</pre><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>:t (double 2)^(1/!2)
+</code></strong>Double
+</pre><p>The following examples require package <a href="https://github.com/michalkonecny/aern2/aern2-real">aern2-real</a>:</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>:t 2^(1/2)
+</code></strong>CauchyRealCN
+</pre><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>:t pi
+</code></strong>CauchyReal
+</pre><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>:t sqrt 2
+</code></strong>CauchyRealCN
+</pre><ul><li>comparing an integer with an (exact) real number, giving a seqeunce of <code>Maybe Bool</code>:</li></ul><pre>     if x &lt; 0 then -x else x
+     </pre><p>In the last example, <code>if</code> is overloaded so that it works for conditions
       of other types than <code>Bool</code>.  Here the condition has the type <code>Sequence (Maybe Bool)</code>.
       The whole expression is the sequence of balls in which those balls for which the condition
       is inconclusive are the union of the balls computed by both branches.</p><h1>Type classes</h1><p>Arithmetic operations are provided via multi-parameter type classes
     and the result type is given by associated
-    type families. For example:</p><pre>(+) :: (CanAddAsymmetric t1 t2) =&gt; t1 -&gt; t2 -&gt; AddType t1 t2</pre><p>The type constraint <code>CanAdd t1 t2</code> implies both
+    type families. For example:</p><pre>   (+) :: (CanAddAsymmetric t1 t2) =&gt; t1 -&gt; t2 -&gt; AddType t1 t2
+   </pre><p>The type constraint <code>CanAdd t1 t2</code> implies both
     <code>CanAddAsymmetric t1 t2</code> and <code>CanAddAsymmetric t2 t1</code>.</p><p>For convenience there are other aggregate type constraints such as
     <code>CanAddThis t1 t2</code>, which implies that the result is of type <code>t1</code>,
     and <code>CanAddSameType t</code>, which is a shortcut for <code>CanAddThis t t</code>.</p><h2>Testable specification</h2><p>The arithmetic type classes are accompanied by generic hspec test suites,

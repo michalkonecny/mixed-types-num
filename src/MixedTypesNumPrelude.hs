@@ -15,54 +15,77 @@
     have their result type derived from the parameter type(s),
     allowing, /e.g./:
 
-      * dividing an integer by an integer, giving a rational, wrapped in the CN (ie Collecting NumErrors) monad:
+      * Dividing an integer by an integer, giving a rational, wrapped in the CN (ie Collecting NumErrors) monad:
 
-      @let n = 1 :: Integer in n/(n+1) :: CN Rational@
+      >>> :t let n = 1 :: Integer in n/(n+1)
+      CN Rational
 
-      @1/2 :: CN Rational@
+      >>> :t 1/2
+      CN Rational
 
-      (The type @CN Rational@ would be derived automatically because
-      integer literals are always of type @Integer@, not @Num t => t@.)
+      (Integer literals are always of type @Integer@, not @Num t => t@.)
 
-      * adding an integer and a rational, giving a rational:
+      * Adding an integer and a rational, giving a rational:
 
-      @(length [x])+1/3 :: CN Rational@
+      >>> :t (length [x])+1/3
+      CN Rational
 
       The @CN@ monad is required because integer division can, in general, fail as it is a partial operation:
 
-      @> 1/0 :: CN Rational@
+      >>> 1/0
+      {[(ERROR,division by 0)]}
 
-      @{[(ERROR,division by 0)]}@
+      Note that when evaluating @1/0@, it evaluates to the error value printed above.
+      This is not an exception, but a special value.
 
       When one is certain the division is well defined, one can remove @CN@ in several ways:
 
-      @(1%2) :: Rational -- using Data.Ratio.(%), works only for integers@
+      >>> :t (1%2)  -- using Data.Ratio.(%), works only for integers
+      Rational
 
-      @(1/!(1 + 1/!(n^2+1))) :: Rational -- works for any division@
+      >>> :t (1/!2)  -- this works for non-integer division too
+      Rational
 
-      @(~!) (1/2) :: Rational -- works for any CN type@
+      >>> :t (~!) (1/2) -- ~! removes CN from any type
+      Rational
 
-      The last example will throw an exception when evaluated with @n=0@.
+      The operator (/!) stands for division which throws an exception is the
+      denominator is 0.  It "propagates" any potential errors
+      from the sub-expressions:
+
+      >>> :t 1/!(1 - 1/n)
+      CN Rational
+
+      The last example will throw an error exception when evaluated with @n=1@
+      but it will not thrown any excetion when @n=0@
 
       * taking natural, integer and fractional power using the same operator:
 
-      @2^2 :: CN Integer@
+      >>> :t 2^2
+      CN Integer
 
-      @2.0^(-2) :: CN Rational@
+      >>> :t 2.0^(-2)
+      CN Rational
 
-      @(double 2)^(1/2) :: CN Double@
+      >>> :t (double 2)^(1/!2)
+      Double
 
       The following examples require package <https://github.com/michalkonecny/aern2/aern2-real aern2-real>:
 
-      @2^(1/2) :: CauchyRealCN@
+      >>> :t 2^(1/2)
+      CauchyRealCN
 
-      @pi :: CauchyReal@
+      >>> :t pi
+      CauchyReal
 
-      @sqrt 2 :: CauchyRealCN@
+      >>> :t sqrt 2
+      CauchyRealCN
 
       * comparing an integer with an (exact) real number, giving a seqeunce of @Maybe Bool@:
 
-      @if x < 0 then -x else x :: CauchyReal@
+      @
+      if x < 0 then -x else x
+      @
 
       In the last example, @if@ is overloaded so that it works for conditions
       of other types than @Bool@.  Here the condition has the type @Sequence (Maybe Bool)@.
@@ -75,7 +98,9 @@
     and the result type is given by associated
     type families. For example:
 
-    @(+) :: (CanAddAsymmetric t1 t2) => t1 -> t2 -> AddType t1 t2@
+    @
+    (+) :: (CanAddAsymmetric t1 t2) => t1 -> t2 -> AddType t1 t2
+    @
 
     The type constraint @CanAdd t1 t2@ implies both
     @CanAddAsymmetric t1 t2@ and @CanAddAsymmetric t2 t1@.

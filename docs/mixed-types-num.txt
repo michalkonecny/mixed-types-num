@@ -185,9 +185,6 @@ cn :: (CanEnsureCN v) => v -> EnsureCN v
 deCN :: (CanEnsureCN v) => EnsureCN v -> Either NumErrors v
 
 -- | An unsafe way to get a value out of the CollectNumErrors wrapper.
-(⚡) :: (CanEnsureCN v, Show v) => v -> EnsureNoCN v
-
--- | An unsafe way to get a value out of the CollectNumErrors wrapper.
 (~!) :: (CanEnsureCN v, Show v) => v -> EnsureNoCN v
 instance GHC.Classes.Eq Numeric.CollectErrors.ErrorCertaintyLevel
 instance GHC.Classes.Eq Numeric.CollectErrors.NumError
@@ -1001,10 +998,14 @@ type OrderedCertainlyField t = (OrderedCertainlyFieldPre t, CanEnsureCN t, Order
 -- | A replacement for Prelude's binary <a>/</a>. If <tt>t1 = t2</tt> and
 --   <tt>Fractional t1</tt>, then one can use the default implementation to
 --   mirror Prelude's <tt>/</tt>.
-class CanDiv t1 t2 where type DivType t1 t2 where {
+class CanDiv t1 t2 where type DivTypeNoCN t1 t2 type DivType t1 t2 type DivType t1 t2 = EnsureCN (DivTypeNoCN t1 t2) divide = divideCN divideNoCN where {
+    type family DivTypeNoCN t1 t2;
     type family DivType t1 t2;
+    type DivType t1 t2 = EnsureCN (DivTypeNoCN t1 t2);
 }
+divideNoCN :: CanDiv t1 t2 => t1 -> t2 -> DivTypeNoCN t1 t2
 divide :: CanDiv t1 t2 => t1 -> t2 -> DivType t1 t2
+divide :: (CanDiv t1 t2, CanTestZero t2, CanEnsureCN (DivTypeNoCN t1 t2)) => t1 -> t2 -> EnsureCN (DivTypeNoCN t1 t2)
 type CanDivBy t1 t2 = (CanDiv t1 t2, DivType t1 t2 ~ t1)
 type CanDivCNBy t1 t2 = (CanDiv t1 t2, DivType t1 t2 ~ EnsureCN t1)
 type CanDivSameType t = CanDivBy t t
@@ -1014,7 +1015,7 @@ type CanRecipSameType t = (CanDiv Integer t, DivType Integer t ~ t)
 type CanRecipCNSameType t = (CanDiv Integer t, DivType Integer t ~ EnsureCN t)
 (/) :: (CanDiv t1 t2) => t1 -> t2 -> DivType t1 t2
 infixl 7 /
-(/!) :: (CanDiv t1 t2, Show (DivType t1 t2), CanEnsureCN (DivType t1 t2)) => t1 -> t2 -> EnsureNoCN (DivType t1 t2)
+(/!) :: (CanDiv t1 t2) => t1 -> t2 -> DivTypeNoCN t1 t2
 infixl 7 /!
 recip :: (CanRecip t) => t -> DivType Integer t
 powUsingMulRecip :: (CanBeInteger e, HasIntegers t, CanRecipCNSameType t, CanMulSameType t, CanEnsureCN t) => t -> e -> EnsureCN t
@@ -1027,33 +1028,33 @@ specCanDivNotMixed :: (CanRecip t, CanRecip (DivType Integer t), Show (DivType I
 
 -- | Compound type constraint useful for test definition.
 type CanDivX t1 t2 = (CanDiv t1 t2, Show t1, Arbitrary t1, Show t2, Arbitrary t2, Show (DivType t1 t2), HasEqCertainly t1 (DivType t1 t2))
-instance (Numeric.MixedTypes.Field.CanDiv GHC.Integer.Type.Integer b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType GHC.Integer.Type.Integer b0), Control.CollectErrors.SuitableForCE es0) => Numeric.MixedTypes.Field.CanDiv GHC.Integer.Type.Integer (Control.CollectErrors.CollectErrors es0 b0)
-instance (Numeric.MixedTypes.Field.CanDiv a0 GHC.Integer.Type.Integer, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType a0 GHC.Integer.Type.Integer), Control.CollectErrors.SuitableForCE es0) => Numeric.MixedTypes.Field.CanDiv (Control.CollectErrors.CollectErrors es0 a0) GHC.Integer.Type.Integer
-instance (Numeric.MixedTypes.Field.CanDiv GHC.Types.Int b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType GHC.Types.Int b0), Control.CollectErrors.SuitableForCE es0) => Numeric.MixedTypes.Field.CanDiv GHC.Types.Int (Control.CollectErrors.CollectErrors es0 b0)
-instance (Numeric.MixedTypes.Field.CanDiv a0 GHC.Types.Int, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType a0 GHC.Types.Int), Control.CollectErrors.SuitableForCE es0) => Numeric.MixedTypes.Field.CanDiv (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Int
-instance (Numeric.MixedTypes.Field.CanDiv GHC.Real.Rational b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType GHC.Real.Rational b0), Control.CollectErrors.SuitableForCE es0) => Numeric.MixedTypes.Field.CanDiv GHC.Real.Rational (Control.CollectErrors.CollectErrors es0 b0)
-instance (Numeric.MixedTypes.Field.CanDiv a0 GHC.Real.Rational, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType a0 GHC.Real.Rational), Control.CollectErrors.SuitableForCE es0) => Numeric.MixedTypes.Field.CanDiv (Control.CollectErrors.CollectErrors es0 a0) GHC.Real.Rational
-instance (Numeric.MixedTypes.Field.CanDiv GHC.Types.Double b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType GHC.Types.Double b0), Control.CollectErrors.SuitableForCE es0) => Numeric.MixedTypes.Field.CanDiv GHC.Types.Double (Control.CollectErrors.CollectErrors es0 b0)
-instance (Numeric.MixedTypes.Field.CanDiv a0 GHC.Types.Double, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType a0 GHC.Types.Double), Control.CollectErrors.SuitableForCE es0) => Numeric.MixedTypes.Field.CanDiv (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Double
+instance (Numeric.MixedTypes.Field.CanDiv GHC.Integer.Type.Integer b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType GHC.Integer.Type.Integer b0), Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivTypeNoCN GHC.Integer.Type.Integer b0), Control.CollectErrors.SuitableForCE es0) => Numeric.MixedTypes.Field.CanDiv GHC.Integer.Type.Integer (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Field.CanDiv a0 GHC.Integer.Type.Integer, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType a0 GHC.Integer.Type.Integer), Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivTypeNoCN a0 GHC.Integer.Type.Integer), Control.CollectErrors.SuitableForCE es0) => Numeric.MixedTypes.Field.CanDiv (Control.CollectErrors.CollectErrors es0 a0) GHC.Integer.Type.Integer
+instance (Numeric.MixedTypes.Field.CanDiv GHC.Types.Int b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType GHC.Types.Int b0), Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivTypeNoCN GHC.Types.Int b0), Control.CollectErrors.SuitableForCE es0) => Numeric.MixedTypes.Field.CanDiv GHC.Types.Int (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Field.CanDiv a0 GHC.Types.Int, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType a0 GHC.Types.Int), Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivTypeNoCN a0 GHC.Types.Int), Control.CollectErrors.SuitableForCE es0) => Numeric.MixedTypes.Field.CanDiv (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Int
+instance (Numeric.MixedTypes.Field.CanDiv GHC.Real.Rational b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType GHC.Real.Rational b0), Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivTypeNoCN GHC.Real.Rational b0), Control.CollectErrors.SuitableForCE es0) => Numeric.MixedTypes.Field.CanDiv GHC.Real.Rational (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Field.CanDiv a0 GHC.Real.Rational, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType a0 GHC.Real.Rational), Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivTypeNoCN a0 GHC.Real.Rational), Control.CollectErrors.SuitableForCE es0) => Numeric.MixedTypes.Field.CanDiv (Control.CollectErrors.CollectErrors es0 a0) GHC.Real.Rational
+instance (Numeric.MixedTypes.Field.CanDiv GHC.Types.Double b0, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType GHC.Types.Double b0), Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivTypeNoCN GHC.Types.Double b0), Control.CollectErrors.SuitableForCE es0) => Numeric.MixedTypes.Field.CanDiv GHC.Types.Double (Control.CollectErrors.CollectErrors es0 b0)
+instance (Numeric.MixedTypes.Field.CanDiv a0 GHC.Types.Double, Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivType a0 GHC.Types.Double), Control.CollectErrors.CanEnsureCE es0 (Numeric.MixedTypes.Field.DivTypeNoCN a0 GHC.Types.Double), Control.CollectErrors.SuitableForCE es0) => Numeric.MixedTypes.Field.CanDiv (Control.CollectErrors.CollectErrors es0 a0) GHC.Types.Double
+instance Numeric.MixedTypes.Field.CanDiv GHC.Integer.Type.Integer GHC.Types.Double
+instance Numeric.MixedTypes.Field.CanDiv GHC.Types.Double GHC.Integer.Type.Integer
+instance Numeric.MixedTypes.Field.CanDiv GHC.Types.Int GHC.Types.Double
+instance Numeric.MixedTypes.Field.CanDiv GHC.Types.Double GHC.Types.Int
+instance Numeric.MixedTypes.Field.CanDiv GHC.Real.Rational GHC.Types.Double
+instance Numeric.MixedTypes.Field.CanDiv GHC.Types.Double GHC.Real.Rational
+instance Numeric.MixedTypes.Field.CanDiv a b => Numeric.MixedTypes.Field.CanDiv [a] [b]
+instance Numeric.MixedTypes.Field.CanDiv a b => Numeric.MixedTypes.Field.CanDiv (GHC.Base.Maybe a) (GHC.Base.Maybe b)
+instance (Numeric.MixedTypes.Field.CanDiv a b, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.Field.DivType a b), Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.Field.DivTypeNoCN a b), Control.CollectErrors.SuitableForCE es) => Numeric.MixedTypes.Field.CanDiv (Control.CollectErrors.CollectErrors es a) (Control.CollectErrors.CollectErrors es b)
 instance Numeric.MixedTypes.Field.CanDiv GHC.Types.Int GHC.Types.Int
 instance Numeric.MixedTypes.Field.CanDiv GHC.Integer.Type.Integer GHC.Integer.Type.Integer
 instance Numeric.MixedTypes.Field.CanDiv GHC.Real.Rational GHC.Real.Rational
-instance Numeric.MixedTypes.Field.CanDiv GHC.Types.Double GHC.Types.Double
 instance Numeric.MixedTypes.Field.CanDiv GHC.Types.Int GHC.Integer.Type.Integer
 instance Numeric.MixedTypes.Field.CanDiv GHC.Integer.Type.Integer GHC.Types.Int
 instance Numeric.MixedTypes.Field.CanDiv GHC.Types.Int GHC.Real.Rational
 instance Numeric.MixedTypes.Field.CanDiv GHC.Real.Rational GHC.Types.Int
 instance Numeric.MixedTypes.Field.CanDiv GHC.Integer.Type.Integer GHC.Real.Rational
 instance Numeric.MixedTypes.Field.CanDiv GHC.Real.Rational GHC.Integer.Type.Integer
-instance Numeric.MixedTypes.Field.CanDiv GHC.Types.Int GHC.Types.Double
-instance Numeric.MixedTypes.Field.CanDiv GHC.Types.Double GHC.Types.Int
-instance Numeric.MixedTypes.Field.CanDiv GHC.Integer.Type.Integer GHC.Types.Double
-instance Numeric.MixedTypes.Field.CanDiv GHC.Types.Double GHC.Integer.Type.Integer
-instance Numeric.MixedTypes.Field.CanDiv GHC.Real.Rational GHC.Types.Double
-instance Numeric.MixedTypes.Field.CanDiv GHC.Types.Double GHC.Real.Rational
-instance Numeric.MixedTypes.Field.CanDiv a b => Numeric.MixedTypes.Field.CanDiv [a] [b]
-instance Numeric.MixedTypes.Field.CanDiv a b => Numeric.MixedTypes.Field.CanDiv (GHC.Base.Maybe a) (GHC.Base.Maybe b)
-instance (Numeric.MixedTypes.Field.CanDiv a b, Control.CollectErrors.CanEnsureCE es (Numeric.MixedTypes.Field.DivType a b), Control.CollectErrors.SuitableForCE es) => Numeric.MixedTypes.Field.CanDiv (Control.CollectErrors.CollectErrors es a) (Control.CollectErrors.CollectErrors es b)
+instance Numeric.MixedTypes.Field.CanDiv GHC.Types.Double GHC.Types.Double
 
 
 module Numeric.MixedTypes.Elementary
@@ -1206,54 +1207,72 @@ instance (Numeric.MixedTypes.Elementary.CanExp t, Numeric.MixedTypes.Elementary.
 --   result type derived from the parameter type(s), allowing, <i>e.g.</i>:
 --   
 --   <ul>
---   <li>dividing an integer by an integer, giving a rational, wrapped in
+--   <li>Dividing an integer by an integer, giving a rational, wrapped in
 --   the CN (ie Collecting NumErrors) monad:</li>
 --   </ul>
 --   
 --   <pre>
---   let n = 1 :: Integer in n/(n+1) :: CN Rational
+--   &gt;&gt;&gt; :t let n = 1 :: Integer in n/(n+1)
+--   CN Rational
 --   </pre>
 --   
 --   <pre>
---   1/2 :: CN Rational
+--   &gt;&gt;&gt; :t 1/2
+--   CN Rational
 --   </pre>
 --   
---   (The type <tt>CN Rational</tt> would be derived automatically because
---   integer literals are always of type <tt>Integer</tt>, not <tt>Num t
+--   (Integer literals are always of type <tt>Integer</tt>, not <tt>Num t
 --   =&gt; t</tt>.)
 --   
 --   <ul>
---   <li>adding an integer and a rational, giving a rational:</li>
+--   <li>Adding an integer and a rational, giving a rational:</li>
 --   </ul>
 --   
 --   <pre>
---   (length [x])+1/3 :: CN Rational
+--   &gt;&gt;&gt; :t (length [x])+1/3
+--   CN Rational
 --   </pre>
 --   
 --   The <tt>CN</tt> monad is required because integer division can, in
 --   general, fail as it is a partial operation:
 --   
 --   <pre>
---   &gt; 1/0 :: CN Rational
+--   &gt;&gt;&gt; 1/0
+--   {[(ERROR,division by 0)]}
 --   </pre>
 --   
---   <pre>
---   {[(ErrorCertain,DivByZero)]}
---   </pre>
+--   Note that when evaluating <tt>1/0</tt>, it evaluates to the error
+--   value printed above. This is not an exception, but a special value.
 --   
 --   When one is certain the division is well defined, one can remove
---   <tt>CN</tt> using the <tt>~!</tt> operator:
+--   <tt>CN</tt> in several ways:
 --   
 --   <pre>
---   ((1/2)~!) :: Rational
+--   &gt;&gt;&gt; :t (1%2)  -- using Data.Ratio.(%), works only for integers
+--   Rational
 --   </pre>
 --   
 --   <pre>
---   ((1/n)~!) :: Rational
+--   &gt;&gt;&gt; :t (1/!2)  -- this works for non-integer division too
+--   Rational
 --   </pre>
 --   
---   The last example will throw an exception when evaluated with
---   <tt>n=0</tt>.
+--   <pre>
+--   &gt;&gt;&gt; :t (~!) (1/2) -- ~! removes CN from any type
+--   Rational
+--   </pre>
+--   
+--   The operator (/!) stands for division which throws an exception is the
+--   denominator is 0. It "propagates" any potential errors from the
+--   sub-expressions:
+--   
+--   <pre>
+--   &gt;&gt;&gt; :t 1/!(1 - 1/n)
+--   CN Rational
+--   </pre>
+--   
+--   The last example will throw an error exception when evaluated with
+--   <tt>n=1</tt> but it will not thrown any excetion when <tt>n=0</tt>
 --   
 --   <ul>
 --   <li>taking natural, integer and fractional power using the same
@@ -1261,29 +1280,35 @@ instance (Numeric.MixedTypes.Elementary.CanExp t, Numeric.MixedTypes.Elementary.
 --   </ul>
 --   
 --   <pre>
---   2^2 :: CN Integer
+--   &gt;&gt;&gt; :t 2^2
+--   CN Integer
 --   </pre>
 --   
 --   <pre>
---   2.0^(-2) :: CN Rational
+--   &gt;&gt;&gt; :t 2.0^(-2)
+--   CN Rational
 --   </pre>
 --   
 --   <pre>
---   (double 2)^(1/2) :: CN Double
+--   &gt;&gt;&gt; :t (double 2)^(1/!2)
+--   Double
 --   </pre>
 --   
 --   The following examples require package <a>aern2-real</a>:
 --   
 --   <pre>
---   2^(1/2) :: CauchyRealCN
+--   &gt;&gt;&gt; :t 2^(1/2)
+--   CauchyRealCN
 --   </pre>
 --   
 --   <pre>
---   pi :: CauchyReal
+--   &gt;&gt;&gt; :t pi
+--   CauchyReal
 --   </pre>
 --   
 --   <pre>
---   sqrt 2 :: CauchyRealCN
+--   &gt;&gt;&gt; :t sqrt 2
+--   CauchyRealCN
 --   </pre>
 --   
 --   <ul>
@@ -1292,7 +1317,8 @@ instance (Numeric.MixedTypes.Elementary.CanExp t, Numeric.MixedTypes.Elementary.
 --   </ul>
 --   
 --   <pre>
---   if x &lt; 0 then -x else x :: CauchyReal
+--   if x &lt; 0 then -x else x
+--   
 --   </pre>
 --   
 --   In the last example, <tt>if</tt> is overloaded so that it works for
@@ -1308,6 +1334,7 @@ instance (Numeric.MixedTypes.Elementary.CanExp t, Numeric.MixedTypes.Elementary.
 --   
 --   <pre>
 --   (+) :: (CanAddAsymmetric t1 t2) =&gt; t1 -&gt; t2 -&gt; AddType t1 t2
+--   
 --   </pre>
 --   
 --   The type constraint <tt>CanAdd t1 t2</tt> implies both
