@@ -23,7 +23,7 @@ module Numeric.CollectErrors
 , noValueECN
 , noValueNumErrorCertainECN, noValueNumErrorPotentialECN
   -- ** More compact synonyms
-, cn, deCN, (⚡), (~!)
+, cn, deCN, (~!)
 )
 where
 
@@ -122,10 +122,6 @@ cn = ensureCN
 {-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
 deCN :: (CanEnsureCN v) => EnsureCN v -> Either NumErrors v
 deCN = deEnsureCN
-
-{-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
-(⚡) :: (CanEnsureCN v, Show v) => v -> EnsureNoCN v
-(⚡) = getValueOrThrowErrorsNCE sample_NumErrors
 
 {-| An unsafe way to get a value out of the CollectNumErrors wrapper. -}
 (~!) :: (CanEnsureCN v, Show v) => v -> EnsureNoCN v
