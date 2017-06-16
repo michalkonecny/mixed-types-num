@@ -32,13 +32,15 @@
 
       @> 1/0 :: CN Rational@
 
-      @{[(ErrorCertain,DivByZero)]} @
+      @{[(ERROR,division by 0)]}@
 
-      When one is certain the division is well defined, one can remove @CN@ using the @~!@ operator:
+      When one is certain the division is well defined, one can remove @CN@ in several ways:
 
-      @((1/2)~!) :: Rational@
+      @(1%2) :: Rational -- using Data.Ratio.(%), works only for integers@
 
-      @((1/n)~!) :: Rational@
+      @(1/!(1 + 1/!(n^2+1))) :: Rational -- works for any division@
+
+      @(~!) (1/2) :: Rational -- works for any CN type@
 
       The last example will throw an exception when evaluated with @n=0@.
 

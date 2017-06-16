@@ -8,6 +8,7 @@ maintainer:     Michal Konecny <mikkonecny@gmail.com>
 copyright:      (c) 2015-2017 Michal Konecny
 license:        BSD3
 license-file:   LICENSE
+extra-source-files:  changelog.md
 stability:      experimental
 tested-with:    GHC==7.10.3, GHC==8.0.2
 category:       Math
@@ -17,11 +18,12 @@ Description:
     unary and binary operations such as @not@, @+@, @==@
     have their result type derived from the parameter type(s).
     .
-    See module "Numeric.MixedTypes" for further documentation.
+    See module "MixedTypesNumPrelude" for further documentation.
 
 source-repository head
   type:     git
   location: https://github.com/mikkonecny/mixed-types-num
+
 
 library
   hs-source-dirs:  src
@@ -63,6 +65,7 @@ library
     Numeric.MixedTypes.Elementary
     Numeric.MixedTypes.Complex
     MixedTypesNumPrelude
+
 
 test-suite spec
   type:
