@@ -44,7 +44,7 @@ module Numeric.MixedTypes.Literals
   , CanBeInt, int, ints
   , CanBeRational, rational, rationals, HasRationals, fromRational_
   , CanBeDouble, double, doubles
-  , ConvertibleExactly(..), convertExactly
+  , ConvertibleExactly(..), convertExactly, convertExactlyTargetSample
   , ConvertResult, ConvertError, convError
   -- * Generic list index
   , (!!), specCanBeInteger, printArgsIfFails2
@@ -176,6 +176,9 @@ convertExactly a =
   case safeConvertExactly a of
     Right v -> v
     Left err -> error (show err)
+
+convertExactlyTargetSample :: (ConvertibleExactly t1 t2) => t2 -> t1 -> t2
+convertExactlyTargetSample _sample = convertExactly
 
 instance ConvertibleExactly Integer Integer -- use CVT instance by default
 instance ConvertibleExactly Int Integer
