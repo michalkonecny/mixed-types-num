@@ -11,7 +11,7 @@
 
 module Numeric.MixedTypes.MinMaxAbsSpec (spec) where
 
-import Numeric.MixedTypes
+import MixedTypesNumPrelude
 
 import Test.Hspec
 

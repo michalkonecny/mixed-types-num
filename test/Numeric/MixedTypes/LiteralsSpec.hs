@@ -11,7 +11,7 @@
 
 module Numeric.MixedTypes.LiteralsSpec (spec) where
 
-import Numeric.MixedTypes
+import MixedTypesNumPrelude
 import qualified Prelude as P
 
 -- import Text.Printf

@@ -11,7 +11,7 @@
 
 module Numeric.MixedTypes.AddSubSpec (spec) where
 
-import Numeric.MixedTypes
+import MixedTypesNumPrelude
 
 import Test.Hspec
 

@@ -11,7 +11,7 @@
 
 module Numeric.MixedTypes.RingSpec (spec) where
 
-import Numeric.MixedTypes
+import MixedTypesNumPrelude
 
 import Test.Hspec
 
