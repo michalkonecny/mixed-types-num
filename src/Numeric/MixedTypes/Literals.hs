@@ -50,7 +50,7 @@ module Numeric.MixedTypes.Literals
   , (!!), specCanBeInteger, printArgsIfFails2
   -- * Testing support functions
   , T(..), tInt, tInteger, tRational, tDouble
-  , tBool, tMaybeBool, tMaybeMaybeBool
+  , tBool, tMaybe, tMaybeBool, tMaybeMaybeBool
   -- * Helper functions
   , convertFirst, convertSecond
   , convertFirstUsing, convertSecondUsing
@@ -236,11 +236,14 @@ tDouble = T "Double"
 tBool :: T Bool
 tBool = T "Bool"
 
+tMaybe :: T t -> T (Maybe t)
+tMaybe (T tName) = T ("(Maybe " ++ tName ++ ")")
+
 tMaybeBool :: T (Maybe Bool)
-tMaybeBool = T "(Maybe Bool)"
+tMaybeBool = tMaybe tBool
 
 tMaybeMaybeBool :: T (Maybe (Maybe Bool))
-tMaybeMaybeBool = T "(Maybe (Maybe Bool))"
+tMaybeMaybeBool = tMaybe tMaybeBool
 
 {---- Auxiliary functions ----}
 

@@ -14,6 +14,7 @@
 
 module Numeric.MixedTypes.Complex
 (
+  tComplex
 )
 where
 
@@ -33,6 +34,9 @@ import Numeric.MixedTypes.AddSub
 import Numeric.MixedTypes.Ring
 import Numeric.MixedTypes.Field
 import Numeric.MixedTypes.Elementary
+
+tComplex :: T t -> T (Complex t)
+tComplex (T tName) = T ("(Complex " ++ tName ++ ")")
 
 instance (ConvertibleExactly Integer t) => (ConvertibleExactly Integer (Complex t))
   where

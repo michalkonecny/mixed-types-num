@@ -27,7 +27,7 @@
 
       * Adding an integer and a rational, giving a rational:
 
-      >>> :t (length [x])+1/3
+      >>> :t (length [])+1/3
       CN Rational
 
       The @CN@ monad is required because integer division can, in general, fail as it is a partial operation:
@@ -83,9 +83,7 @@
 
       * comparing an integer with an (exact) real number, giving a seqeunce of @Maybe Bool@:
 
-      @
-      if x < 0 then -x else x
-      @
+      > if x < 0 then -x else x
 
       In the last example, @if@ is overloaded so that it works for conditions
       of other types than @Bool@.  Here the condition has the type @Sequence (Maybe Bool)@.
@@ -98,9 +96,7 @@
     and the result type is given by associated
     type families. For example:
 
-    @
-    (+) :: (CanAddAsymmetric t1 t2) => t1 -> t2 -> AddType t1 t2
-    @
+    > (+) :: (CanAddAsymmetric t1 t2) => t1 -> t2 -> AddType t1 t2
 
     The type constraint @CanAdd t1 t2@ implies both
     @CanAddAsymmetric t1 t2@ and @CanAddAsymmetric t2 t1@.
@@ -123,15 +119,13 @@
 
     * Inferred types can be very large. Eg for @f a b c = sqrt (a + b * c + 1)@ the inferred type is:
 
-      @
-      f: (CanMulAsymmetric t1 t2, CanAddAsymmetric t4 (MulType t1 t2),
-          CanAddAsymmetric (AddType t4 (MulType t1 t2)) Integer,
-          CanSqrt (AddType (AddType t4 (MulType t1 t2)) Integer)) =>
-         t4
-         -> t1
-         -> t2
-         -> SqrtType (AddType (AddType t4 (MulType t1 t2)) Integer)
-      @
+    >  f: (CanMulAsymmetric t1 t2, CanAddAsymmetric t4 (MulType t1 t2),
+    >      CanAddAsymmetric (AddType t4 (MulType t1 t2)) Integer,
+    >      CanSqrt (AddType (AddType t4 (MulType t1 t2)) Integer)) =>
+    >     t4
+    >     -> t1
+    >     -> t2
+    >     -> SqrtType (AddType (AddType t4 (MulType t1 t2)) Integer)
 
     * Due to limitations of some versions of ghc, type inferrence sometimes fails.
       Eg @add1 = (+ 1)@ fails (eg with ghc 8.0.2) unless we explicitly declare the type
@@ -163,10 +157,12 @@ module MixedTypesNumPrelude
   module Numeric.MixedTypes.Round,
   module Numeric.MixedTypes.Ring,
   module Numeric.MixedTypes.Field,
-  (%),
   module Numeric.MixedTypes.Elementary,
+  module Numeric.MixedTypes.Complex,
   module Numeric.CollectErrors,
-  module Utils.TH.DeclForTypes
+  module Utils.TH.DeclForTypes,
+  -- * Re-export for convenient Rational literals
+  (%)
 )
 where
 
@@ -184,4 +180,4 @@ import Numeric.MixedTypes.Round
 import Numeric.MixedTypes.Ring
 import Numeric.MixedTypes.Field
 import Numeric.MixedTypes.Elementary
-import Numeric.MixedTypes.Complex ()
+import Numeric.MixedTypes.Complex

@@ -20,13 +20,18 @@ spec = do
   specCanAddNotMixed tInt
   specCanAddNotMixed tInteger
   specCanAddNotMixed tRational
+  -- specCanAddNotMixed (tComplex tRational)
   specCanAdd tInt tInteger tRational
   specCanAdd tInteger tRational tInt
+  -- specCanAdd tInteger tRational (tComplex tRational)
   specCanAddSameType tInteger
   specCanAddSameType tRational
+  -- specCanAddSameType (tComplex tRational)
   specCanSubNotMixed tInt
   specCanSubNotMixed tInteger
   specCanSubNotMixed tRational
+  -- specCanSubNotMixed (tComplex tRational)
   specCanSub tInt tInteger
   specCanSub tInt tRational
   specCanSub tInteger tRational
+  -- specCanSub tInteger (tComplex tRational)
