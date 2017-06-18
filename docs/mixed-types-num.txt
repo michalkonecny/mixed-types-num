@@ -6,11 +6,15 @@
 --   
 --   This package provides a version of Prelude where unary and binary
 --   operations such as <tt>not</tt>, <tt>+</tt>, <tt>==</tt> have their
---   result type derived from the parameter type(s).
+--   result type derived from the parameter type(s) and thus supports
+--   mixed-type arithmetic and comparisons.
 --   
 --   See module <a>MixedTypesNumPrelude</a> for further documentation.
+--   
+--   <i>Ghci 8.0.* fails when loading this package</i> due to ghc bug
+--   <a>13385</a>. This bug does not affect ghci 7.10.3 and ghci 8.2.1.
 @package mixed-types-num
-@version 0.2
+@version 0.2.0.1
 
 
 -- | Template Haskell utilities
@@ -255,6 +259,7 @@ class ConvertibleExactly t1 t2 where safeConvertExactly = safeConvert
 safeConvertExactly :: ConvertibleExactly t1 t2 => t1 -> ConvertResult t2
 safeConvertExactly :: (ConvertibleExactly t1 t2, Convertible t1 t2) => t1 -> ConvertResult t2
 convertExactly :: (ConvertibleExactly t1 t2) => t1 -> t2
+convertExactlyTargetSample :: (ConvertibleExactly t1 t2) => t2 -> t1 -> t2
 
 -- | The result of a safe conversion via <a>safeConvert</a>.
 type ConvertResult a = Either ConvertError a
@@ -278,6 +283,7 @@ tInteger :: T Integer
 tRational :: T Rational
 tDouble :: T Double
 tBool :: T Bool
+tMaybe :: T t -> T (Maybe t)
 tMaybeBool :: T (Maybe Bool)
 tMaybeMaybeBool :: T (Maybe (Maybe Bool))
 convertFirst :: (ConvertibleExactly a b) => (b -> b -> c) -> (a -> b -> c)
@@ -1145,57 +1151,58 @@ instance (Numeric.MixedTypes.Elementary.CanSinCos a, Control.CollectErrors.CanEn
 
 -- | Instances for <a>Data.Complex</a>.
 module Numeric.MixedTypes.Complex
+tComplex :: T t -> T (Complex t)
+instance Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Integer.Type.Integer b0 => Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Integer.Type.Integer (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.Eq.HasEqAsymmetric a0 GHC.Integer.Type.Integer => Numeric.MixedTypes.Eq.HasEqAsymmetric (Data.Complex.Complex a0) GHC.Integer.Type.Integer
+instance Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Integer.Type.Integer b0 => Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Integer.Type.Integer (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.AddSub.CanAddAsymmetric a0 GHC.Integer.Type.Integer => Numeric.MixedTypes.AddSub.CanAddAsymmetric (Data.Complex.Complex a0) GHC.Integer.Type.Integer
+instance Numeric.MixedTypes.AddSub.CanSub GHC.Integer.Type.Integer b0 => Numeric.MixedTypes.AddSub.CanSub GHC.Integer.Type.Integer (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.AddSub.CanSub a0 GHC.Integer.Type.Integer => Numeric.MixedTypes.AddSub.CanSub (Data.Complex.Complex a0) GHC.Integer.Type.Integer
+instance Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Integer.Type.Integer b0 => Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Integer.Type.Integer (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.Ring.CanMulAsymmetric a0 GHC.Integer.Type.Integer => Numeric.MixedTypes.Ring.CanMulAsymmetric (Data.Complex.Complex a0) GHC.Integer.Type.Integer
+instance (Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Integer.Type.Integer b0, Numeric.MixedTypes.Ring.CanMulAsymmetric b0 b0, Numeric.MixedTypes.AddSub.CanAddSameType (Numeric.MixedTypes.Ring.MulType b0 b0), Numeric.MixedTypes.Field.CanDiv (Numeric.MixedTypes.Ring.MulType GHC.Integer.Type.Integer b0) (Numeric.MixedTypes.Ring.MulType b0 b0)) => Numeric.MixedTypes.Field.CanDiv GHC.Integer.Type.Integer (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.Field.CanDiv a0 GHC.Integer.Type.Integer => Numeric.MixedTypes.Field.CanDiv (Data.Complex.Complex a0) GHC.Integer.Type.Integer
+instance Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Types.Int b0 => Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Types.Int (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.Eq.HasEqAsymmetric a0 GHC.Types.Int => Numeric.MixedTypes.Eq.HasEqAsymmetric (Data.Complex.Complex a0) GHC.Types.Int
+instance Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Types.Int b0 => Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Types.Int (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.AddSub.CanAddAsymmetric a0 GHC.Types.Int => Numeric.MixedTypes.AddSub.CanAddAsymmetric (Data.Complex.Complex a0) GHC.Types.Int
+instance Numeric.MixedTypes.AddSub.CanSub GHC.Types.Int b0 => Numeric.MixedTypes.AddSub.CanSub GHC.Types.Int (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.AddSub.CanSub a0 GHC.Types.Int => Numeric.MixedTypes.AddSub.CanSub (Data.Complex.Complex a0) GHC.Types.Int
+instance Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Int b0 => Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Int (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.Ring.CanMulAsymmetric a0 GHC.Types.Int => Numeric.MixedTypes.Ring.CanMulAsymmetric (Data.Complex.Complex a0) GHC.Types.Int
+instance (Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Int b0, Numeric.MixedTypes.Ring.CanMulAsymmetric b0 b0, Numeric.MixedTypes.AddSub.CanAddSameType (Numeric.MixedTypes.Ring.MulType b0 b0), Numeric.MixedTypes.Field.CanDiv (Numeric.MixedTypes.Ring.MulType GHC.Types.Int b0) (Numeric.MixedTypes.Ring.MulType b0 b0)) => Numeric.MixedTypes.Field.CanDiv GHC.Types.Int (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.Field.CanDiv a0 GHC.Types.Int => Numeric.MixedTypes.Field.CanDiv (Data.Complex.Complex a0) GHC.Types.Int
+instance Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Real.Rational b0 => Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Real.Rational (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.Eq.HasEqAsymmetric a0 GHC.Real.Rational => Numeric.MixedTypes.Eq.HasEqAsymmetric (Data.Complex.Complex a0) GHC.Real.Rational
+instance Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Real.Rational b0 => Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Real.Rational (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.AddSub.CanAddAsymmetric a0 GHC.Real.Rational => Numeric.MixedTypes.AddSub.CanAddAsymmetric (Data.Complex.Complex a0) GHC.Real.Rational
+instance Numeric.MixedTypes.AddSub.CanSub GHC.Real.Rational b0 => Numeric.MixedTypes.AddSub.CanSub GHC.Real.Rational (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.AddSub.CanSub a0 GHC.Real.Rational => Numeric.MixedTypes.AddSub.CanSub (Data.Complex.Complex a0) GHC.Real.Rational
+instance Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Real.Rational b0 => Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Real.Rational (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.Ring.CanMulAsymmetric a0 GHC.Real.Rational => Numeric.MixedTypes.Ring.CanMulAsymmetric (Data.Complex.Complex a0) GHC.Real.Rational
+instance (Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Real.Rational b0, Numeric.MixedTypes.Ring.CanMulAsymmetric b0 b0, Numeric.MixedTypes.AddSub.CanAddSameType (Numeric.MixedTypes.Ring.MulType b0 b0), Numeric.MixedTypes.Field.CanDiv (Numeric.MixedTypes.Ring.MulType GHC.Real.Rational b0) (Numeric.MixedTypes.Ring.MulType b0 b0)) => Numeric.MixedTypes.Field.CanDiv GHC.Real.Rational (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.Field.CanDiv a0 GHC.Real.Rational => Numeric.MixedTypes.Field.CanDiv (Data.Complex.Complex a0) GHC.Real.Rational
+instance Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Types.Double b0 => Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Types.Double (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.Eq.HasEqAsymmetric a0 GHC.Types.Double => Numeric.MixedTypes.Eq.HasEqAsymmetric (Data.Complex.Complex a0) GHC.Types.Double
+instance Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Types.Double b0 => Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Types.Double (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.AddSub.CanAddAsymmetric a0 GHC.Types.Double => Numeric.MixedTypes.AddSub.CanAddAsymmetric (Data.Complex.Complex a0) GHC.Types.Double
+instance Numeric.MixedTypes.AddSub.CanSub GHC.Types.Double b0 => Numeric.MixedTypes.AddSub.CanSub GHC.Types.Double (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.AddSub.CanSub a0 GHC.Types.Double => Numeric.MixedTypes.AddSub.CanSub (Data.Complex.Complex a0) GHC.Types.Double
+instance Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Double b0 => Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Double (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.Ring.CanMulAsymmetric a0 GHC.Types.Double => Numeric.MixedTypes.Ring.CanMulAsymmetric (Data.Complex.Complex a0) GHC.Types.Double
+instance (Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Double b0, Numeric.MixedTypes.Ring.CanMulAsymmetric b0 b0, Numeric.MixedTypes.AddSub.CanAddSameType (Numeric.MixedTypes.Ring.MulType b0 b0), Numeric.MixedTypes.Field.CanDiv (Numeric.MixedTypes.Ring.MulType GHC.Types.Double b0) (Numeric.MixedTypes.Ring.MulType b0 b0)) => Numeric.MixedTypes.Field.CanDiv GHC.Types.Double (Data.Complex.Complex b0)
+instance Numeric.MixedTypes.Field.CanDiv a0 GHC.Types.Double => Numeric.MixedTypes.Field.CanDiv (Data.Complex.Complex a0) GHC.Types.Double
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Integer.Type.Integer t => Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Integer.Type.Integer (Data.Complex.Complex t)
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Int t => Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Types.Int (Data.Complex.Complex t)
 instance Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Real.Rational t => Numeric.MixedTypes.Literals.ConvertibleExactly GHC.Real.Rational (Data.Complex.Complex t)
 instance Numeric.MixedTypes.Literals.ConvertibleExactly t1 t2 => Numeric.MixedTypes.Literals.ConvertibleExactly (Data.Complex.Complex t1) (Data.Complex.Complex t2)
 instance Numeric.MixedTypes.Eq.HasEqAsymmetric a b => Numeric.MixedTypes.Eq.HasEqAsymmetric (Data.Complex.Complex a) (Data.Complex.Complex b)
-instance Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Integer.Type.Integer b => Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Integer.Type.Integer (Data.Complex.Complex b)
-instance Numeric.MixedTypes.Eq.HasEqAsymmetric a GHC.Integer.Type.Integer => Numeric.MixedTypes.Eq.HasEqAsymmetric (Data.Complex.Complex a) GHC.Integer.Type.Integer
-instance Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Real.Rational b => Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Real.Rational (Data.Complex.Complex b)
-instance Numeric.MixedTypes.Eq.HasEqAsymmetric a GHC.Real.Rational => Numeric.MixedTypes.Eq.HasEqAsymmetric (Data.Complex.Complex a) GHC.Real.Rational
-instance Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Types.Int b => Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Types.Int (Data.Complex.Complex b)
-instance Numeric.MixedTypes.Eq.HasEqAsymmetric a GHC.Types.Int => Numeric.MixedTypes.Eq.HasEqAsymmetric (Data.Complex.Complex a) GHC.Types.Int
-instance Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Types.Double b => Numeric.MixedTypes.Eq.HasEqAsymmetric GHC.Types.Double (Data.Complex.Complex b)
-instance Numeric.MixedTypes.Eq.HasEqAsymmetric a GHC.Types.Double => Numeric.MixedTypes.Eq.HasEqAsymmetric (Data.Complex.Complex a) GHC.Types.Double
 instance (Numeric.MixedTypes.Eq.CanTestInteger t, Numeric.MixedTypes.Eq.CanTestZero t) => Numeric.MixedTypes.Eq.CanTestInteger (Data.Complex.Complex t)
 instance Numeric.MixedTypes.Bool.CanNeg t => Numeric.MixedTypes.Bool.CanNeg (Data.Complex.Complex t)
 instance Numeric.MixedTypes.AddSub.CanAddAsymmetric a b => Numeric.MixedTypes.AddSub.CanAddAsymmetric (Data.Complex.Complex a) (Data.Complex.Complex b)
-instance Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Integer.Type.Integer b => Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Integer.Type.Integer (Data.Complex.Complex b)
-instance Numeric.MixedTypes.AddSub.CanAddAsymmetric a GHC.Integer.Type.Integer => Numeric.MixedTypes.AddSub.CanAddAsymmetric (Data.Complex.Complex a) GHC.Integer.Type.Integer
-instance Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Real.Rational b => Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Real.Rational (Data.Complex.Complex b)
-instance Numeric.MixedTypes.AddSub.CanAddAsymmetric a GHC.Real.Rational => Numeric.MixedTypes.AddSub.CanAddAsymmetric (Data.Complex.Complex a) GHC.Real.Rational
-instance Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Types.Int b => Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Types.Int (Data.Complex.Complex b)
-instance Numeric.MixedTypes.AddSub.CanAddAsymmetric a GHC.Types.Int => Numeric.MixedTypes.AddSub.CanAddAsymmetric (Data.Complex.Complex a) GHC.Types.Int
-instance Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Types.Double b => Numeric.MixedTypes.AddSub.CanAddAsymmetric GHC.Types.Double (Data.Complex.Complex b)
-instance Numeric.MixedTypes.AddSub.CanAddAsymmetric a GHC.Types.Double => Numeric.MixedTypes.AddSub.CanAddAsymmetric (Data.Complex.Complex a) GHC.Types.Double
 instance Numeric.MixedTypes.AddSub.CanSub a b => Numeric.MixedTypes.AddSub.CanSub (Data.Complex.Complex a) (Data.Complex.Complex b)
-instance Numeric.MixedTypes.AddSub.CanSub GHC.Integer.Type.Integer b => Numeric.MixedTypes.AddSub.CanSub GHC.Integer.Type.Integer (Data.Complex.Complex b)
-instance Numeric.MixedTypes.AddSub.CanSub a GHC.Integer.Type.Integer => Numeric.MixedTypes.AddSub.CanSub (Data.Complex.Complex a) GHC.Integer.Type.Integer
-instance Numeric.MixedTypes.AddSub.CanSub GHC.Real.Rational b => Numeric.MixedTypes.AddSub.CanSub GHC.Real.Rational (Data.Complex.Complex b)
-instance Numeric.MixedTypes.AddSub.CanSub a GHC.Real.Rational => Numeric.MixedTypes.AddSub.CanSub (Data.Complex.Complex a) GHC.Real.Rational
-instance Numeric.MixedTypes.AddSub.CanSub GHC.Types.Int b => Numeric.MixedTypes.AddSub.CanSub GHC.Types.Int (Data.Complex.Complex b)
-instance Numeric.MixedTypes.AddSub.CanSub a GHC.Types.Int => Numeric.MixedTypes.AddSub.CanSub (Data.Complex.Complex a) GHC.Types.Int
-instance Numeric.MixedTypes.AddSub.CanSub GHC.Types.Double b => Numeric.MixedTypes.AddSub.CanSub GHC.Types.Double (Data.Complex.Complex b)
-instance Numeric.MixedTypes.AddSub.CanSub a GHC.Types.Double => Numeric.MixedTypes.AddSub.CanSub (Data.Complex.Complex a) GHC.Types.Double
 instance (Numeric.MixedTypes.Ring.CanMulAsymmetric a b, Numeric.MixedTypes.AddSub.CanAddSameType (Numeric.MixedTypes.Ring.MulType a b), Numeric.MixedTypes.AddSub.CanSubSameType (Numeric.MixedTypes.Ring.MulType a b)) => Numeric.MixedTypes.Ring.CanMulAsymmetric (Data.Complex.Complex a) (Data.Complex.Complex b)
-instance Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Integer.Type.Integer b => Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Integer.Type.Integer (Data.Complex.Complex b)
-instance Numeric.MixedTypes.Ring.CanMulAsymmetric a GHC.Integer.Type.Integer => Numeric.MixedTypes.Ring.CanMulAsymmetric (Data.Complex.Complex a) GHC.Integer.Type.Integer
-instance Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Int b => Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Int (Data.Complex.Complex b)
-instance Numeric.MixedTypes.Ring.CanMulAsymmetric a GHC.Types.Int => Numeric.MixedTypes.Ring.CanMulAsymmetric (Data.Complex.Complex a) GHC.Types.Int
-instance Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Real.Rational b => Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Real.Rational (Data.Complex.Complex b)
-instance Numeric.MixedTypes.Ring.CanMulAsymmetric a GHC.Real.Rational => Numeric.MixedTypes.Ring.CanMulAsymmetric (Data.Complex.Complex a) GHC.Real.Rational
-instance Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Double b => Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Double (Data.Complex.Complex b)
-instance Numeric.MixedTypes.Ring.CanMulAsymmetric a GHC.Types.Double => Numeric.MixedTypes.Ring.CanMulAsymmetric (Data.Complex.Complex a) GHC.Types.Double
 instance (Numeric.MixedTypes.Ring.CanMulAsymmetric a b, Numeric.MixedTypes.AddSub.CanAddSameType (Numeric.MixedTypes.Ring.MulType a b), Numeric.MixedTypes.AddSub.CanSubSameType (Numeric.MixedTypes.Ring.MulType a b), Numeric.MixedTypes.Ring.CanMulAsymmetric b b, Numeric.MixedTypes.AddSub.CanAddSameType (Numeric.MixedTypes.Ring.MulType b b), Numeric.MixedTypes.Field.CanDiv (Numeric.MixedTypes.Ring.MulType a b) (Numeric.MixedTypes.Ring.MulType b b)) => Numeric.MixedTypes.Field.CanDiv (Data.Complex.Complex a) (Data.Complex.Complex b)
-instance (Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Integer.Type.Integer b, Numeric.MixedTypes.Ring.CanMulAsymmetric b b, Numeric.MixedTypes.AddSub.CanAddSameType (Numeric.MixedTypes.Ring.MulType b b), Numeric.MixedTypes.Field.CanDiv (Numeric.MixedTypes.Ring.MulType GHC.Integer.Type.Integer b) (Numeric.MixedTypes.Ring.MulType b b)) => Numeric.MixedTypes.Field.CanDiv GHC.Integer.Type.Integer (Data.Complex.Complex b)
-instance (Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Real.Rational b, Numeric.MixedTypes.Ring.CanMulAsymmetric b b, Numeric.MixedTypes.AddSub.CanAddSameType (Numeric.MixedTypes.Ring.MulType b b), Numeric.MixedTypes.Field.CanDiv (Numeric.MixedTypes.Ring.MulType GHC.Real.Rational b) (Numeric.MixedTypes.Ring.MulType b b)) => Numeric.MixedTypes.Field.CanDiv GHC.Real.Rational (Data.Complex.Complex b)
-instance (Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Int b, Numeric.MixedTypes.Ring.CanMulAsymmetric b b, Numeric.MixedTypes.AddSub.CanAddSameType (Numeric.MixedTypes.Ring.MulType b b), Numeric.MixedTypes.Field.CanDiv (Numeric.MixedTypes.Ring.MulType GHC.Types.Int b) (Numeric.MixedTypes.Ring.MulType b b)) => Numeric.MixedTypes.Field.CanDiv GHC.Types.Int (Data.Complex.Complex b)
-instance (Numeric.MixedTypes.Ring.CanMulAsymmetric GHC.Types.Double b, Numeric.MixedTypes.Ring.CanMulAsymmetric b b, Numeric.MixedTypes.AddSub.CanAddSameType (Numeric.MixedTypes.Ring.MulType b b), Numeric.MixedTypes.Field.CanDiv (Numeric.MixedTypes.Ring.MulType GHC.Types.Double b) (Numeric.MixedTypes.Ring.MulType b b)) => Numeric.MixedTypes.Field.CanDiv GHC.Types.Double (Data.Complex.Complex b)
-instance Numeric.MixedTypes.Field.CanDiv a GHC.Integer.Type.Integer => Numeric.MixedTypes.Field.CanDiv (Data.Complex.Complex a) GHC.Integer.Type.Integer
-instance Numeric.MixedTypes.Field.CanDiv a GHC.Types.Int => Numeric.MixedTypes.Field.CanDiv (Data.Complex.Complex a) GHC.Types.Int
-instance Numeric.MixedTypes.Field.CanDiv a GHC.Real.Rational => Numeric.MixedTypes.Field.CanDiv (Data.Complex.Complex a) GHC.Real.Rational
-instance Numeric.MixedTypes.Field.CanDiv a GHC.Types.Double => Numeric.MixedTypes.Field.CanDiv (Data.Complex.Complex a) GHC.Types.Double
 instance (Numeric.MixedTypes.Ring.CanMulAsymmetric t t, Numeric.MixedTypes.AddSub.CanAddSameType (Numeric.MixedTypes.Ring.MulType t t), Numeric.MixedTypes.Elementary.CanSqrt (Numeric.MixedTypes.Ring.MulType t t)) => Numeric.MixedTypes.MinMaxAbs.CanAbs (Data.Complex.Complex t)
 instance (Numeric.MixedTypes.Elementary.CanExp t, Numeric.MixedTypes.Elementary.CanSinCos t, Numeric.MixedTypes.Ring.CanMulAsymmetric (Numeric.MixedTypes.Elementary.ExpType t) (Numeric.MixedTypes.Elementary.SinCosType t)) => Numeric.MixedTypes.Elementary.CanExp (Data.Complex.Complex t)
 
@@ -1213,12 +1220,12 @@ instance (Numeric.MixedTypes.Elementary.CanExp t, Numeric.MixedTypes.Elementary.
 --   
 --   <pre>
 --   &gt;&gt;&gt; :t let n = 1 :: Integer in n/(n+1)
---   CN Rational
+--   ...CN Rational
 --   </pre>
 --   
 --   <pre>
 --   &gt;&gt;&gt; :t 1/2
---   CN Rational
+--   ...CN Rational
 --   </pre>
 --   
 --   (Integer literals are always of type <tt>Integer</tt>, not <tt>Num t
@@ -1229,8 +1236,8 @@ instance (Numeric.MixedTypes.Elementary.CanExp t, Numeric.MixedTypes.Elementary.
 --   </ul>
 --   
 --   <pre>
---   &gt;&gt;&gt; :t (length [x])+1/3
---   CN Rational
+--   &gt;&gt;&gt; :t (length [])+1/3
+--   ...CN Rational
 --   </pre>
 --   
 --   The <tt>CN</tt> monad is required because integer division can, in
@@ -1248,31 +1255,40 @@ instance (Numeric.MixedTypes.Elementary.CanExp t, Numeric.MixedTypes.Elementary.
 --   <tt>CN</tt> in several ways:
 --   
 --   <pre>
---   &gt;&gt;&gt; :t (1%2)  -- using Data.Ratio.(%), works only for integers
---   Rational
+--   &gt;&gt;&gt; :t (1%2)
+--   ...Rational
 --   </pre>
 --   
---   <pre>
---   &gt;&gt;&gt; :t (1/!2)  -- this works for non-integer division too
---   Rational
---   </pre>
+--   Above we use (re-exported) Data.Ratio.(%), which means this trick
+--   works only for Integers.
 --   
 --   <pre>
---   &gt;&gt;&gt; :t (~!) (1/2) -- ~! removes CN from any type
---   Rational
+--   &gt;&gt;&gt; :t (1/!2)
+--   ...Rational
 --   </pre>
+--   
+--   This works also for non-integer division.
+--   
+--   <pre>
+--   &gt;&gt;&gt; :t (~!) (1/2)
+--   ...Rational
+--   </pre>
+--   
+--   The (~!) operator removes CN from any type, throwing an exception if
+--   there are collected errors.
 --   
 --   The operator (/!) stands for division which throws an exception is the
 --   denominator is 0. It "propagates" any potential errors from the
---   sub-expressions:
+--   sub-expressions. For example:
 --   
 --   <pre>
 --   &gt;&gt;&gt; :t 1/!(1 - 1/n)
---   CN Rational
+--   ...CN Rational
 --   </pre>
 --   
---   The last example will throw an error exception when evaluated with
---   <tt>n=1</tt> but it will not thrown any excetion when <tt>n=0</tt>
+--   The above expression will throw an error exception when evaluated with
+--   <tt>n=1</tt> but when <tt>n=0</tt>, it will not throw an excetion but
+--   return an error value.
 --   
 --   <ul>
 --   <li>taking natural, integer and fractional power using the same
@@ -1281,44 +1297,44 @@ instance (Numeric.MixedTypes.Elementary.CanExp t, Numeric.MixedTypes.Elementary.
 --   
 --   <pre>
 --   &gt;&gt;&gt; :t 2^2
---   CN Integer
+--   ...CN Integer
 --   </pre>
 --   
 --   <pre>
 --   &gt;&gt;&gt; :t 2.0^(-2)
---   CN Rational
+--   ...CN Rational
 --   </pre>
 --   
 --   <pre>
 --   &gt;&gt;&gt; :t (double 2)^(1/!2)
---   Double
+--   ...Double
 --   </pre>
 --   
 --   The following examples require package <a>aern2-real</a>:
 --   
 --   <pre>
 --   &gt;&gt;&gt; :t 2^(1/2)
---   CauchyRealCN
+--   ...CauchyRealCN
 --   </pre>
 --   
 --   <pre>
 --   &gt;&gt;&gt; :t pi
---   CauchyReal
+--   ...CauchyReal
 --   </pre>
 --   
 --   <pre>
 --   &gt;&gt;&gt; :t sqrt 2
---   CauchyRealCN
+--   ...CauchyRealCN
 --   </pre>
 --   
 --   <ul>
 --   <li>comparing an integer with an (exact) real number, giving a
---   seqeunce of <tt>Maybe Bool</tt>:</li>
+--   sequence of <tt>Maybe Bool</tt>:</li>
 --   </ul>
 --   
 --   <pre>
---   if x &lt; 0 then -x else x
---   
+--   &gt;&gt;&gt; let abs2 x = if x &lt; 0 then -x else x in (abs2 (pi - pi)) ? (bitsS 100)
+--   [0 ± &lt;2^(-102)]
 --   </pre>
 --   
 --   In the last example, <tt>if</tt> is overloaded so that it works for
@@ -1334,7 +1350,6 @@ instance (Numeric.MixedTypes.Elementary.CanExp t, Numeric.MixedTypes.Elementary.
 --   
 --   <pre>
 --   (+) :: (CanAddAsymmetric t1 t2) =&gt; t1 -&gt; t2 -&gt; AddType t1 t2
---   
 --   </pre>
 --   
 --   The type constraint <tt>CanAdd t1 t2</tt> implies both
@@ -1372,7 +1387,6 @@ instance (Numeric.MixedTypes.Elementary.CanExp t, Numeric.MixedTypes.Elementary.
 --      -&gt; t1
 --      -&gt; t2
 --      -&gt; SqrtType (AddType (AddType t4 (MulType t1 t2)) Integer)
---   
 --   </pre>
 --   
 --   <ul>

@@ -18,17 +18,17 @@
       * Dividing an integer by an integer, giving a rational, wrapped in the CN (ie Collecting NumErrors) monad:
 
       >>> :t let n = 1 :: Integer in n/(n+1)
-      CN Rational
+      ...CN Rational
 
       >>> :t 1/2
-      CN Rational
+      ...CN Rational
 
       (Integer literals are always of type @Integer@, not @Num t => t@.)
 
       * Adding an integer and a rational, giving a rational:
 
       >>> :t (length [])+1/3
-      CN Rational
+      ...CN Rational
 
       The @CN@ monad is required because integer division can, in general, fail as it is a partial operation:
 
@@ -40,50 +40,57 @@
 
       When one is certain the division is well defined, one can remove @CN@ in several ways:
 
-      >>> :t (1%2)  -- using Data.Ratio.(%), works only for integers
-      Rational
+      >>> :t (1%2)
+      ...Rational
 
-      >>> :t (1/!2)  -- this works for non-integer division too
-      Rational
+      Above we use (re-exported) Data.Ratio.(%), which means this trick works only for Integers.
 
-      >>> :t (~!) (1/2) -- ~! removes CN from any type
-      Rational
+      >>> :t (1/!2)
+      ...Rational
+
+      This works also for non-integer division.
+
+      >>> :t (~!) (1/2)
+      ...Rational
+
+      The (~!) operator removes CN from any type, throwing an exception if there are collected errors.
 
       The operator (/!) stands for division which throws an exception is the
       denominator is 0.  It "propagates" any potential errors
-      from the sub-expressions:
+      from the sub-expressions.  For example:
 
       >>> :t 1/!(1 - 1/n)
-      CN Rational
+      ...CN Rational
 
-      The last example will throw an error exception when evaluated with @n=1@
-      but it will not thrown any excetion when @n=0@
+      The above expression will throw an error exception when evaluated with @n=1@
+      but when @n=0@, it will not throw an excetion but return an error value.
 
       * taking natural, integer and fractional power using the same operator:
 
       >>> :t 2^2
-      CN Integer
+      ...CN Integer
 
       >>> :t 2.0^(-2)
-      CN Rational
+      ...CN Rational
 
       >>> :t (double 2)^(1/!2)
-      Double
+      ...Double
 
-      The following examples require package <https://github.com/michalkonecny/aern2/aern2-real aern2-real>:
+      The following examples require package <https://github.com/michalkonecny/aern2 aern2-real>:
 
       >>> :t 2^(1/2)
-      CauchyRealCN
+      ...CauchyRealCN
 
       >>> :t pi
-      CauchyReal
+      ...CauchyReal
 
       >>> :t sqrt 2
-      CauchyRealCN
+      ...CauchyRealCN
 
-      * comparing an integer with an (exact) real number, giving a seqeunce of @Maybe Bool@:
+      * comparing an integer with an (exact) real number, giving a sequence of @Maybe Bool@:
 
-      > if x < 0 then -x else x
+      >>> let abs2 x = if x < 0 then -x else x in (abs2 (pi - pi)) ? (bitsS 100)
+      [0 ± <2^(-102)]
 
       In the last example, @if@ is overloaded so that it works for conditions
       of other types than @Bool@.  Here the condition has the type @Sequence (Maybe Bool)@.

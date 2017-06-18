@@ -18,17 +18,17 @@
       * Dividing an integer by an integer, giving a rational, wrapped in the CN (ie Collecting NumErrors) monad:
 
       &gt;&gt;&gt; :t let n = 1 :: Integer in n/(n+1)
-      CN Rational
+      ...CN Rational
 
       &gt;&gt;&gt; :t 1/2
-      CN Rational
+      ...CN Rational
 
       (Integer literals are always of type @Integer@, not @Num t =&gt; t@.)
 
       * Adding an integer and a rational, giving a rational:
 
-      &gt;&gt;&gt; :t (length [x])+1/3
-      CN Rational
+      &gt;&gt;&gt; :t (length [])+1/3
+      ...CN Rational
 
       The @CN@ monad is required because integer division can, in general, fail as it is a partial operation:
 
@@ -40,52 +40,57 @@
 
       When one is certain the division is well defined, one can remove @CN@ in several ways:
 
-      &gt;&gt;&gt; :t (1%2)  -- using Data.Ratio.(%), works only for integers
-      Rational
+      &gt;&gt;&gt; :t (1%2)
+      ...Rational
 
-      &gt;&gt;&gt; :t (1/!2)  -- this works for non-integer division too
-      Rational
+      Above we use (re-exported) Data.Ratio.(%), which means this trick works only for Integers.
 
-      &gt;&gt;&gt; :t (~!) (1/2) -- ~! removes CN from any type
-      Rational
+      &gt;&gt;&gt; :t (1/!2)
+      ...Rational
+
+      This works also for non-integer division.
+
+      &gt;&gt;&gt; :t (~!) (1/2)
+      ...Rational
+
+      The (~!) operator removes CN from any type, throwing an exception if there are collected errors.
 
       The operator (/!) stands for division which throws an exception is the
       denominator is 0.  It &quot;propagates&quot; any potential errors
-      from the sub-expressions:
+      from the sub-expressions.  For example:
 
       &gt;&gt;&gt; :t 1/!(1 - 1/n)
-      CN Rational
+      ...CN Rational
 
-      The last example will throw an error exception when evaluated with @n=1@
-      but it will not thrown any excetion when @n=0@
+      The above expression will throw an error exception when evaluated with @n=1@
+      but when @n=0@, it will not throw an excetion but return an error value.
 
       * taking natural, integer and fractional power using the same operator:
 
       &gt;&gt;&gt; :t 2^2
-      CN Integer
+      ...CN Integer
 
       &gt;&gt;&gt; :t 2.0^(-2)
-      CN Rational
+      ...CN Rational
 
       &gt;&gt;&gt; :t (double 2)^(1/!2)
-      Double
+      ...Double
 
-      The following examples require package &lt;https://github.com/michalkonecny/aern2/aern2-real aern2-real&gt;:
+      The following examples require package &lt;https://github.com/michalkonecny/aern2 aern2-real&gt;:
 
       &gt;&gt;&gt; :t 2^(1/2)
-      CauchyRealCN
+      ...CauchyRealCN
 
       &gt;&gt;&gt; :t pi
-      CauchyReal
+      ...CauchyReal
 
       &gt;&gt;&gt; :t sqrt 2
-      CauchyRealCN
+      ...CauchyRealCN
 
-      * comparing an integer with an (exact) real number, giving a seqeunce of @Maybe Bool@:
+      * comparing an integer with an (exact) real number, giving a sequence of @Maybe Bool@:
 
-      @
-      if x &lt; 0 then -x else x
-      @
+      &gt;&gt;&gt; let abs2 x = if x &lt; 0 then -x else x in (abs2 (pi - pi)) ? (bitsS 100)
+      [0 &#177; &lt;2^(-102)]
 
       In the last example, @if@ is overloaded so that it works for conditions
       of other types than @Bool@.  Here the condition has the type @Sequence (Maybe Bool)@.
@@ -98,9 +103,7 @@
     and the result type is given by associated
     type families. For example:
 
-    @
-    (+) :: (CanAddAsymmetric t1 t2) =&gt; t1 -&gt; t2 -&gt; AddType t1 t2
-    @
+    &gt; (+) :: (CanAddAsymmetric t1 t2) =&gt; t1 -&gt; t2 -&gt; AddType t1 t2
 
     The type constraint @CanAdd t1 t2@ implies both
     @CanAddAsymmetric t1 t2@ and @CanAddAsymmetric t2 t1@.
@@ -123,15 +126,13 @@
 
     * Inferred types can be very large. Eg for @f a b c = sqrt (a + b * c + 1)@ the inferred type is:
 
-      @
-      f: (CanMulAsymmetric t1 t2, CanAddAsymmetric t4 (MulType t1 t2),
-          CanAddAsymmetric (AddType t4 (MulType t1 t2)) Integer,
-          CanSqrt (AddType (AddType t4 (MulType t1 t2)) Integer)) =&gt;
-         t4
-         -&gt; t1
-         -&gt; t2
-         -&gt; SqrtType (AddType (AddType t4 (MulType t1 t2)) Integer)
-      @
+    &gt;  f: (CanMulAsymmetric t1 t2, CanAddAsymmetric t4 (MulType t1 t2),
+    &gt;      CanAddAsymmetric (AddType t4 (MulType t1 t2)) Integer,
+    &gt;      CanSqrt (AddType (AddType t4 (MulType t1 t2)) Integer)) =&gt;
+    &gt;     t4
+    &gt;     -&gt; t1
+    &gt;     -&gt; t2
+    &gt;     -&gt; SqrtType (AddType (AddType t4 (MulType t1 t2)) Integer)
 
     * Due to limitations of some versions of ghc, type inferrence sometimes fails.
       Eg @add1 = (+ 1)@ fails (eg with ghc 8.0.2) unless we explicitly declare the type
@@ -149,40 +150,42 @@
     This module facilitates a single-line import for the package
     mixed-types-num.  See the re-exported modules for further details.
 -}</span><span>
-</span><a name="line-152"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">MixedTypesNumPrelude</span><span>
-</span><a name="line-153"></a><span class="hs-special">(</span><span>
-</span><a name="line-154"></a><span>  </span><span class="hs-comment">-- * Re-exporting Prelude, hiding the operators we are changing</span><span>
-</span><a name="line-155"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">PreludeHiding</span><span class="hs-special">,</span><span>
-</span><a name="line-156"></a><span>  </span><span class="hs-comment">-- * Modules with Prelude alternatives</span><span>
-</span><a name="line-157"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Literals</span><span class="hs-special">,</span><span>
-</span><a name="line-158"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Bool</span><span class="hs-special">,</span><span>
-</span><a name="line-159"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Eq</span><span class="hs-special">,</span><span>
-</span><a name="line-160"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Ord</span><span class="hs-special">,</span><span>
-</span><a name="line-161"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">MinMaxAbs</span><span class="hs-special">,</span><span>
-</span><a name="line-162"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">AddSub</span><span class="hs-special">,</span><span>
-</span><a name="line-163"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Round</span><span class="hs-special">,</span><span>
-</span><a name="line-164"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Ring</span><span class="hs-special">,</span><span>
-</span><a name="line-165"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Field</span><span class="hs-special">,</span><span>
-</span><a name="line-166"></a><span>  </span><span class="hs-special">(</span><span class="hs-operator hs-var">%</span><span class="hs-special">)</span><span class="hs-special">,</span><span>
+</span><a name="line-153"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">MixedTypesNumPrelude</span><span>
+</span><a name="line-154"></a><span class="hs-special">(</span><span>
+</span><a name="line-155"></a><span>  </span><span class="hs-comment">-- * Re-exporting Prelude, hiding the operators we are changing</span><span>
+</span><a name="line-156"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">PreludeHiding</span><span class="hs-special">,</span><span>
+</span><a name="line-157"></a><span>  </span><span class="hs-comment">-- * Modules with Prelude alternatives</span><span>
+</span><a name="line-158"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Literals</span><span class="hs-special">,</span><span>
+</span><a name="line-159"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Bool</span><span class="hs-special">,</span><span>
+</span><a name="line-160"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Eq</span><span class="hs-special">,</span><span>
+</span><a name="line-161"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Ord</span><span class="hs-special">,</span><span>
+</span><a name="line-162"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">MinMaxAbs</span><span class="hs-special">,</span><span>
+</span><a name="line-163"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">AddSub</span><span class="hs-special">,</span><span>
+</span><a name="line-164"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Round</span><span class="hs-special">,</span><span>
+</span><a name="line-165"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Ring</span><span class="hs-special">,</span><span>
+</span><a name="line-166"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Field</span><span class="hs-special">,</span><span>
 </span><a name="line-167"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Elementary</span><span class="hs-special">,</span><span>
-</span><a name="line-168"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">CollectErrors</span><span class="hs-special">,</span><span>
-</span><a name="line-169"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Utils</span><span class="hs-operator">.</span><span class="hs-identifier">TH</span><span class="hs-operator">.</span><span class="hs-identifier">DeclForTypes</span><span>
-</span><a name="line-170"></a><span class="hs-special">)</span><span>
-</span><a name="line-171"></a><span class="hs-keyword">where</span><span>
-</span><a name="line-172"></a><span>
-</span><a name="line-173"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Ratio</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-operator hs-var">%</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
-</span><a name="line-174"></a><span class="hs-keyword">import</span><span> </span><a href="Utils.TH.DeclForTypes.html"><span class="hs-identifier">Utils</span><span class="hs-operator">.</span><span class="hs-identifier">TH</span><span class="hs-operator">.</span><span class="hs-identifier">DeclForTypes</span></a><span>
-</span><a name="line-175"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.CollectErrors.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">CollectErrors</span></a><span>
-</span><a name="line-176"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.PreludeHiding.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">PreludeHiding</span></a><span>
-</span><a name="line-177"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Literals.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Literals</span></a><span>
-</span><a name="line-178"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Bool.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Bool</span></a><span>
-</span><a name="line-179"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Eq.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Eq</span></a><span>
-</span><a name="line-180"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Ord.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Ord</span></a><span>
-</span><a name="line-181"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.MinMaxAbs.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">MinMaxAbs</span></a><span>
-</span><a name="line-182"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.AddSub.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">AddSub</span></a><span>
-</span><a name="line-183"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Round.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Round</span></a><span>
-</span><a name="line-184"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Ring.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Ring</span></a><span>
-</span><a name="line-185"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Field.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Field</span></a><span>
-</span><a name="line-186"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Elementary.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Elementary</span></a><span>
-</span><a name="line-187"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Complex.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Complex</span></a><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
-</span><a name="line-188"></a></pre></body></html>
+</span><a name="line-168"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Complex</span><span class="hs-special">,</span><span>
+</span><a name="line-169"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">CollectErrors</span><span class="hs-special">,</span><span>
+</span><a name="line-170"></a><span>  </span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Utils</span><span class="hs-operator">.</span><span class="hs-identifier">TH</span><span class="hs-operator">.</span><span class="hs-identifier">DeclForTypes</span><span class="hs-special">,</span><span>
+</span><a name="line-171"></a><span>  </span><span class="hs-comment">-- * Re-export for convenient Rational literals</span><span>
+</span><a name="line-172"></a><span>  </span><span class="hs-special">(</span><span class="hs-operator hs-var">%</span><span class="hs-special">)</span><span>
+</span><a name="line-173"></a><span class="hs-special">)</span><span>
+</span><a name="line-174"></a><span class="hs-keyword">where</span><span>
+</span><a name="line-175"></a><span>
+</span><a name="line-176"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Ratio</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-operator hs-var">%</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a name="line-177"></a><span class="hs-keyword">import</span><span> </span><a href="Utils.TH.DeclForTypes.html"><span class="hs-identifier">Utils</span><span class="hs-operator">.</span><span class="hs-identifier">TH</span><span class="hs-operator">.</span><span class="hs-identifier">DeclForTypes</span></a><span>
+</span><a name="line-178"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.CollectErrors.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">CollectErrors</span></a><span>
+</span><a name="line-179"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.PreludeHiding.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">PreludeHiding</span></a><span>
+</span><a name="line-180"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Literals.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Literals</span></a><span>
+</span><a name="line-181"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Bool.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Bool</span></a><span>
+</span><a name="line-182"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Eq.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Eq</span></a><span>
+</span><a name="line-183"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Ord.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Ord</span></a><span>
+</span><a name="line-184"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.MinMaxAbs.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">MinMaxAbs</span></a><span>
+</span><a name="line-185"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.AddSub.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">AddSub</span></a><span>
+</span><a name="line-186"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Round.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Round</span></a><span>
+</span><a name="line-187"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Ring.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Ring</span></a><span>
+</span><a name="line-188"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Field.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Field</span></a><span>
+</span><a name="line-189"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Elementary.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Elementary</span></a><span>
+</span><a name="line-190"></a><span class="hs-keyword">import</span><span> </span><a href="Numeric.MixedTypes.Complex.html"><span class="hs-identifier">Numeric</span><span class="hs-operator">.</span><span class="hs-identifier">MixedTypes</span><span class="hs-operator">.</span><span class="hs-identifier">Complex</span></a><span>
+</span><a name="line-191"></a></pre></body></html>
