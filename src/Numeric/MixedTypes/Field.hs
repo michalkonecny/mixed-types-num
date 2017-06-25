@@ -140,12 +140,12 @@ recip :: (CanRecip t) => t -> DivType Integer t
 recip = divide 1
 
 type CanDivBy t1 t2 =
-  (CanDiv t1 t2, DivType t1 t2 ~ t1)
+  (CanDiv t1 t2, DivType t1 t2 ~ t1, DivTypeNoCN t1 t2 ~ t1)
 type CanDivSameType t =
   CanDivBy t t
 
 type CanDivCNBy t1 t2 =
-  (CanDiv t1 t2, DivType t1 t2 ~ EnsureCN t1)
+  (CanDiv t1 t2, DivType t1 t2 ~ EnsureCN t1, DivTypeNoCN t1 t2 ~ t1)
 type CanDivCNSameType t =
   CanDivCNBy t t
 
