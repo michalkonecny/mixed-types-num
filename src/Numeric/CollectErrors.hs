@@ -27,7 +27,8 @@ module Numeric.CollectErrors
 )
 where
 
-import Prelude (Show(..), Eq(..), String, Maybe(..), Either(..), (++))
+import Prelude
+  (Show(..), Eq(..), String, Maybe(..), Either(..), (++), (.), or, map, fst, ($))
 
 import Control.CollectErrors
 
@@ -49,6 +50,10 @@ instance Show ErrorCertaintyLevel where
   show ErrorPotential = "POTENTIAL ERROR"
 
 type NumErrors = [(ErrorCertaintyLevel, NumError)]
+
+instance CanTestErrorsCertain NumErrors where
+  hasCertainError es =
+    or $ map ((== ErrorCertain) . fst) es
 
 sample_NumErrors :: Maybe [(ErrorCertaintyLevel, NumError)]
 sample_NumErrors = Nothing

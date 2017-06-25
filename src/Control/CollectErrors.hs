@@ -3,6 +3,7 @@ module Control.CollectErrors
 (
 -- * Monad for collecting errors in expressions
   CollectErrors(..), SuitableForCE
+, CanTestErrorsCertain(..)
 , noValueCE, prependErrorsCE
 , filterValuesWithoutErrorCE, getValueIfNoErrorCE
 , ce2ConvertResult
@@ -15,7 +16,7 @@ where
 
 import Prelude
   (Functor(..), Applicative(..), Monad(..), (<$>), ($)
-  , id, error, const, flip
+  , id, error, const, flip, not
   , Int, Integer, Rational, Double, Bool, Char
   , Maybe(..), Either(..)
   , Show(..), Eq(..))
@@ -47,7 +48,10 @@ data CollectErrors es v =
     { getMaybeValueCE :: Maybe v
     , getErrorsCE :: es }
 
-type SuitableForCE es = (Monoid es, Eq es, Show es)
+class CanTestErrorsCertain es where
+  hasCertainError :: es -> Bool
+
+type SuitableForCE es = (Monoid es, Eq es, Show es, CanTestErrorsCertain es)
 
 instance (Show v, SuitableForCE es) => (Show (CollectErrors es v)) where
   show (CollectErrors mv es) =
@@ -195,7 +199,7 @@ instance
   deEnsureCE _sample_es = Right
   ensureNoCE _sample_es (CollectErrors mv es) =
     case mv of
-    Just v | es == mempty -> Right v
+    Just v | not (hasCertainError es) -> Right v
     _ -> Left es
 
   noValueECE _sample_vCE es = CollectErrors Nothing es
