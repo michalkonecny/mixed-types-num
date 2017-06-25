@@ -19,7 +19,7 @@ module Numeric.CollectErrors
 , ensureCN, deEnsureCN, ensureNoCN
 , noValueCN
 , noValueNumErrorCertainCN, noValueNumErrorPotentialCN
-, getMaybeValueCN, getErrorsCN, prependErrorsCN
+, getMaybeValueCN, getErrorsCN, hasCertainError, prependErrorsCN
 , noValueECN
 , noValueNumErrorCertainECN, noValueNumErrorPotentialECN
   -- ** More compact synonyms
