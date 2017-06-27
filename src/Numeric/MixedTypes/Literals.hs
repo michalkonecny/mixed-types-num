@@ -91,7 +91,9 @@ fromRational = id
   Restore if-then-else with RebindableSyntax
 -}
 class HasIfThenElse b t where
-  ifThenElse :: b -> t -> t -> t
+  type IfThenElseType b t
+  type IfThenElseType b t = t
+  ifThenElse :: b -> t -> t -> IfThenElseType b t
 
 instance HasIfThenElse Bool t where
   ifThenElse b e1 e2
