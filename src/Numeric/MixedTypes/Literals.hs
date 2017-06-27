@@ -38,7 +38,7 @@ module Numeric.MixedTypes.Literals
   -- * Fixed-type literals
   fromInteger, fromRational
   -- * Generalised if-then-else
-  , HasIfThenElse(..)
+  , HasIfThenElse(..), HasIfThenElseSameType
   -- * Convenient conversions
   , CanBeInteger, integer, integers, HasIntegers, fromInteger_
   , CanBeInt, int, ints
@@ -94,6 +94,9 @@ class HasIfThenElse b t where
   type IfThenElseType b t
   type IfThenElseType b t = t
   ifThenElse :: b -> t -> t -> IfThenElseType b t
+
+type HasIfThenElseSameType b t =
+  (HasIfThenElse b t, IfThenElseType b t ~ t)
 
 instance HasIfThenElse Bool t where
   ifThenElse b e1 e2
