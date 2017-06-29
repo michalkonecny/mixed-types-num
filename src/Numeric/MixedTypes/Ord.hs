@@ -172,6 +172,10 @@ specHasOrderNotMixed ::
   T t -> Spec
 specHasOrderNotMixed t = specHasOrder t t t
 
+instance HasOrderAsymmetric () () where
+  lessThan _ _ = False
+  leq _ _ = True
+
 instance HasOrderAsymmetric Int Int
 instance HasOrderAsymmetric Integer Integer
 instance HasOrderAsymmetric Rational Rational
