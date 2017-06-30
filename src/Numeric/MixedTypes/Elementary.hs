@@ -261,18 +261,26 @@ instance
   log = lift1CE log
 
 instance CanPow Double Double where
+  powNoCN = (P.**)
+  type PowType Double Double = Double
   pow = (P.**)
-  -- pow = powUsingExpLog
 instance CanPow Double Rational where
+  powNoCN b e = b ^! (double e)
   type PowType Double Rational = Double
   pow b e = b ^ (double e)
 instance CanPow Rational Double where
+  type PowTypeNoCN Rational Double = Double
+  powNoCN b e = (double b) ^! e
   type PowType Rational Double = Double
   pow b e = (double b) ^ e
 instance CanPow Integer Double where
+  type PowTypeNoCN Integer Double = Double
+  powNoCN b e = (double b) ^! e
   type PowType Integer Double = Double
   pow b e = (double b) ^ e
 instance CanPow Int Double where
+  type PowTypeNoCN Int Double = Double
+  powNoCN b e = (double b) ^! e
   type PowType Int Double = Double
   pow b e = (double b) ^ e
 

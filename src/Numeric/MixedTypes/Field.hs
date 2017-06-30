@@ -131,10 +131,10 @@ type CanRecip t =
   (CanDiv Integer t)
 
 type CanRecipSameType t =
-  (CanDiv Integer t, DivType Integer t ~ t)
+  (CanDiv Integer t, DivType Integer t ~ t, DivTypeNoCN Integer t ~ t)
 
 type CanRecipCNSameType t =
-  (CanDiv Integer t, DivType Integer t ~ EnsureCN t)
+  (CanDiv Integer t, DivType Integer t ~ EnsureCN t, DivTypeNoCN Integer t ~ t)
 
 recip :: (CanRecip t) => t -> DivType Integer t
 recip = divide 1

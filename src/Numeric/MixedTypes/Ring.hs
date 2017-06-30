@@ -96,14 +96,6 @@ infixl 7  *
 (*) :: (CanMulAsymmetric t1 t2) => t1 -> t2 -> MulType t1 t2
 (*) = mul
 
-(^) :: (CanPow t1 t2) => t1 -> t2 -> PowType t1 t2
-(^) = pow
-
-{-| Like `^` but throwing an exception if the power is undefined. -}
-(^!) :: (CanPow t1 t2, Show (PowType t1 t2), CanEnsureCN (PowType t1 t2)) =>
-  t1 -> t2 -> EnsureNoCN (PowType t1 t2)
-a ^! b = (~!) (a ^ b)
-
 type CanMulBy t1 t2 =
   (CanMul t1 t2, MulType t1 t2 ~ t1)
 type CanMulSameType t =
@@ -267,16 +259,33 @@ instance
 
 {---- Exponentiation -----}
 
+(^) :: (CanPow t1 t2) => t1 -> t2 -> PowType t1 t2
+(^) = pow
+
+{-| Like `^` but throwing an exception if the power is undefined. -}
+(^!) :: (CanPow t1 t2) =>
+  t1 -> t2 -> PowTypeNoCN t1 t2
+(^!) = powNoCN
+
+
 {-|
   A replacement for Prelude's binary `P.^` and `P.^^`.  If @Num t1@ and @Integral t2@,
   then one can use the default implementation to mirror Prelude's @^@.
 -}
-class CanPow t1 t2 where
-  type PowType t1 t2
-  type PowType t1 t2 = t1 -- default
-  pow :: t1 -> t2 -> PowType t1 t2
-  -- default pow :: (PowType t1 t2 ~ t1, P.Num t1, P.Integral t2) => t1 -> t2 -> t1
-  -- pow = (P.^)
+class CanPow b e where
+  type PowTypeNoCN b e
+  type PowTypeNoCN b e = b -- default
+  powNoCN :: b -> e -> PowTypeNoCN b e
+  type PowType b e
+  type PowType b e = EnsureCN (PowTypeNoCN b e) -- default
+  pow :: b -> e -> PowType b e
+  default pow ::
+    (HasOrderCertainly b Integer, HasOrderCertainly e Integer,
+     HasEqCertainly b Integer, CanTestInteger e,
+     CanEnsureCN (PowTypeNoCN b e))
+    =>
+    b -> e -> EnsureCN (PowTypeNoCN b e)
+  pow = powCN powNoCN
 
 integerPowCN ::
   (HasOrderCertainly b Integer, HasOrderCertainly e Integer,
@@ -337,10 +346,10 @@ powUsingMul x nPre
         let s = aux ((m-1) `div` 2) in x * s * s
 
 type CanPowBy t1 t2 =
-  (CanPow t1 t2, PowType t1 t2 ~ t1)
+  (CanPow t1 t2, PowType t1 t2 ~ t1, PowTypeNoCN t1 t2 ~ t1)
 
 type CanPowCNBy t1 t2 =
-  (CanPow t1 t2, PowType t1 t2 ~ EnsureCN t1)
+  (CanPow t1 t2, PowType t1 t2 ~ EnsureCN t1, PowTypeNoCN t1 t2 ~ t1)
 
 {-| Compound type constraint useful for test definition. -}
 type CanPowX t1 t2 =
@@ -385,25 +394,31 @@ specCanPow (T typeName1 :: T t1) (T typeName2 :: T t2) =
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 instance CanPow Integer Integer where
-  type PowType Integer Integer = CN Integer
+  powNoCN = (P.^)
   pow = integerPowCN (P.^)
 instance CanPow Integer Int where
-  type PowType Integer Int = CN Integer
+  powNoCN = (P.^)
   pow = integerPowCN (P.^)
 instance CanPow Int Integer where
-  type PowType Int Integer = CN Integer
+  type PowTypeNoCN Int Integer = Integer
+  powNoCN x n = powNoCN (integer x) n
   pow x n = pow (integer x) n
 instance CanPow Int Int where
-  type PowType Int Int = CN Integer
+  type PowTypeNoCN Int Int = Integer
+  powNoCN x n = powNoCN (integer x) n
   pow x n = pow (integer x) n
 instance CanPow Rational Int where
-  type PowType Rational Int = CN Rational
-  pow = powCN (P.^^)
+  powNoCN = (P.^^)
 instance CanPow Rational Integer where
-  type PowType Rational Integer = CN Rational
-  pow = powCN (P.^^)
-instance CanPow Double Int where pow = (P.^^)
-instance CanPow Double Integer where pow = (P.^^)
+  powNoCN = (P.^^)
+instance CanPow Double Int where
+  powNoCN = (P.^^)
+  type PowType Double Int = Double
+  pow = (P.^^)
+instance CanPow Double Integer where
+  powNoCN = (P.^^)
+  type PowType Double Integer = Double
+  pow = (P.^^)
 
 -- instance (CanPow a b) => CanPow [a] [b] where
 --   type PowType [a] [b] = [PowType a b]
@@ -411,17 +426,24 @@ instance CanPow Double Integer where pow = (P.^^)
 --   pow _ _ = []
 
 instance (CanPow a b) => CanPow (Maybe a) (Maybe b) where
+  type PowTypeNoCN (Maybe a) (Maybe b) = Maybe (PowTypeNoCN a b)
+  powNoCN (Just x) (Just y) = Just (powNoCN x y)
+  powNoCN _ _ = Nothing
   type PowType (Maybe a) (Maybe b) = Maybe (PowType a b)
   pow (Just x) (Just y) = Just (pow x y)
   pow _ _ = Nothing
 
 instance
   (CanPow a b
+  , CanEnsureCE es (PowTypeNoCN a b)
   , CanEnsureCE es (PowType a b)
   , SuitableForCE es)
   =>
   CanPow (CollectErrors es a) (CollectErrors es  b)
   where
+  type PowTypeNoCN (CollectErrors es a) (CollectErrors es b) =
+    EnsureCE es (PowTypeNoCN a b)
+  powNoCN = lift2CE powNoCN
   type PowType (CollectErrors es a) (CollectErrors es b) =
     EnsureCE es (PowType a b)
   pow = lift2CE pow
@@ -433,10 +455,14 @@ $(declForTypes
     instance
       (CanPow $t b
       , CanEnsureCE es (PowType $t b)
+      , CanEnsureCE es (PowTypeNoCN $t b)
       , SuitableForCE es)
       =>
       CanPow $t (CollectErrors es  b)
       where
+      type PowTypeNoCN $t (CollectErrors es  b) =
+        EnsureCE es (PowTypeNoCN $t b)
+      powNoCN = lift2TLCE powNoCN
       type PowType $t (CollectErrors es  b) =
         EnsureCE es (PowType $t b)
       pow = lift2TLCE pow
@@ -444,10 +470,14 @@ $(declForTypes
     instance
       (CanPow a $t
       , CanEnsureCE es (PowType a $t)
+      , CanEnsureCE es (PowTypeNoCN a $t)
       , SuitableForCE es)
       =>
       CanPow (CollectErrors es a) $t
       where
+      type PowTypeNoCN (CollectErrors es  a) $t =
+        EnsureCE es (PowTypeNoCN a $t)
+      powNoCN = lift2TCE powNoCN
       type PowType (CollectErrors es  a) $t =
         EnsureCE es (PowType a $t)
       pow = lift2TCE pow
