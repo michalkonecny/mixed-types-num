@@ -23,7 +23,7 @@ module Numeric.MixedTypes.Ring
   -- * Exponentiation
   , CanPow(..), CanPowBy, CanPowCNBy
   , (^), (^!)
-  , powUsingMul
+  , powUsingMul, integerPowCN
   -- ** Tests
   , specCanPow, CanPowX
 )
