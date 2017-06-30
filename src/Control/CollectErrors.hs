@@ -185,6 +185,16 @@ class (Monoid es) => CanEnsureCE es a where
     es -> CollectErrors es a
   noValueECE _ = noValueCE
 
+  prependErrorsECE ::
+    Maybe a ->
+    es -> EnsureCE es a -> EnsureCE es a
+  default prependErrorsECE ::
+    (EnsureCE es a ~ CollectErrors es a)
+    =>
+    Maybe a ->
+    es -> EnsureCE es a -> EnsureCE es a
+  prependErrorsECE _ = prependErrorsCE
+
 -- instance for CollectErrors a:
 
 instance
@@ -203,6 +213,7 @@ instance
     _ -> Left es
 
   noValueECE _sample_vCE es = CollectErrors Nothing es
+  prependErrorsECE _sample_vCE = prependErrorsCE
 
 -- instances for ground types, using the default implementations:
 
@@ -231,6 +242,10 @@ instance
   ensureNoCE _sample_es Nothing = Right Nothing
 
   noValueECE sample_vCE es = Just (noValueECE (fromJust sample_vCE) es)
+
+  prependErrorsECE sample_vCE es (Just vCE) =
+    Just $ prependErrorsECE (fromJust sample_vCE) es vCE
+  prependErrorsECE _sample_vCE _es Nothing = Nothing
 
 -- instance (Monoid es) => CanEnsureCE es [a] where
 -- instance (Monoid es) => CanEnsureCE es (Either e a) where
