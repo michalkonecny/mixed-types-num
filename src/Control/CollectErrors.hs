@@ -12,7 +12,7 @@ module Control.CollectErrors
 , getValueOrThrowErrorsNCE
 , lift1CE, lift2CE, lift2TCE, lift2TLCE
 -- ** Tools for pulling errors out of structures
-, CanCollectCE(..)
+, CanExtractCE(..)
 )
 where
 
@@ -346,16 +346,16 @@ lift2TLCE f = flip $ lift2TCE (flip f)
   This is useful mostly for structures that use the default implementation of
   'CanEnsureCE es'.
 -}
-class (SuitableForCE es) => CanCollectCE es f where
-  collectCE ::
-    (CanEnsureCE es c) => 
+class (SuitableForCE es) => CanExtractCE es f where
+  extractCE ::
+    (CanEnsureCE es c) =>
     Maybe es ->
     f c -> CollectErrors es (f (EnsureNoCE es c))
-  default collectCE ::
+  default extractCE ::
     (CanEnsureCE es c, Traversable f) =>
     Maybe es ->
     f c -> CollectErrors es (f (EnsureNoCE es c))
-  collectCE sample_es fc =
+  extractCE sample_es fc =
     case sequence (fmap (ensureNoCE sample_es) fc) of
       Right fec -> pure fec
       Left es -> noValueCE es
