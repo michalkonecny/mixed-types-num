@@ -18,12 +18,15 @@ where
 
 import Prelude
   (Functor(..), Applicative(..), Monad(..), (<$>), ($)
-  , id, error, const, flip, not
+  , error, const, flip, not
   , Int, Integer, Rational, Double, Bool, Char
   , Maybe(..), Either(..)
   , Show(..), Eq(..)
   , Traversable(..))
 import Text.Printf
+
+import Control.Monad (join)
+
 import Data.Monoid
 import Data.Maybe (fromJust)
 
@@ -134,6 +137,8 @@ instance (Arbitrary t, Monoid es) => Arbitrary (CollectErrors es t) where
 class
   (Monoid es
   , EnsureCE es (EnsureCE es a) ~ EnsureCE es a
+  , EnsureCE es (EnsureNoCE es a) ~ EnsureCE es a
+  , EnsureNoCE es (EnsureCE es a) ~ EnsureNoCE es a
   , EnsureNoCE es (EnsureNoCE es a) ~ EnsureNoCE es a)
   =>
   CanEnsureCE es a where
@@ -213,19 +218,27 @@ instance
   =>
   CanEnsureCE es (CollectErrors es a)
   where
-  type EnsureCE es (CollectErrors es a) = CollectErrors es a
+  type EnsureCE es (CollectErrors es a) = EnsureCE es a
   type EnsureNoCE es (CollectErrors es a) = EnsureNoCE es a
 
-  ensureCE _sample_es = id
-  deEnsureCE _sample_es = Right
+  ensureCE sample_es (CollectErrors mv es) =
+    case mv of
+      Just v -> prependErrorsECE (Just v) es $ ensureCE sample_es v
+      _ -> noValueECE mv es
+  deEnsureCE sample_es vCE =
+    case deEnsureCE sample_es vCE of
+      Right v -> Right $ CollectErrors (Just v) mempty
+      Left es -> Left es
   ensureNoCE sample_es (CollectErrors mv es) =
     case fmap (ensureNoCE sample_es) mv of
       Just (Right v) | not (hasCertainError es) -> Right v
       Just (Left es2) -> Left es2
       _ -> Left es
 
-  noValueECE _sample_vCE es = CollectErrors Nothing es
-  prependErrorsECE _sample_vCE = prependErrorsCE
+  noValueECE sample_vCE es =
+    noValueECE (join $ fmap getMaybeValueCE sample_vCE) es
+  prependErrorsECE sample_vCE =
+    prependErrorsECE (join $ fmap getMaybeValueCE sample_vCE)
 
 -- instances for ground types, using the default implementations:
 
