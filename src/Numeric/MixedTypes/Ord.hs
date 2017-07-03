@@ -222,7 +222,7 @@ instance
   , IsBool (EnsureCE es (OrderCompareType a b))
   , SuitableForCE es)
   =>
-  HasOrderAsymmetric (CollectErrors es a) (CollectErrors es  b)
+  HasOrderAsymmetric (CollectErrors es a) (CollectErrors es b)
   where
   type OrderCompareType (CollectErrors es a) (CollectErrors es b) =
     EnsureCE es (OrderCompareType a b)

@@ -12,14 +12,16 @@
 -}
 module Numeric.CollectErrors
 (
-  -- * Describing numeric errors
+  -- * Type of numeric errors
   ErrorCertaintyLevel(..), NumError(..), NumErrors, sample_NumErrors
   -- * Specialisation to numeric errors
-, CN, CanEnsureCN, EnsureCN, EnsureNoCN
-, ensureCN, deEnsureCN, ensureNoCN
+, CN
+, hasCertainError, hasCertainErrorCN
 , noValueCN
 , noValueNumErrorCertainCN, noValueNumErrorPotentialCN
-, getMaybeValueCN, getErrorsCN, hasCertainError, prependErrorsCN
+, getMaybeValueCN, getErrorsCN, prependErrorsCN
+, CanEnsureCN, EnsureCN, EnsureNoCN
+, ensureCN, deEnsureCN, ensureNoCN
 , noValueECN, prependErrorsECN
 , noValueNumErrorCertainECN, noValueNumErrorPotentialECN
   -- ** More compact synonyms
@@ -28,7 +30,7 @@ module Numeric.CollectErrors
 where
 
 import Prelude
-  (Show(..), Eq(..), String, Maybe(..), Either(..), (++), (.), or, map, fst, ($))
+  (Show(..), Eq(..), Bool, String, Maybe(..), Either(..), (++), (.), or, map, fst, ($))
 
 import Control.CollectErrors
 
@@ -54,6 +56,9 @@ type NumErrors = [(ErrorCertaintyLevel, NumError)]
 instance CanTestErrorsCertain NumErrors where
   hasCertainError es =
     or $ map ((== ErrorCertain) . fst) es
+
+hasCertainErrorCN :: CN v -> Bool
+hasCertainErrorCN = hasCertainErrorCE
 
 sample_NumErrors :: Maybe [(ErrorCertaintyLevel, NumError)]
 sample_NumErrors = Nothing

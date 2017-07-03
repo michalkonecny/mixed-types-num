@@ -3,7 +3,7 @@ module Control.CollectErrors
 (
 -- * Monad for collecting errors in expressions
   CollectErrors(..), SuitableForCE
-, CanTestErrorsCertain(..)
+, CanTestErrorsCertain(..), hasCertainErrorCE
 , noValueCE, prependErrorsCE
 , filterValuesWithoutErrorCE, getValueIfNoErrorCE
 , ce2ConvertResult
@@ -50,6 +50,9 @@ data CollectErrors es v =
 
 class CanTestErrorsCertain es where
   hasCertainError :: es -> Bool
+
+hasCertainErrorCE :: (CanTestErrorsCertain es) => (CollectErrors es v) -> Bool
+hasCertainErrorCE (CollectErrors _ es) = hasCertainError es
 
 type SuitableForCE es = (Monoid es, Eq es, Show es, CanTestErrorsCertain es)
 
