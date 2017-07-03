@@ -24,6 +24,7 @@ module Numeric.CollectErrors
 , ensureCN, deEnsureCN, ensureNoCN
 , noValueECN, prependErrorsECN
 , noValueNumErrorCertainECN, noValueNumErrorPotentialECN
+, CanCollectCN, collectCN
   -- ** More compact synonyms
 , cn, deCN, (~!)
 )
@@ -67,6 +68,12 @@ type CN = CollectErrors NumErrors
 type CanEnsureCN = CanEnsureCE NumErrors
 type EnsureCN a = EnsureCE NumErrors a
 type EnsureNoCN a = EnsureNoCE NumErrors a
+
+type CanCollectCN f = CanCollectCE NumErrors f
+collectCN ::
+  (CanEnsureCN c, CanCollectCN f) =>
+  f c -> CN (f (EnsureNoCN c))
+collectCN = collectCE sample_NumErrors
 
 {-|
   Translate a value of a type @a@

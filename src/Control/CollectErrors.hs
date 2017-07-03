@@ -11,6 +11,8 @@ module Control.CollectErrors
 , CanEnsureCE(..)
 , getValueOrThrowErrorsNCE
 , lift1CE, lift2CE, lift2TCE, lift2TLCE
+-- ** Tools for pulling errors out of structures
+, CanCollectCE(..)
 )
 where
 
@@ -19,7 +21,8 @@ import Prelude
   , id, error, const, flip, not
   , Int, Integer, Rational, Double, Bool, Char
   , Maybe(..), Either(..)
-  , Show(..), Eq(..))
+  , Show(..), Eq(..)
+  , Traversable(..))
 import Text.Printf
 import Data.Monoid
 import Data.Maybe (fromJust)
@@ -335,3 +338,24 @@ lift2TLCE ::
   (a -> b -> c) ->
   a -> (CollectErrors es b) -> (EnsureCE es c)
 lift2TLCE f = flip $ lift2TCE (flip f)
+
+
+{-|
+  Ability to lift collected (potential) errors from inside some structure/collection.
+
+  This is useful mostly for structures that use the default implementation of
+  'CanEnsureCE es'.
+-}
+class (SuitableForCE es) => CanCollectCE es f where
+  collectCE ::
+    (CanEnsureCE es c) => 
+    Maybe es ->
+    f c -> CollectErrors es (f (EnsureNoCE es c))
+  default collectCE ::
+    (CanEnsureCE es c, Traversable f) =>
+    Maybe es ->
+    f c -> CollectErrors es (f (EnsureNoCE es c))
+  collectCE sample_es fc =
+    case sequence (fmap (ensureNoCE sample_es) fc) of
+      Right fec -> pure fec
+      Left es -> noValueCE es
