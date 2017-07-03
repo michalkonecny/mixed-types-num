@@ -210,6 +210,7 @@ instance (CanMinMaxAsymmetric a b) => CanMinMaxAsymmetric (Maybe a) (Maybe b) wh
 
 instance
   (CanMinMaxAsymmetric a b
+  , CanEnsureCE es a, CanEnsureCE es b
   , CanEnsureCE es (MinMaxType a b)
   , SuitableForCE es)
   =>
@@ -226,6 +227,7 @@ $(declForTypes
 
     instance
       (CanMinMaxAsymmetric $t b
+      , CanEnsureCE es b
       , CanEnsureCE es (MinMaxType $t b)
       , SuitableForCE es)
       =>
@@ -238,6 +240,7 @@ $(declForTypes
 
     instance
       (CanMinMaxAsymmetric a $t
+      , CanEnsureCE es a
       , CanEnsureCE es (MinMaxType a $t)
       , SuitableForCE es)
       =>
@@ -316,6 +319,7 @@ instance CanAbs Double
 
 instance
   (CanAbs a
+  , CanEnsureCE es a
   , CanEnsureCE es (AbsType a)
   , SuitableForCE es)
   =>

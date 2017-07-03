@@ -131,7 +131,12 @@ instance (Arbitrary t, Monoid es) => Arbitrary (CollectErrors es t) where
   the shape of the type, especially whether
   it already has CollectErrors.
 -}
-class (Monoid es) => CanEnsureCE es a where
+class
+  (Monoid es
+  , EnsureCE es (EnsureCE es a) ~ EnsureCE es a
+  , EnsureNoCE es (EnsureNoCE es a) ~ EnsureNoCE es a)
+  =>
+  CanEnsureCE es a where
   {-|
     Add CollectErrors to a type except when the type already
     has CollectErrors in it.
@@ -204,19 +209,20 @@ class (Monoid es) => CanEnsureCE es a where
 -- instance for CollectErrors a:
 
 instance
-  (SuitableForCE es)
+  (SuitableForCE es, CanEnsureCE es a)
   =>
   CanEnsureCE es (CollectErrors es a)
   where
   type EnsureCE es (CollectErrors es a) = CollectErrors es a
-  type EnsureNoCE es (CollectErrors es a) = a
+  type EnsureNoCE es (CollectErrors es a) = EnsureNoCE es a
 
   ensureCE _sample_es = id
   deEnsureCE _sample_es = Right
-  ensureNoCE _sample_es (CollectErrors mv es) =
-    case mv of
-    Just v | not (hasCertainError es) -> Right v
-    _ -> Left es
+  ensureNoCE sample_es (CollectErrors mv es) =
+    case fmap (ensureNoCE sample_es) mv of
+      Just (Right v) | not (hasCertainError es) -> Right v
+      Just (Left es2) -> Left es2
+      _ -> Left es
 
   noValueECE _sample_vCE es = CollectErrors Nothing es
   prependErrorsECE _sample_vCE = prependErrorsCE
@@ -273,17 +279,19 @@ getValueOrThrowErrorsNCE sample_es v =
 -}
 lift1CE ::
   (SuitableForCE es
-  , CanEnsureCE es c)
+  , CanEnsureCE es a, CanEnsureCE es c)
   =>
   (a -> c) ->
   (CollectErrors es a) -> (EnsureCE es c)
-lift1CE (fn :: a -> c) aCE =
-  case (ensureNoCE sample_es aCE) of
-    Right a -> ensureCE sample_es $ fn a
-    _ -> noValueECE sample_c a_es
+lift1CE fn aCE =
+  case ma of
+    Just a ->
+      prependErrorsECE sample_c a_es $ ensureCE sample_es $ fn a
+    _ ->
+      noValueECE sample_c a_es
   where
-  sample_es = Just a_es
   CollectErrors ma a_es = aCE
+  sample_es = Just a_es
   sample_c = fn <$> ma
 
 {-|
@@ -292,18 +300,21 @@ lift1CE (fn :: a -> c) aCE =
 -}
 lift2CE ::
   (SuitableForCE es
-  , CanEnsureCE es c)
+  , CanEnsureCE es a, CanEnsureCE es b, CanEnsureCE es c)
   =>
   (a -> b -> c) ->
   (CollectErrors es a) -> (CollectErrors es b) -> (EnsureCE es c)
-lift2CE (fn :: a -> b -> c) aCE bCE =
-  case (ensureNoCE sample_es aCE, ensureNoCE sample_es bCE) of
-    (Right a, Right b) -> ensureCE sample_es $ fn a b
-    _ -> noValueECE sample_c (a_es <> b_es)
+lift2CE fn aCE bCE =
+  case (ma, mb) of
+    (Just a, Just b) ->
+      prependErrorsECE sample_c ab_es $ ensureCE sample_es $ fn a b
+    _ ->
+      noValueECE sample_c ab_es
   where
-  sample_es = Just a_es
   CollectErrors ma a_es = aCE
   CollectErrors mb b_es = bCE
+  ab_es = a_es <> b_es
+  sample_es = Just a_es
   sample_c = fn <$> ma <*> mb
 
 {-|
@@ -313,17 +324,19 @@ lift2CE (fn :: a -> b -> c) aCE bCE =
 -}
 lift2TCE ::
   (SuitableForCE es
-  , CanEnsureCE es c)
+  , CanEnsureCE es a, CanEnsureCE es c)
   =>
   (a -> b -> c) ->
   (CollectErrors es a) -> b -> (EnsureCE es c)
-lift2TCE (fn :: a -> b -> c) aCE b =
-  case (ensureNoCE sample_es aCE) of
-    (Right a) -> ensureCE sample_es $ fn a b
-    _ -> noValueECE sample_c a_es
+lift2TCE fn aCE b =
+  case ma of
+    (Just a) ->
+      prependErrorsECE sample_c a_es $ ensureCE sample_es $ fn a b
+    _ ->
+      noValueECE sample_c a_es
   where
-  sample_es = Just a_es
   CollectErrors ma a_es = aCE
+  sample_es = Just a_es
   sample_c = fn <$> ma <*> (Just b)
 
 {-|
@@ -333,7 +346,7 @@ lift2TCE (fn :: a -> b -> c) aCE b =
 -}
 lift2TLCE ::
   (SuitableForCE es
-  , CanEnsureCE es c)
+  , CanEnsureCE es b, CanEnsureCE es c)
   =>
   (a -> b -> c) ->
   a -> (CollectErrors es b) -> (EnsureCE es c)

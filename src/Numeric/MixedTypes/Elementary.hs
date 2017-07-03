@@ -105,6 +105,7 @@ instance CanSqrt Double -- not exact, will not pass the tests
 
 instance
   (CanSqrt a
+  , CanEnsureCE es a
   , CanEnsureCE es (SqrtType a)
   , SuitableForCE es)
   =>
@@ -180,6 +181,7 @@ instance CanExp Double -- not exact, will not pass the tests
 
 instance
   (CanExp a
+  , CanEnsureCE es a
   , CanEnsureCE es (ExpType a)
   , SuitableForCE es)
   =>
@@ -252,6 +254,7 @@ instance CanLog Double -- not exact, will not pass the tests
 
 instance
   (CanLog a
+  , CanEnsureCE es a
   , CanEnsureCE es (LogType a)
   , SuitableForCE es)
   =>
@@ -386,6 +389,7 @@ instance CanSinCos Double -- not exact, will not pass the tests
 
 instance
   (CanSinCos a
+  , CanEnsureCE es a
   , CanEnsureCE es (SinCosType a)
   , SuitableForCE es)
   =>

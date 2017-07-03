@@ -247,6 +247,7 @@ instance (HasEqAsymmetric a b) => HasEqAsymmetric (Maybe a) (Maybe b) where
 instance
   (HasEqAsymmetric a b
   , CanEnsureCE es (EqCompareType a b)
+  , CanEnsureCE es a, CanEnsureCE es b
   , IsBool (EnsureCE es (EqCompareType a b))
   , SuitableForCE es)
   =>
@@ -262,6 +263,7 @@ $(declForTypes
 
     instance
       (HasEqAsymmetric $t b
+      , CanEnsureCE es b
       , CanEnsureCE es (EqCompareType $t b)
       , IsBool (EnsureCE es (EqCompareType $t b))
       , SuitableForCE es)
@@ -274,6 +276,7 @@ $(declForTypes
 
     instance
       (HasEqAsymmetric a $t
+      , CanEnsureCE es a
       , CanEnsureCE es (EqCompareType a $t)
       , IsBool (EnsureCE es (EqCompareType a $t))
       , SuitableForCE es)

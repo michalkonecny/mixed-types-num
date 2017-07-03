@@ -282,6 +282,7 @@ instance (CanDiv a b) => CanDiv (Maybe a) (Maybe b) where
 
 instance
   (CanDiv a b
+  , CanEnsureCE es a, CanEnsureCE es b
   , CanEnsureCE es (DivType a b)
   , CanEnsureCE es (DivTypeNoCN a b)
   , SuitableForCE es)
@@ -312,6 +313,7 @@ $(declForTypes
 
     instance
       (CanDiv $t b
+      , CanEnsureCE es b
       , CanEnsureCE es (DivType $t b)
       , CanEnsureCE es (DivTypeNoCN $t b)
       , SuitableForCE es)
@@ -327,6 +329,7 @@ $(declForTypes
 
     instance
       (CanDiv a $t
+      , CanEnsureCE es a
       , CanEnsureCE es (DivType a $t)
       , CanEnsureCE es (DivTypeNoCN a $t)
       , SuitableForCE es)

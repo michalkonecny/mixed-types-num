@@ -248,6 +248,7 @@ instance (CanMulAsymmetric a b) => CanMulAsymmetric (Maybe a) (Maybe b) where
 
 instance
   (CanMulAsymmetric a b
+  , CanEnsureCE es a, CanEnsureCE es b
   , CanEnsureCE es (MulType a b)
   , SuitableForCE es)
   =>
@@ -435,6 +436,7 @@ instance (CanPow a b) => CanPow (Maybe a) (Maybe b) where
 
 instance
   (CanPow a b
+  , CanEnsureCE es a, CanEnsureCE es b
   , CanEnsureCE es (PowTypeNoCN a b)
   , CanEnsureCE es (PowType a b)
   , SuitableForCE es)
@@ -454,6 +456,7 @@ $(declForTypes
 
     instance
       (CanPow $t b
+      , CanEnsureCE es b
       , CanEnsureCE es (PowType $t b)
       , CanEnsureCE es (PowTypeNoCN $t b)
       , SuitableForCE es)
@@ -469,6 +472,7 @@ $(declForTypes
 
     instance
       (CanPow a $t
+      , CanEnsureCE es a
       , CanEnsureCE es (PowType a $t)
       , CanEnsureCE es (PowTypeNoCN a $t)
       , SuitableForCE es)
@@ -484,6 +488,7 @@ $(declForTypes
 
     instance
       (CanMulAsymmetric $t b
+      , CanEnsureCE es b
       , CanEnsureCE es (MulType $t b)
       , SuitableForCE es)
       =>
@@ -495,6 +500,7 @@ $(declForTypes
 
     instance
       (CanMulAsymmetric a $t
+      , CanEnsureCE es a
       , CanEnsureCE es (MulType a $t)
       , SuitableForCE es)
       =>

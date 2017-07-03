@@ -186,7 +186,7 @@ _testNeg1 :: Maybe Bool
 _testNeg1 = not (Just True)
 
 instance
-  (CanNeg t, SuitableForCE es, CanEnsureCE es (NegType t))
+  (CanNeg t, SuitableForCE es, CanEnsureCE es t, CanEnsureCE es (NegType t))
   =>
   CanNeg (CollectErrors es t) where
   type NegType (CollectErrors es t) = EnsureCE es (NegType t)
@@ -349,21 +349,30 @@ _testAndOr2 = (Just (Just True)) || False
 _testAndOr3 :: Maybe Bool
 _testAndOr3 = and [Just True, Nothing, Just False]
 
-instance (CanAndOrAsymmetric t1 t2, SuitableForCE es, CanEnsureCE es (AndOrType t1 t2)) =>
+instance
+  (CanAndOrAsymmetric t1 t2, SuitableForCE es
+  , CanEnsureCE es t1, CanEnsureCE es t2, CanEnsureCE es (AndOrType t1 t2))
+  =>
   CanAndOrAsymmetric (CollectErrors es t1) (CollectErrors es t2)
   where
   type AndOrType (CollectErrors es t1) (CollectErrors es t2) = EnsureCE es (AndOrType t1 t2)
   and2 = lift2CE and2
   or2 = lift2CE or2
 
-instance (CanAndOrAsymmetric t1 Bool, SuitableForCE es, CanEnsureCE es (AndOrType t1 Bool)) =>
+instance
+  (CanAndOrAsymmetric t1 Bool, SuitableForCE es
+  , CanEnsureCE es t1, CanEnsureCE es (AndOrType t1 Bool))
+  =>
   CanAndOrAsymmetric (CollectErrors es t1) Bool
   where
   type AndOrType (CollectErrors es t1) Bool = EnsureCE es (AndOrType t1 Bool)
   and2 = lift2TCE and2
   or2 = lift2TCE or2
 
-instance (CanAndOrAsymmetric Bool t2, SuitableForCE es, CanEnsureCE es (AndOrType Bool t2)) =>
+instance
+  (CanAndOrAsymmetric Bool t2, SuitableForCE es
+  , CanEnsureCE es t2, CanEnsureCE es (AndOrType Bool t2))
+  =>
   CanAndOrAsymmetric Bool (CollectErrors es t2)
   where
   type AndOrType Bool (CollectErrors es t2) = EnsureCE es (AndOrType Bool t2)

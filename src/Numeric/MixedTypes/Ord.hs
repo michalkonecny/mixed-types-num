@@ -218,6 +218,7 @@ instance HasOrderAsymmetric Double Int where
 
 instance
   (HasOrderAsymmetric a b
+  , CanEnsureCE es a, CanEnsureCE es b
   , CanEnsureCE es (OrderCompareType a b)
   , IsBool (EnsureCE es (OrderCompareType a b))
   , SuitableForCE es)
@@ -237,6 +238,7 @@ $(declForTypes
 
     instance
       (HasOrderAsymmetric $t b
+      , CanEnsureCE es b
       , CanEnsureCE es (OrderCompareType $t b)
       , IsBool (EnsureCE es (OrderCompareType $t b))
       , SuitableForCE es)
@@ -252,6 +254,7 @@ $(declForTypes
 
     instance
       (HasOrderAsymmetric a $t
+      , CanEnsureCE es a
       , CanEnsureCE es (OrderCompareType a $t)
       , IsBool (EnsureCE es (OrderCompareType a $t))
       , SuitableForCE es)

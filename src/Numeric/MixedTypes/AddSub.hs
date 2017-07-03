@@ -228,7 +228,8 @@ instance (CanAddAsymmetric a b) => CanAddAsymmetric (Maybe a) (Maybe b) where
 
 instance
   (CanAddAsymmetric a b
-  , CanEnsureCE es   (AddType a b)
+  , CanEnsureCE es a, CanEnsureCE es b
+  , CanEnsureCE es (AddType a b)
   , SuitableForCE es)
   =>
   CanAddAsymmetric (CollectErrors es a) (CollectErrors es  b)
@@ -376,6 +377,7 @@ instance (CanSub a b) => CanSub (Maybe a) (Maybe b) where
 
 instance
   (CanSub a b
+  , CanEnsureCE es a, CanEnsureCE es b
   , CanEnsureCE es (SubType a b)
   , SuitableForCE es)
   =>
@@ -385,13 +387,13 @@ instance
     EnsureCE es (SubType a b)
   sub = lift2CE sub
 
-
 $(declForTypes
   [[t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
   (\ t -> [d|
 
     instance
       (CanSub $t b
+      , CanEnsureCE es b
       , CanEnsureCE es (SubType $t b)
       , SuitableForCE es)
       =>
@@ -403,6 +405,7 @@ $(declForTypes
 
     instance
       (CanSub a $t
+      , CanEnsureCE es a
       , CanEnsureCE es (SubType a $t)
       , SuitableForCE es)
       =>
@@ -414,6 +417,7 @@ $(declForTypes
 
     instance
       (CanAddAsymmetric $t b
+      , CanEnsureCE es b
       , CanEnsureCE es (AddType $t b)
       , SuitableForCE es)
       =>
@@ -425,6 +429,7 @@ $(declForTypes
 
     instance
       (CanAddAsymmetric a $t
+      , CanEnsureCE es a
       , CanEnsureCE es (AddType a $t)
       , SuitableForCE es)
       =>
