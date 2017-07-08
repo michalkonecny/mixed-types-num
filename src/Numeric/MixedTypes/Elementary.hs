@@ -62,20 +62,17 @@ class CanSqrt t where
 type CanSqrtSameType t = (CanSqrt t, SqrtType t ~ t)
 type CanSqrtCNSameType t = (CanSqrt t, SqrtType t ~ EnsureCN t)
 
-type CanSqrtX t =
-  (CanSqrt t,
-   CanTestPosNeg t,
-   HasEqCertainly t (SqrtType t),
-   HasOrderCertainly Integer (SqrtType t),
-   Show t, Arbitrary t, Show (SqrtType t))
-
 {-|
   HSpec properties that each implementation of CanSqrt should satisfy.
  -}
 specCanSqrtReal ::
-  (CanSqrtX t,
-   CanPowX (SqrtType t) Integer,
-   HasEqCertainly t (PowType (SqrtType t) Integer))
+  (Show t, Show (SqrtType t), Show (PowType (SqrtType t) Integer),
+    Arbitrary t,
+    CanTestCertainly (OrderCompareType (SqrtType t) Integer),
+    CanTestCertainly (EqCompareType (PowType (SqrtType t) Integer) t),
+    HasEqAsymmetric (PowType (SqrtType t) Integer) t,
+    HasOrderAsymmetric (SqrtType t) Integer, CanTestPosNeg t,
+    CanPow (SqrtType t) Integer, CanSqrt t)
   =>
   T t -> Spec
 specCanSqrtReal (T typeName :: T t) =
@@ -130,25 +127,36 @@ class CanExp t where
 
 type CanExpSameType t = (CanExp t, ExpType t ~ t)
 
-type CanExpX t =
-  (CanExp t,
-   Ring t,
-   Field (ExpType t),
-   CanTestPosNeg t,
-   CanTestPosNeg (ExpType t),
-   HasEqCertainlyCN (ExpType t) (ExpType t),
-   HasOrderCertainly Integer t,
-   HasOrderCertainly Integer (ExpType t),
-   Show t, Arbitrary t, Show (ExpType t),
-   Show (EnsureCN t), Show (EnsureCN (ExpType t)))
-
 {-|
   HSpec properties that each implementation of CanExp should satisfy.
  -}
 specCanExpReal ::
-  (CanExpX t)
-  =>
-  T t -> Spec
+  (Show t, Show (ExpType t), Show (DivType Integer (ExpType t)),
+   Show (ExpType (AddType t t)),
+   Show (MulType (ExpType t) (ExpType t)),
+   Show (EnsureCN (ExpType t)), Arbitrary t,
+   CanEnsureCN (ExpType t),
+   CanTestCertainly (OrderCompareType Integer t),
+   CanTestCertainly (OrderCompareType t Integer),
+   CanTestCertainly (OrderCompareType (ExpType t) Integer),
+   CanTestCertainly
+     (EqCompareType
+        (EnsureCN (ExpType t)) (DivType Integer (ExpType t))),
+   CanTestCertainly
+     (EqCompareType
+        (ExpType (AddType t t)) (MulType (ExpType t) (ExpType t))),
+   CanNeg t,
+   HasEqAsymmetric
+     (ExpType (AddType t t)) (MulType (ExpType t) (ExpType t)),
+   HasEqAsymmetric
+     (EnsureCN (ExpType t)) (DivType Integer (ExpType t)),
+   HasOrderAsymmetric t Integer,
+   HasOrderAsymmetric (ExpType t) Integer,
+   HasOrderAsymmetric Integer t, CanAddAsymmetric t t,
+   CanMulAsymmetric (ExpType t) (ExpType t),
+   CanDiv Integer (ExpType t), CanExp t, CanExp (AddType t t),
+   NegType t ~ t) =>
+   T t -> Spec
 specCanExpReal (T typeName :: T t) =
   describe (printf "CanExp %s" typeName) $ do
     it "exp(x) >= 0" $ do
@@ -206,25 +214,36 @@ class CanLog t where
 type CanLogSameType t = (CanLog t, LogType t ~ t)
 type CanLogCNSameType t = (CanLog t, LogType t ~ EnsureCN t)
 
-type CanLogX t =
-  (CanLog t,
-   Field t,
-   Ring (LogType t),
-   HasOrderCertainly t Integer,
-   HasOrderCertainlyCN t Integer,
-   HasEqCertainly (LogType t) (LogType t),
-   Show t, Arbitrary t, Show (LogType t))
-
 {-|
   HSpec properties that each implementation of CanLog should satisfy.
  -}
 specCanLogReal ::
-  (CanLogX t,
-   CanLogX (DivType Integer t),
-   CanExp t, CanLogX (ExpType t),
-   HasEqCertainly (LogType t) (LogType (EnsureCN t)),
-   HasEqCertainlyCN t (LogType (ExpType t)))
-  =>
+  (Show t, Show (LogType t), Show (LogType (DivType Integer t)),
+   Show (LogType (MulType t t)),
+   Show (AddType (LogType t) (LogType t)), Show (LogType (ExpType t)),
+   Arbitrary t, CanTestCertainly (OrderCompareType t Integer),
+   CanTestCertainly (OrderCompareType (DivType Integer t) Integer),
+   CanTestCertainly
+     (EqCompareType (LogType (DivType Integer t)) (LogType t)),
+   CanTestCertainly (OrderCompareType (MulType t t) Integer),
+   CanTestCertainly
+     (EqCompareType
+        (LogType (MulType t t)) (AddType (LogType t) (LogType t))),
+   CanTestCertainly (OrderCompareType Integer t),
+   CanTestCertainly (EqCompareType (LogType (ExpType t)) t),
+   CanNeg (LogType t),
+   HasEqAsymmetric (LogType (DivType Integer t)) (LogType t),
+   HasEqAsymmetric
+     (LogType (MulType t t)) (AddType (LogType t) (LogType t)),
+   HasEqAsymmetric (LogType (ExpType t)) t,
+   HasOrderAsymmetric t Integer,
+   HasOrderAsymmetric (DivType Integer t) Integer,
+   HasOrderAsymmetric (MulType t t) Integer,
+   HasOrderAsymmetric Integer t,
+   CanAddAsymmetric (LogType t) (LogType t), CanMulAsymmetric t t,
+   CanDiv Integer t, CanExp t, CanLog t, CanLog (DivType Integer t),
+   CanLog (MulType t t), CanLog (ExpType t),
+   LogType t ~ NegType (LogType t)) =>
   T t -> Spec
 specCanLogReal (T typeName :: T t) =
   describe (printf "CanLog %s" typeName) $ do
@@ -333,14 +352,6 @@ class CanSinCos t where
 
 type CanSinCosSameType t = (CanSinCos t, SinCosType t ~ t)
 
-type CanSinCosX t =
-  (CanSinCos t,
-   OrderedCertainlyField t,
-   OrderedCertainlyField (SinCosType t),
-   HasOrderCertainlyCN (SinCosType t) t,
-   Show t, Arbitrary t, Show (SinCosType t),
-   Show (EnsureCN t), Arbitrary t, Show (EnsureCN (SinCosType t)))
-
 {-|
   HSpec properties that each implementation of CanSinCos should satisfy.
 
@@ -348,7 +359,79 @@ type CanSinCosX t =
   http://math.stackexchange.com/questions/1303044/axiomatic-definition-of-sin-and-cos
  -}
 specCanSinCosReal ::
-  (CanSinCosX t)
+ (Show t, Show (SinCosType t),
+  Show
+    (AddType
+       (PowType (SinCosType t) Integer) (PowType (SinCosType t) Integer)),
+  Show (SinCosType (SubType t t)),
+  Show
+    (SubType
+       (MulType (SinCosType t) (SinCosType t))
+       (MulType (SinCosType t) (SinCosType t))),
+  Show
+    (AddType
+       (MulType (SinCosType t) (SinCosType t))
+       (MulType (SinCosType t) (SinCosType t))),
+  Show (DivType (SinCosType t) (SinCosType t)),
+  Show (EnsureCN t), Arbitrary t, CanEnsureCN t,
+  CanTestCertainly (OrderCompareType Integer (SinCosType t)),
+  CanTestCertainly (OrderCompareType (SinCosType t) Integer),
+  CanTestCertainly
+    (EqCompareType
+       (AddType
+          (PowType (SinCosType t) Integer)
+          (PowType (SinCosType t) Integer))
+       Integer),
+  CanTestCertainly
+    (EqCompareType
+       (SinCosType (SubType t t))
+       (SubType
+          (MulType (SinCosType t) (SinCosType t))
+          (MulType (SinCosType t) (SinCosType t)))),
+  CanTestCertainly
+    (EqCompareType
+       (SinCosType (SubType t t))
+       (AddType
+          (MulType (SinCosType t) (SinCosType t))
+          (MulType (SinCosType t) (SinCosType t)))),
+  CanTestCertainly (OrderCompareType t Integer),
+  CanTestCertainly (OrderCompareType t Rational),
+  CanTestCertainly (OrderCompareType (SinCosType t) t),
+  CanTestCertainly
+    (OrderCompareType
+       (EnsureCN t) (DivType (SinCosType t) (SinCosType t))),
+  HasEqAsymmetric
+    (AddType
+       (PowType (SinCosType t) Integer) (PowType (SinCosType t) Integer))
+    Integer,
+  HasEqAsymmetric
+    (SinCosType (SubType t t))
+    (SubType
+       (MulType (SinCosType t) (SinCosType t))
+       (MulType (SinCosType t) (SinCosType t))),
+  HasEqAsymmetric
+    (SinCosType (SubType t t))
+    (AddType
+       (MulType (SinCosType t) (SinCosType t))
+       (MulType (SinCosType t) (SinCosType t))),
+  HasOrderAsymmetric t Integer, HasOrderAsymmetric t Rational,
+  HasOrderAsymmetric (SinCosType t) t,
+  HasOrderAsymmetric (SinCosType t) Integer,
+  HasOrderAsymmetric
+    (EnsureCN t) (DivType (SinCosType t) (SinCosType t)),
+  HasOrderAsymmetric Integer (SinCosType t), CanSub t t,
+  CanSub
+    (MulType (SinCosType t) (SinCosType t))
+    (MulType (SinCosType t) (SinCosType t)),
+  CanAddAsymmetric
+    (PowType (SinCosType t) Integer) (PowType (SinCosType t) Integer),
+  CanAddAsymmetric
+    (MulType (SinCosType t) (SinCosType t))
+    (MulType (SinCosType t) (SinCosType t)),
+  CanPow (SinCosType t) Integer,
+  CanMulAsymmetric (SinCosType t) (SinCosType t),
+  CanDiv (SinCosType t) (SinCosType t), CanSinCos t,
+  CanSinCos (SubType t t))
   =>
   T t -> Spec
 specCanSinCosReal (T typeName :: T t) =

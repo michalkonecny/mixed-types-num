@@ -17,12 +17,12 @@ module Numeric.MixedTypes.AddSub
     CanAdd, CanAddAsymmetric(..), CanAddThis, CanAddSameType
     , (+), sum
   -- ** Tests
-    , specCanAdd, specCanAddNotMixed, specCanAddSameType, CanAddX, CanAddXX,
+    , specCanAdd, specCanAddNotMixed, specCanAddSameType
     -- * Subtraction
-    CanSub(..), CanSubThis, CanSubSameType
+    , CanSub(..), CanSubThis, CanSubSameType
     , (-)
   -- ** Tests
-    , specCanSub, specCanSubNotMixed, CanSubX
+    , specCanSub, specCanSubNotMixed
 )
 where
 
@@ -41,7 +41,7 @@ import Test.QuickCheck
 import Control.CollectErrors
 
 import Numeric.MixedTypes.Literals
-import Numeric.MixedTypes.Bool (CanNeg(..))
+import Numeric.MixedTypes.Bool
 import Numeric.MixedTypes.Eq
 import Numeric.MixedTypes.Ord
 import Numeric.MixedTypes.MinMaxAbs ()
@@ -79,36 +79,32 @@ type CanAddSameType t =
 sum :: (CanAddSameType t, ConvertibleExactly Integer t) => [t] -> t
 sum xs = List.foldl' add (convertExactly 0) xs
 
-{-| Compound type constraint useful for test definition. -}
-type CanAddX t1 t2 =
-  (CanAdd t1 t2,
-   Show t1, Arbitrary t1,
-   Show t2, Arbitrary t2,
-   Show (AddType t1 t2),
-   HasEqCertainly t1 (AddType t1 t2),
-   HasEqCertainly t2 (AddType t1 t2),
-   HasEqCertainly (AddType t1 t2) (AddType t1 t2),
-   HasOrderCertainly t1 (AddType t1 t2),
-   HasOrderCertainly t2 (AddType t1 t2),
-   HasOrderCertainly (AddType t1 t2) (AddType t1 t2))
-
-{-| Compound type constraint useful for test definition. -}
-type CanAddXX t1 t2 =
-  (CanAddX t1 t2,
-   HasEqCertainly (AddType t1 t2) (AddType t2 t1))
-
 {-|
   HSpec properties that each implementation of CanAdd should satisfy.
  -}
 specCanAdd ::
-  (CanAddXX t1 t1,
-   CanAddXX t1 t2,
-   CanAddXX t1 t3, CanAddXX t2 t3,
-   CanAddXX t1 (AddType t2 t3),
-   CanAddXX (AddType t1 t2) t3,
-   ConvertibleExactly Integer t1,
-   CanTestPosNeg t1,
-   HasEqCertainly (AddType t1 (AddType t2 t3)) (AddType (AddType t1 t2) t3))
+  (Show t1, Show t2, Show t3, Show (AddType t1 t1),
+   Show (AddType t1 t2), Show (AddType t2 t1),
+   Show (AddType t1 (AddType t2 t3)),
+   Show (AddType (AddType t1 t2) t3), Arbitrary t1, Arbitrary t2,
+   Arbitrary t3, ConvertibleExactly Integer t1,
+   CanTestCertainly
+     (EqCompareType (AddType t1 t1) t1),
+   CanTestCertainly
+     (EqCompareType (AddType t1 t2) (AddType t2 t1)),
+   CanTestCertainly
+     (EqCompareType
+        (AddType t1 (AddType t2 t3)) (AddType (AddType t1 t2) t3)),
+   CanTestCertainly
+     (OrderCompareType (AddType t1 t2) t2),
+   HasEqAsymmetric (AddType t1 t1) t1,
+   HasEqAsymmetric (AddType t1 t2) (AddType t2 t1),
+   HasEqAsymmetric
+     (AddType t1 (AddType t2 t3)) (AddType (AddType t1 t2) t3),
+   HasOrderAsymmetric (AddType t1 t2) t2, CanTestPosNeg t1,
+   CanAddAsymmetric t1 t1, CanAddAsymmetric t1 t2,
+   CanAddAsymmetric t1 (AddType t2 t3), CanAddAsymmetric t2 t1,
+   CanAddAsymmetric t2 t3, CanAddAsymmetric (AddType t1 t2) t3)
   =>
   T t1 -> T t2 -> T t3 -> Spec
 specCanAdd (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
@@ -139,13 +135,25 @@ specCanAdd (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   HSpec properties that each implementation of CanAdd should satisfy.
  -}
 specCanAddNotMixed ::
-  (CanAddXX t t,
-   CanAddXX t (AddType t t),
+  (Show t, Show (AddType t t), Show (AddType t (AddType t t)),
+   Show (AddType (AddType t t) t), Arbitrary t,
    ConvertibleExactly Integer t,
-   CanTestPosNeg t)
+   CanTestCertainly (EqCompareType (AddType t t) t),
+   CanTestCertainly (EqCompareType (AddType t t) (AddType t t)),
+   CanTestCertainly
+     (EqCompareType
+        (AddType t (AddType t t)) (AddType (AddType t t) t)),
+   CanTestCertainly (OrderCompareType (AddType t t) t),
+   HasEqAsymmetric (AddType t t) t,
+   HasEqAsymmetric (AddType t t) (AddType t t),
+   HasEqAsymmetric
+     (AddType t (AddType t t)) (AddType (AddType t t) t),
+   HasOrderAsymmetric (AddType t t) t, CanTestPosNeg t,
+   CanAddAsymmetric t t, CanAddAsymmetric t (AddType t t),
+   CanAddAsymmetric (AddType t t) t)
   =>
   T t -> Spec
-specCanAddNotMixed t = specCanAdd t t t
+specCanAddNotMixed (t :: T t) = specCanAdd t t t
 
 {-|
   HSpec properties that each implementation of CanAddSameType should satisfy.
@@ -265,24 +273,19 @@ type CanSubThis t1 t2 =
 type CanSubSameType t =
   CanSubThis t t
 
-{-| Compound type constraint useful for test definition. -}
-type CanSubX t1 t2 =
-  (CanSub t1 t2,
-   HasEqCertainly t1 (SubType t1 t2),
-   CanAddXX t1 t2,
-   Show (SubType t1 t2))
-
 {-|
   HSpec properties that each implementation of CanSub should satisfy.
  -}
 specCanSub ::
-  (CanSubX t1 t1,
-   CanSubX t1 t2,
-   CanNeg t2,
-   CanAdd t1 (NegType t2),
-   HasEqCertainly (SubType t1 t2) (AddType t1 (NegType t2)),
-   Show (AddType t1 (NegType t2)),
-   ConvertibleExactly Integer t1)
+  (Show t1, Show t2, Show (SubType t1 t1), Show (SubType t1 t2),
+   Show (AddType t1 (NegType t2)), Arbitrary t1, Arbitrary t2,
+   ConvertibleExactly Integer t1,
+   CanTestCertainly (EqCompareType (SubType t1 t1) t1),
+   CanTestCertainly
+     (EqCompareType (SubType t1 t2) (AddType t1 (NegType t2))),
+   CanNeg t2, HasEqAsymmetric (SubType t1 t1) t1,
+   HasEqAsymmetric (SubType t1 t2) (AddType t1 (NegType t2)),
+   CanSub t1 t1, CanSub t1 t2, CanAddAsymmetric t1 (NegType t2))
   =>
   T t1 -> T t2 -> Spec
 specCanSub (T typeName1 :: T t1) (T typeName2 :: T t2) =
@@ -303,16 +306,17 @@ specCanSub (T typeName1 :: T t1) (T typeName2 :: T t2) =
   HSpec properties that each implementation of CanSub should satisfy.
  -}
 specCanSubNotMixed ::
-  (CanSubX t t,
-   CanSubX t (SubType t t),
-   CanNeg t,
-   CanAdd t (NegType t),
-   Show (AddType t (NegType t)),
-   HasEqCertainly (SubType t t) (AddType t (NegType t)),
-   ConvertibleExactly Integer t)
+  (Show t, Show (SubType t t), Show (AddType t (NegType t)),
+   Arbitrary t, ConvertibleExactly Integer t,
+   CanTestCertainly (EqCompareType (SubType t t) t),
+   CanTestCertainly
+     (EqCompareType (SubType t t) (AddType t (NegType t))),
+   CanNeg t, HasEqAsymmetric (SubType t t) t,
+   HasEqAsymmetric (SubType t t) (AddType t (NegType t)), CanSub t t,
+   CanAddAsymmetric t (NegType t))
   =>
   T t -> Spec
-specCanSubNotMixed t = specCanSub t t
+specCanSubNotMixed (t :: T t) = specCanSub t t
 
 instance CanSub Int Int where
   type SubType Int Int = Integer -- do not risk overflow

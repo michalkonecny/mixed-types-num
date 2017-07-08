@@ -17,7 +17,7 @@ module Numeric.MixedTypes.MinMaxAbs
   CanMinMax, CanMinMaxAsymmetric(..), CanMinMaxThis, CanMinMaxSameType
   , minimum, maximum
   -- ** Tests
-  , specCanMinMax, specCanMinMaxNotMixed, CanMinMaxX, CanMinMaxXX
+  , specCanMinMax, specCanMinMaxNotMixed
   -- * Absolute value
   , CanAbs(..), CanAbsSameType
   -- ** Tests
@@ -77,36 +77,39 @@ minimum :: (CanMinMaxSameType t) => [t] -> t
 minimum (x:xs) = List.foldl' min x xs
 minimum [] = error $ "minimum: empty list"
 
-{-| Compound type constraint useful for test definition. -}
-type CanMinMaxX t1 t2 =
-  (CanMinMax t1 t2,
-   Show t1, Arbitrary t1,
-   Show t2, Arbitrary t2,
-   Show (MinMaxType t1 t2),
-   HasEqCertainly t1 t1,
-   HasEqCertainly t2 t2,
-   HasEqCertainly t1 (MinMaxType t1 t2),
-   HasEqCertainly t2 (MinMaxType t1 t2),
-   HasEqCertainly (MinMaxType t1 t2) (MinMaxType t1 t2),
-   HasOrderCertainly t1 (MinMaxType t1 t2),
-   HasOrderCertainly t2 (MinMaxType t1 t2),
-   HasOrderCertainly (MinMaxType t1 t2) (MinMaxType t1 t2))
-
-{-| Compound type constraint useful for test definition. -}
-type CanMinMaxXX t1 t2 =
-  (CanMinMaxX t1 t2,
-   HasEqCertainly (MinMaxType t1 t2) (MinMaxType t2 t1))
-
 {-|
   HSpec properties that each implementation of CanMinMax should satisfy.
  -}
 specCanMinMax ::
-  (CanMinMaxXX t1 t1,
-   CanMinMaxXX t1 t2,
-   CanMinMaxXX t1 t3, CanMinMaxXX t2 t3,
-   CanMinMaxXX t1 (MinMaxType t2 t3),
-   CanMinMaxXX (MinMaxType t1 t2) t3,
-   HasEqCertainly (MinMaxType t1 (MinMaxType t2 t3)) (MinMaxType (MinMaxType t1 t2) t3))
+ (Show t1, Show t2, Show t3, Show (MinMaxType t1 t2),
+  Show (MinMaxType t1 t1), Show (MinMaxType t2 t1),
+  Show (MinMaxType t1 (MinMaxType t2 t3)),
+  Show (MinMaxType (MinMaxType t1 t2) t3), Arbitrary t1,
+  Arbitrary t2, Arbitrary t3, CanTestCertainly (EqCompareType t1 t1),
+  CanTestCertainly (EqCompareType t2 t2),
+  CanTestCertainly (OrderCompareType (MinMaxType t1 t2) t2),
+  CanTestCertainly (OrderCompareType (MinMaxType t1 t2) t1),
+  CanTestCertainly (EqCompareType (MinMaxType t1 t1) t1),
+  CanTestCertainly
+    (EqCompareType (MinMaxType t1 t2) (MinMaxType t2 t1)),
+  CanTestCertainly (EqCompareType t3 t3),
+  CanTestCertainly
+    (EqCompareType
+       (MinMaxType t1 (MinMaxType t2 t3))
+       (MinMaxType (MinMaxType t1 t2) t3)),
+  HasEqAsymmetric t1 t1, HasEqAsymmetric t2 t2,
+  HasEqAsymmetric t3 t3,
+  HasEqAsymmetric (MinMaxType t1 t2) (MinMaxType t2 t1),
+  HasEqAsymmetric (MinMaxType t1 t1) t1,
+  HasEqAsymmetric
+    (MinMaxType t1 (MinMaxType t2 t3))
+    (MinMaxType (MinMaxType t1 t2) t3),
+  HasOrderAsymmetric (MinMaxType t1 t2) t1,
+  HasOrderAsymmetric (MinMaxType t1 t2) t2,
+  CanMinMaxAsymmetric t1 t1, CanMinMaxAsymmetric t1 t2,
+  CanMinMaxAsymmetric t1 (MinMaxType t2 t3),
+  CanMinMaxAsymmetric t2 t1, CanMinMaxAsymmetric t2 t3,
+  CanMinMaxAsymmetric (MinMaxType t1 t2) t3)
   =>
   T t1 -> T t2 -> T t3 -> Spec
 specCanMinMax (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
@@ -155,9 +158,27 @@ specCanMinMax (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) 
   HSpec properties that each implementation of CanMinMax should satisfy.
  -}
 specCanMinMaxNotMixed ::
-  (CanMinMaxXX t t,
-   CanMinMaxXX t (MinMaxType t t),
-   HasEq (MinMaxType (MinMaxType t t) t) (MinMaxType t (MinMaxType t t)) )
+ (Show t, Show (MinMaxType t t),
+  Show (MinMaxType t (MinMaxType t t)),
+  Show (MinMaxType (MinMaxType t t) t), Arbitrary t,
+  CanTestCertainly (EqCompareType t t),
+  CanTestCertainly (OrderCompareType (MinMaxType t t) t),
+  CanTestCertainly (EqCompareType (MinMaxType t t) t),
+  CanTestCertainly
+    (EqCompareType (MinMaxType t t) (MinMaxType t t)),
+  CanTestCertainly
+    (EqCompareType
+       (MinMaxType t (MinMaxType t t))
+       (MinMaxType (MinMaxType t t) t)),
+  HasEqAsymmetric t t, HasEqAsymmetric (MinMaxType t t) t,
+  HasEqAsymmetric (MinMaxType t t) (MinMaxType t t),
+  HasEqAsymmetric
+    (MinMaxType t (MinMaxType t t))
+    (MinMaxType (MinMaxType t t) t),
+  HasOrderAsymmetric (MinMaxType t t) t,
+  CanMinMaxAsymmetric t t,
+  CanMinMaxAsymmetric t (MinMaxType t t),
+  CanMinMaxAsymmetric (MinMaxType t t) t)
   =>
   T t -> Spec
 specCanMinMaxNotMixed t = specCanMinMax t t t

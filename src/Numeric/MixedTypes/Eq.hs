@@ -19,7 +19,7 @@ module Numeric.MixedTypes.Eq
   , notCertainlyDifferentFrom, certainlyEqualTo, certainlyNotEqualTo
   , (?==?), (!==!), (!/=!)
   -- ** Tests
-  , specHasEq, specHasEqNotMixed, HasEqX
+  , specHasEq, specHasEqNotMixed
   , specConversion
   -- ** Specific comparisons
   , CanTestNaN(..)
@@ -110,18 +110,20 @@ notCertainlyDifferentFrom a b = isNotFalse $ a == b
 (!/=!) :: (HasEqCertainlyAsymmetric a b) => a -> b -> Bool
 (!/=!) = certainlyNotEqualTo
 
-{-| Compound type constraint useful for test definition. -}
-type HasEqX t1 t2 =
-  (HasEqCertainly t1 t2, Show t1, Arbitrary t1, Show t2, Arbitrary t2)
-
 {-|
   HSpec properties that each implementation of HasEq should satisfy.
  -}
 specHasEq ::
-  (HasEqX t1 t1,
-   HasEqX t1 t2, HasEqX t2 t1,
-   HasEqX t1 t3, HasEqX t2 t3,
-   CanAndOrX (EqCompareType t1 t2) (EqCompareType t2 t3))
+ (Show t1, Show t2, Show t3, Arbitrary t1, Arbitrary t2,
+  Arbitrary t3, CanTestCertainly (EqCompareType t1 t1),
+  CanTestCertainly (EqCompareType t1 t2),
+  CanTestCertainly (EqCompareType t2 t1),
+  CanTestCertainly (EqCompareType t2 t3),
+  CanTestCertainly
+    (AndOrType (EqCompareType t1 t2) (EqCompareType t2 t3)),
+  CanAndOrAsymmetric (EqCompareType t1 t2) (EqCompareType t2 t3),
+  HasEqAsymmetric t1 t1, HasEqAsymmetric t1 t2,
+  HasEqAsymmetric t2 t1, HasEqAsymmetric t2 t3)
   =>
   T t1 -> T t2 -> T t3 -> Spec
 specHasEq (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
@@ -141,11 +143,13 @@ specHasEq (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   HSpec properties that each implementation of HasEq should satisfy.
  -}
 specHasEqNotMixed ::
-  (HasEqX t t,
-   CanAndOrX (EqCompareType t t) (EqCompareType t t))
+  (Show t, Arbitrary t, CanTestCertainly (EqCompareType t t),
+   CanTestCertainly
+     (AndOrType (EqCompareType t t) (EqCompareType t t)),
+   HasEqAsymmetric t t)
   =>
   T t -> Spec
-specHasEqNotMixed t = specHasEq t t t
+specHasEqNotMixed (t :: T t) = specHasEq t t t
 
 {-|
   HSpec property of there-and-back conversion.

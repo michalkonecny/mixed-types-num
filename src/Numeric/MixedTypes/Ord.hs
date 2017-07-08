@@ -20,7 +20,7 @@ module Numeric.MixedTypes.Ord
   , (?<=?), (?<?), (?>=?), (?>?)
   , (!<=!), (!<!), (!>=!), (!>!)
   -- ** Tests
-  , specHasOrder, specHasOrderNotMixed, HasOrderX
+  , specHasOrder, specHasOrderNotMixed
   -- ** Specific comparisons
   , CanTestPosNeg(..)
 )
@@ -127,18 +127,21 @@ a !>=! b = isCertainlyTrue $ a >= b
 (!<=!) :: (HasOrderCertainlyAsymmetric a b) => a -> b -> Bool
 a !<=! b = isCertainlyTrue $ a <= b
 
-{-| Compound type constraint useful for test definition. -}
-type HasOrderX t1 t2 =
-  (HasOrderCertainly t1 t2, Show t1, QC.Arbitrary t1, Show t2, QC.Arbitrary t2)
-
 {-|
   HSpec properties that each implementation of 'HasOrder' should satisfy.
  -}
 specHasOrder ::
-  (HasOrderX t1 t1,
-   HasOrderX t1 t2,
-   HasOrderX t1 t3, HasOrderX t2 t3,
-   CanAndOrX (OrderCompareType t1 t2) (OrderCompareType t2 t3))
+  (Show t1, Show t2, Show t3, QC.Arbitrary t1, QC.Arbitrary t2,
+   QC.Arbitrary t3, CanTestCertainly (OrderCompareType t1 t1),
+   CanTestCertainly (OrderCompareType t1 t2),
+   CanTestCertainly (OrderCompareType t2 t1),
+   CanTestCertainly (OrderCompareType t2 t3),
+   CanTestCertainly
+     (AndOrType (OrderCompareType t1 t2) (OrderCompareType t2 t3)),
+   CanAndOrAsymmetric
+     (OrderCompareType t1 t2) (OrderCompareType t2 t3),
+   HasOrderAsymmetric t1 t1, HasOrderAsymmetric t1 t2,
+   HasOrderAsymmetric t2 t1, HasOrderAsymmetric t2 t3)
   =>
   T t1 -> T t2 -> T t3 -> Spec
 specHasOrder (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
@@ -166,11 +169,13 @@ specHasOrder (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   HSpec properties that each implementation of 'HasOrder' should satisfy.
  -}
 specHasOrderNotMixed ::
-  (HasOrderX t t,
-   CanAndOrX (OrderCompareType t t) (OrderCompareType t t))
+  (Show t, QC.Arbitrary t, CanTestCertainly (OrderCompareType t t),
+   CanTestCertainly
+     (AndOrType (OrderCompareType t t) (OrderCompareType t t)),
+   HasOrderAsymmetric t t)
   =>
   T t -> Spec
-specHasOrderNotMixed t = specHasOrder t t t
+specHasOrderNotMixed (t :: T t) = specHasOrder t t t
 
 instance HasOrderAsymmetric () () where
   lessThan _ _ = False

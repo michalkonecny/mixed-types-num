@@ -21,11 +21,11 @@ module Numeric.MixedTypes.Bool
   -- * Negation
   , CanNeg(..), not, CanNegSameType
   -- ** Tests
-  , specCanNegBool, CanNegBoolX
+  , specCanNegBool
   -- * And and or
   , CanAndOr, CanAndOrAsymmetric(..), (&&), (||), CanAndOrWith, CanAndOrSameType, and, or
   -- ** Tests
-  , specCanAndOr, specCanAndOrNotMixed, CanAndOrX
+  , specCanAndOr, specCanAndOrNotMixed
 )
 where
 
@@ -153,15 +153,14 @@ type CanNegSameType t =
 {-| Compound type constraint useful for test definition. -}
 type CanTestCertainlyX t = (CanTestCertainly t, Show t, SCS.Serial IO t)
 
-{-| Compound type constraint useful for test definition. -}
-type CanNegBoolX t =
-  (CanNeg t, CanTestCertainlyX t, CanTestCertainlyX (NegType t))
-
 {-|
   HSpec properties that each Boolean implementation of CanNeg should satisfy.
  -}
 specCanNegBool ::
-  (CanNegBoolX t, CanNegBoolX (NegType t))
+  (Show t, Show (NegType (NegType t)), SCS.Serial IO t,
+   CanTestCertainly t, CanTestCertainly (NegType t),
+   CanTestCertainly (NegType (NegType t)), CanNeg t,
+   CanNeg (NegType t))
   =>
   T t -> Spec
 specCanNegBool (T typeName :: T t) =
@@ -230,32 +229,32 @@ and = List.foldl' (&&) (convertExactly True)
 or :: (CanAndOrSameType t, CanTestCertainly t) => [t] -> t
 or = List.foldl' (||) (convertExactly False)
 
-{-| Compound type constraint useful for test definition. -}
-type CanAndOrX t1 t2 =
-  (CanAndOr t1 t2,
-   CanNeg t1,
-   CanNeg t2,
-   CanAndOr (NegType t1) t2,
-   CanAndOr t1 (NegType t2),
-   CanAndOr (NegType t1) (NegType t2),
-   CanTestCertainlyX t1,
-   CanTestCertainlyX t2,
-   CanTestCertainlyX (AndOrType t1 t2),
-   CanTestCertainlyX (NegType (AndOrType t1 t2)),
-   CanTestCertainlyX (AndOrType (NegType t1) t2),
-   CanTestCertainlyX (AndOrType t1 (NegType t2)),
-   CanTestCertainlyX (AndOrType (NegType t1) (NegType t2))
-   )
-
 {-|
   HSpec properties that each implementation of CanAndOr should satisfy.
  -}
 specCanAndOr ::
-  (CanAndOrX t1 t1,
-   CanAndOrX t1 t2, CanAndOrX t2 t1,
-   CanAndOrX t1 t3, CanAndOrX t2 t3,
-   CanAndOrX (AndOrType t1 t2) t3, CanAndOrX t1 (AndOrType t2 t3),
-   CanAndOrX (AndOrType t1 t2) (AndOrType t1 t3))
+  (Show t1, Show t2, Show t3, Show (AndOrType t1 t1),
+   Show (AndOrType t1 t2), Show (AndOrType t2 t1),
+   Show (AndOrType t1 (AndOrType t2 t3)),
+   Show (AndOrType (AndOrType t1 t2) t3),
+   Show (AndOrType (AndOrType t1 t2) (AndOrType t1 t3)),
+   Show (NegType (AndOrType t1 t2)),
+   Show (AndOrType (NegType t1) (NegType t2)), SCS.Serial IO t1,
+   SCS.Serial IO t2, SCS.Serial IO t3, CanTestCertainly t1,
+   CanTestCertainly (AndOrType t1 t1),
+   CanTestCertainly (AndOrType t1 t2),
+   CanTestCertainly (AndOrType t2 t1),
+   CanTestCertainly (AndOrType t1 (AndOrType t2 t3)),
+   CanTestCertainly (AndOrType (AndOrType t1 t2) t3),
+   CanTestCertainly (AndOrType (AndOrType t1 t2) (AndOrType t1 t3)),
+   CanTestCertainly (NegType (AndOrType t1 t2)),
+   CanTestCertainly (AndOrType (NegType t1) (NegType t2)), CanNeg t1,
+   CanNeg t2, CanNeg (AndOrType t1 t2), CanAndOrAsymmetric t1 t1,
+   CanAndOrAsymmetric t1 t2, CanAndOrAsymmetric t1 t3,
+   CanAndOrAsymmetric t1 (AndOrType t2 t3), CanAndOrAsymmetric t2 t1,
+   CanAndOrAsymmetric t2 t3, CanAndOrAsymmetric (AndOrType t1 t2) t3,
+   CanAndOrAsymmetric (AndOrType t1 t2) (AndOrType t1 t3),
+   CanAndOrAsymmetric (NegType t1) (NegType t2))
   =>
   T t1 -> T t2 -> T t3 -> Spec
 specCanAndOr (T typeName1 ::T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
@@ -289,9 +288,23 @@ specCanAndOr (T typeName1 ::T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   HSpec properties that each implementation of CanAndOr should satisfy.
  -}
 specCanAndOrNotMixed ::
-  (CanAndOrX t t,
-   CanAndOrX (AndOrType t t) t, CanAndOrX t (AndOrType t t),
-   CanAndOrX (AndOrType t t) (AndOrType t t))
+  (Show t, Show (AndOrType t t),
+   Show (AndOrType t (AndOrType t t)),
+   Show (AndOrType (AndOrType t t) t),
+   Show (AndOrType (AndOrType t t) (AndOrType t t)),
+   Show (NegType (AndOrType t t)),
+   Show (AndOrType (NegType t) (NegType t)), SCS.Serial IO t,
+   CanTestCertainly t, CanTestCertainly (AndOrType t t),
+   CanTestCertainly (AndOrType t (AndOrType t t)),
+   CanTestCertainly (AndOrType (AndOrType t t) t),
+   CanTestCertainly (AndOrType (AndOrType t t) (AndOrType t t)),
+   CanTestCertainly (NegType (AndOrType t t)),
+   CanTestCertainly (AndOrType (NegType t) (NegType t)), CanNeg t,
+   CanNeg (AndOrType t t), CanAndOrAsymmetric t t,
+   CanAndOrAsymmetric t (AndOrType t t),
+   CanAndOrAsymmetric (AndOrType t t) t,
+   CanAndOrAsymmetric (AndOrType t t) (AndOrType t t),
+   CanAndOrAsymmetric (NegType t) (NegType t))
   =>
   T t -> Spec
 specCanAndOrNotMixed t = specCanAndOr t t t
