@@ -66,7 +66,8 @@ instance (Show v, SuitableForCE es) => (Show (CollectErrors es v)) where
   show (CollectErrors mv es) =
     case mv of
       Just v | es == mempty -> show v
-      _ -> printf "{%s}" (show es)
+      Just v -> printf "%s{%s}" (show v) (show es)
+      Nothing -> printf "{%s}" (show es)
 
 noValueCE :: es -> CollectErrors es v
 noValueCE es = CollectErrors Nothing es
