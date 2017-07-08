@@ -18,7 +18,7 @@ where
 
 import Prelude
   (Functor(..), Applicative(..), Monad(..), (<$>), ($)
-  , error, const, flip, not
+  , error, const, flip, not, fst, snd, foldMap
   , Int, Integer, Rational, Double, Bool, Char
   , Maybe(..), Either(..)
   , Show(..), Eq(..)
@@ -181,13 +181,13 @@ class
 
   ensureNoCE ::
     Maybe es {-^ sample only -} ->
-    a -> Either es (EnsureNoCE es a)
+    a -> (Maybe (EnsureNoCE es a), es)
 
   default ensureNoCE ::
-    (EnsureNoCE es a ~ a, Eq es) =>
+    (EnsureNoCE es a ~ a, Eq es, Monoid es) =>
     Maybe es {-^ sample only -} ->
-    a -> Either es (EnsureNoCE es a)
-  ensureNoCE _ = Right
+    a -> (Maybe (EnsureNoCE es a), es)
+  ensureNoCE _ a = (Just a, mempty)
 
   {-|  Make CollectErrors record with no value, only errors. -}
   noValueECE ::
@@ -231,9 +231,9 @@ instance
       Left es -> Left es
   ensureNoCE sample_es (CollectErrors mv es) =
     case fmap (ensureNoCE sample_es) mv of
-      Just (Right v) | not (hasCertainError es) -> Right v
-      Just (Left es2) -> Left es2
-      _ -> Left es
+      Just (Just v, es2) -> (Just v, es2 <> es)
+      Just (_, es2) -> (Nothing, es2 <> es)
+      _ -> (Nothing, mempty)
 
   noValueECE sample_vCE es =
     noValueECE (join $ fmap getMaybeValueCE sample_vCE) es
@@ -263,8 +263,11 @@ instance
   ensureCE sample_es = fmap (ensureCE sample_es)
   deEnsureCE sample_es (Just vCE) = fmap Just (deEnsureCE sample_es vCE)
   deEnsureCE _sample_es Nothing = Right Nothing
-  ensureNoCE sample_es (Just vCE) = fmap Just (ensureNoCE sample_es vCE)
-  ensureNoCE _sample_es Nothing = Right Nothing
+  ensureNoCE sample_es (Just vCE) =
+    case ensureNoCE sample_es vCE of
+      (Just v, es) -> (Just (Just v), es)
+      (_, es) -> (Nothing, es)
+  ensureNoCE _sample_es Nothing = (Nothing, mempty)
 
   noValueECE sample_vCE es = Just (noValueECE (fromJust sample_vCE) es)
 
@@ -283,8 +286,8 @@ getValueOrThrowErrorsNCE ::
   v -> (EnsureNoCE es v)
 getValueOrThrowErrorsNCE sample_es v =
   case ensureNoCE sample_es v of
-    Right vNCE -> vNCE
-    Left es -> error (show es)
+    (Just vNCE, es) | not (hasCertainError es) -> vNCE
+    (_, es) -> error (show es)
 
 {-|
   Add error collection support to an unary function whose
@@ -382,6 +385,8 @@ class (SuitableForCE es) => CanExtractCE es f where
     Maybe es ->
     f c -> CollectErrors es (f (EnsureNoCE es c))
   extractCE sample_es fc =
-    case sequence (fmap (ensureNoCE sample_es) fc) of
-      Right fec -> pure fec
-      Left es -> noValueCE es
+    case mapM fst fcNoCE of
+      Just fec -> pure fec
+      _ -> noValueCE $ foldMap snd fcNoCE
+    where
+    fcNoCE = fmap (ensureNoCE sample_es) fc

@@ -96,7 +96,7 @@ deEnsureCN = deEnsureCE sample_NumErrors
   to a value of a type @CollectNumErrors a@ except when @a@
   already is a @CollectNumErrors@ type, in which case the value is left as is.
 -}
-ensureNoCN :: (CanEnsureCN v) => v -> Either NumErrors (EnsureNoCN v)
+ensureNoCN :: (CanEnsureCN v) => v -> (Maybe (EnsureNoCN v), NumErrors)
 ensureNoCN = ensureNoCE sample_NumErrors
 
 noValueECN :: (CanEnsureCN v) => Maybe v -> NumErrors -> EnsureCN v
