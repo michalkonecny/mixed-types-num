@@ -55,13 +55,25 @@ import Numeric.MixedTypes.AddSub
 type CanAddSubMulBy t s =
   (CanAddThis t s, CanSubThis t s, CanMulBy t s)
 
-type Ring t =
+type RingPre t =
   (CanNegSameType t, CanAddSameType t, CanSubSameType t, CanMulSameType t,
    CanPowCNBy t Integer, CanPowCNBy t Int,
    HasEq t t,
    HasEq t Integer, CanAddSubMulBy t Integer,
    HasEq t Int, CanAddSubMulBy t Int,
    HasIntegers t)
+
+class
+  (RingPre t,
+   CanEnsureCN t,
+   RingPre (EnsureCN t))
+  =>
+  Ring t
+
+instance Ring Integer
+instance Ring (CN Integer)
+instance Ring Rational
+instance Ring (CN Rational)
 
 type CertainlyEqRing t =
   (Ring t, HasEqCertainly t t, HasEqCertainly t Int, HasEqCertainly t Integer)

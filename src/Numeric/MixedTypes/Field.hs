@@ -60,10 +60,15 @@ type FieldPre t =
      CanAddSubMulDivCNBy t Int
     )
 
-type Field t =
+class
   (FieldPre t,
    CanEnsureCN t,
    FieldPre (EnsureCN t))
+  =>
+  Field t
+
+instance Field Rational
+instance Field (CN Rational)
 
 type CertainlyEqFieldPre t =
   (FieldPre t, CertainlyEqRing t)
