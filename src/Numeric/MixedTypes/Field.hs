@@ -14,7 +14,7 @@
 module Numeric.MixedTypes.Field
 (
   -- * Field
-  CanAddSubMulDivCNBy, Field, CertainlyEqField, OrderedField, OrderedCertainlyField
+  CanAddSubMulDivCNBy, Field, OrderedField, OrderedCertainlyField
   -- * Division
   , CanDiv(..), CanDivBy, CanDivCNBy, CanDivSameType, CanDivCNSameType
   , CanRecip, CanRecipSameType, CanRecipCNSameType
@@ -50,49 +50,34 @@ import Numeric.MixedTypes.Ring
 {----- Field -----}
 
 type CanAddSubMulDivCNBy t s =
-  (CanAddSubMulBy t s, CanDivCNBy t s)
-
-type FieldPre t =
-    (Ring t,
-     CanDivCNSameType t, CanRecipCNSameType t,
-     CanAddSubMulDivCNBy t Rational,
-     CanAddSubMulDivCNBy t Integer,
-     CanAddSubMulDivCNBy t Int
-    )
+  (CanAddSubMulBy t s, CanAddSubMulBy (EnsureCN t) s, CanDivCNBy t s)
 
 class
-  (FieldPre t,
-   CanEnsureCN t,
-   FieldPre (EnsureCN t))
+  (Ring t,
+   CanDivCNSameType t, CanRecipCNSameType t,
+   CanAddSubMulDivCNBy t Rational,
+   CanAddSubMulDivCNBy t Integer,
+   CanAddSubMulDivCNBy t Int
+  )
   =>
   Field t
 
 instance Field Rational
 instance Field (CN Rational)
 
-type CertainlyEqFieldPre t =
-  (FieldPre t, CertainlyEqRing t)
+class
+  (Field t, OrderedRing t, HasOrder t Rational, HasOrder (EnsureCN t) Rational)
+  => OrderedField t
 
-type CertainlyEqField t =
-  (CertainlyEqFieldPre t,
-   CanEnsureCN t,
-   CertainlyEqFieldPre (EnsureCN t))
+instance OrderedField Rational
+instance OrderedField (CN Rational)
 
-type OrderedFieldPre t =
-  (FieldPre t, OrderedRing t, HasOrder t Rational)
+class
+  (Field t, OrderedCertainlyRing t, HasOrderCertainly t Rational, HasOrderCertainly (EnsureCN t) Rational)
+  => OrderedCertainlyField t
 
-type OrderedField t =
-  (OrderedFieldPre t,
-   CanEnsureCN t,
-   OrderedFieldPre (EnsureCN t))
-
-type OrderedCertainlyFieldPre t =
-  (CertainlyEqFieldPre t, OrderedCertainlyRing t, HasOrderCertainly t Rational)
-
-type OrderedCertainlyField t =
-  (OrderedCertainlyFieldPre t,
-   CanEnsureCN t,
-   OrderedCertainlyFieldPre (EnsureCN t))
+instance OrderedCertainlyField Rational
+instance OrderedCertainlyField (CN Rational)
 
 {---- Division -----}
 
@@ -139,7 +124,9 @@ type CanRecipSameType t =
   (CanDiv Integer t, DivType Integer t ~ t, DivTypeNoCN Integer t ~ t)
 
 type CanRecipCNSameType t =
-  (CanDiv Integer t, DivType Integer t ~ EnsureCN t, DivTypeNoCN Integer t ~ t)
+  (CanDiv Integer t, DivType Integer t ~ EnsureCN t, DivTypeNoCN Integer t ~ t
+  ,CanEnsureCN t
+  ,CanDiv Integer (EnsureCN t), DivType Integer (EnsureCN t) ~ EnsureCN t, DivTypeNoCN Integer (EnsureCN t) ~ (EnsureCN t))
 
 recip :: (CanRecip t) => t -> DivType Integer t
 recip = divide 1
@@ -150,9 +137,12 @@ type CanDivSameType t =
   CanDivBy t t
 
 type CanDivCNBy t1 t2 =
-  (CanDiv t1 t2, DivType t1 t2 ~ EnsureCN t1, DivTypeNoCN t1 t2 ~ t1)
+  (CanDiv t1 t2, DivType t1 t2 ~ EnsureCN t1, DivTypeNoCN t1 t2 ~ t1
+  , CanEnsureCN t1
+  , CanDiv (EnsureCN t1) t2, DivType (EnsureCN t1) t2 ~ EnsureCN t1, DivTypeNoCN (EnsureCN t1) t2 ~ (EnsureCN t1))
 type CanDivCNSameType t =
-  CanDivCNBy t t
+  (CanDivCNBy t t
+  , CanDiv (EnsureCN t) (EnsureCN t), DivType (EnsureCN t) (EnsureCN t) ~ EnsureCN t, DivTypeNoCN (EnsureCN t) (EnsureCN t) ~ (EnsureCN t))
 
 {-|
   HSpec properties that each implementation of CanDiv should satisfy.

@@ -14,7 +14,7 @@
 module Numeric.MixedTypes.Ring
 (
   -- * Ring
-  CanAddSubMulBy, Ring, CertainlyEqRing, OrderedRing, OrderedCertainlyRing
+  CanAddSubMulBy, Ring, OrderedRing, OrderedCertainlyRing
   -- * Multiplication
   , CanMul, CanMulAsymmetric(..), CanMulBy, CanMulSameType
   , (*), product
@@ -75,15 +75,44 @@ instance Ring (CN Integer)
 instance Ring Rational
 instance Ring (CN Rational)
 
-type CertainlyEqRing t =
-  (Ring t, HasEqCertainly t t, HasEqCertainly t Int, HasEqCertainly t Integer)
+class
+  (Ring t
+  , HasEq t t
+  , HasEq (EnsureCN t) t
+  , HasEq t (EnsureCN t)
+  , HasEq t Int, HasEq t Integer
+  , HasEq (EnsureCN t) Int, HasEq (EnsureCN t) Integer
+  , HasOrder t t
+  , HasOrder (EnsureCN t) t
+  , HasOrder t (EnsureCN t)
+  , HasOrder t Int, HasOrder t Integer
+  , HasOrder (EnsureCN t) Int, HasOrder (EnsureCN t) Integer)
+  => OrderedRing t
 
-type OrderedRing t =
-  (Ring t, HasOrder t t, HasOrder t Int, HasOrder t Integer)
+instance OrderedRing Integer
+instance OrderedRing (CN Integer)
+instance OrderedRing Rational
+instance OrderedRing (CN Rational)
 
-type OrderedCertainlyRing t =
-  (CertainlyEqRing t, HasOrderCertainly t t, HasOrderCertainly t Int, HasOrderCertainly t Integer,
-  CanTestPosNeg t)
+class
+  (Ring t
+  , HasEqCertainly t t
+  , HasEqCertainly (EnsureCN t) t
+  , HasEqCertainly t (EnsureCN t)
+  , HasEqCertainly t Int, HasEq t Integer
+  , HasEqCertainly (EnsureCN t) Int, HasEq (EnsureCN t) Integer
+  , HasOrderCertainly t t
+  , HasOrderCertainly (EnsureCN t) t
+  , HasOrderCertainly t (EnsureCN t)
+  , HasOrderCertainly t Int, HasOrderCertainly t Integer
+  , HasOrderCertainly (EnsureCN t) Int, HasOrderCertainly (EnsureCN t) Integer
+  , CanTestPosNeg t)
+  => OrderedCertainlyRing t
+
+instance OrderedCertainlyRing Integer
+instance OrderedCertainlyRing (CN Integer)
+instance OrderedCertainlyRing Rational
+instance OrderedCertainlyRing (CN Rational)
 
 {---- Multiplication -----}
 
@@ -381,7 +410,10 @@ type CanPowBy t1 t2 =
   (CanPow t1 t2, PowType t1 t2 ~ t1, PowTypeNoCN t1 t2 ~ t1)
 
 type CanPowCNBy t1 t2 =
-  (CanPow t1 t2, PowType t1 t2 ~ EnsureCN t1, PowTypeNoCN t1 t2 ~ t1)
+  (CanPow t1 t2, PowType t1 t2 ~ EnsureCN t1, PowTypeNoCN t1 t2 ~ t1
+  , CanEnsureCN t1
+  , CanPow (EnsureCN t1) t2, PowType (EnsureCN t1) t2 ~ EnsureCN t1
+  , PowTypeNoCN (EnsureCN t1) t2 ~ (EnsureCN t1))
 
 {-|
   HSpec properties that each implementation of CanPow should satisfy.
