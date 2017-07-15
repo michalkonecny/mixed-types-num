@@ -17,8 +17,8 @@ module Control.CollectErrors
 where
 
 import Prelude
-  (Functor(..), Applicative(..), Monad(..), (<$>), ($)
-  , error, const, flip, not, fst, snd, foldMap
+  (Functor(..), Applicative(..), Monad(..), (<$>), ($), (.)
+  , error, const, flip, not, fst, snd, foldMap, (++)
   , Int, Integer, Rational, Double, Bool, Char
   , Maybe(..), Either(..)
   , Show(..), Eq(..)
@@ -275,6 +275,33 @@ instance
   prependErrorsECE sample_vCE es (Just vCE) =
     Just $ prependErrorsECE (fromJust sample_vCE) es vCE
   prependErrorsECE _sample_vCE _es Nothing = Nothing
+
+instance
+  (SuitableForCE es, CanEnsureCE es a)
+  =>
+  CanEnsureCE es (b -> a)
+  where
+  type EnsureCE es (b -> a) = b -> (EnsureCE es a)
+  type EnsureNoCE es (b -> a) = b ->  (EnsureNoCE es a)
+
+  ensureCE sample_es = ((ensureCE sample_es) .)
+  deEnsureCE sample_es f =
+    Right $ \ a ->
+      case deEnsureCE sample_es (f a) of
+        Right v -> v
+        Left es -> error $ "deEnsureCE for function: " ++ show es
+  ensureNoCE sample_es f = (Just f', mempty)
+    where
+    f' a =
+      case ensureNoCE sample_es (f a) of
+        (Just v, _) -> v
+        (_, es) -> error $ "ensureNoCE for function: " ++ show es
+
+  noValueECE (_fvCE :: Maybe (b -> a)) es =
+    const (noValueECE (Nothing :: Maybe a) es)
+
+  prependErrorsECE (_fvCE :: Maybe (b -> a)) es =
+    ((prependErrorsECE (Nothing :: Maybe a) es) .)
 
 -- instance (Monoid es) => CanEnsureCE es [a] where
 -- instance (Monoid es) => CanEnsureCE es (Either e a) where
