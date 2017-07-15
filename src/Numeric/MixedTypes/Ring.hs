@@ -390,12 +390,12 @@ powCN unsafePow b e
 
 powUsingMul ::
   (CanBeInteger e,
-   CanMulSameType t, HasIntegers t)
+   CanMulSameType t)
    =>
-   t -> e -> t
-powUsingMul x nPre
+   t -> t -> e -> t
+powUsingMul one x nPre
   | n < 0 = error $ "powUsingMul is not defined for negative exponent " ++ show n
-  | n == 0 = convertExactly 1
+  | n == 0 = one
   | otherwise = aux n
   where
     n = integer nPre

@@ -316,18 +316,16 @@ powUsingExpLog ::
    CanMulSameType (EnsureCN t),
    CanExpSameType (EnsureCN t),
    CanTestInteger t,
-   HasIntegers t,
    CanTestZero t,
-   CanRecipCNSameType t,
-   HasIntegers (EnsureCN t))
+   CanRecipCNSameType t)
   =>
-  t -> t -> EnsureCN t
-powUsingExpLog b e =
+  t -> t -> t -> t -> EnsureCN t
+powUsingExpLog zero one b e =
   case certainlyIntegerGetIt e of
     Just n ->
-      powUsingMulRecip b n
+      powUsingMulRecip one b n
     Nothing
-      | isCertainlyZero b && isCertainlyPositive e -> convertExactly 0
+      | isCertainlyZero b && isCertainlyPositive e -> cn zero
       | isCertainlyNonNegative b -> exp ((log b) * (ensureCN e))
       | isCertainlyNegative b && certainlyNotInteger e -> noValueNumErrorCertainECN (Just b) err
       | otherwise -> noValueNumErrorPotentialECN (Just b) err

@@ -297,15 +297,15 @@ instance
   divideNoCN = lift2CE divideNoCN
 
 powUsingMulRecip ::
-  (CanBeInteger e, HasIntegers t,
+  (CanBeInteger e,
    CanRecipCNSameType t, CanMulSameType t, CanEnsureCN t)
    =>
-   t -> e -> EnsureCN t
-powUsingMulRecip x nPre
-  | n < 0 = recip $ powUsingMul x (negate n)
-  | otherwise = ensureCN $ powUsingMul x n
+   t -> t -> e -> EnsureCN t
+powUsingMulRecip one x nPre
+  | n < 0 = recip $ powUsingMul one x (negate n)
+  | otherwise = ensureCN $ powUsingMul one x n
   where
-    n = integer nPre
+  n = integer nPre
 
 $(declForTypes
   [[t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
