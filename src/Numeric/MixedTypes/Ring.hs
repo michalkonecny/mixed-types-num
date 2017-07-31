@@ -128,7 +128,7 @@ class CanMulAsymmetric t1 t2 where
   type MulType t1 t2
   type MulType t1 t2 = t1 -- default
   mul :: t1 -> t2 -> MulType t1 t2
-  default mul :: (MulType t1 t2 ~ t1, t1~t2, P.Num t1) => t1 -> t1 -> t1
+  default mul :: (MulType t1 t2 ~ t1, t1~t2, P.Num t1) => t1 -> t2 -> MulType t1 t2
   mul = (P.*)
 
 infixl 8  ^, ^!
@@ -343,9 +343,9 @@ class CanPow b e where
   default pow ::
     (HasOrderCertainly b Integer, HasOrderCertainly e Integer,
      HasEqCertainly b Integer, CanTestInteger e,
-     CanEnsureCN (PowTypeNoCN b e))
+     CanEnsureCN (PowTypeNoCN b e), PowType b e~EnsureCN (PowTypeNoCN b e))
     =>
-    b -> e -> EnsureCN (PowTypeNoCN b e)
+    b -> e -> PowType b e
   pow = powCN powNoCN
 
 integerPowCN ::

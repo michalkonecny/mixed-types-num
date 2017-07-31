@@ -60,7 +60,7 @@ class CanAddAsymmetric t1 t2 where
   type AddType t1 t2
   type AddType t1 t2 = t1 -- default
   add :: t1 -> t2 -> AddType t1 t2
-  default add :: (AddType t1 t2 ~ t1, t1~t2, P.Num t1) => t1 -> t1 -> t1
+  default add :: (AddType t1 t2 ~ t1, t1~t2, P.Num t1) => t1 -> t2 -> AddType t1 t2
   add = (P.+)
 
 infixl 6  +, -

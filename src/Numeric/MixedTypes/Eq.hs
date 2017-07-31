@@ -80,7 +80,7 @@ class (IsBool (EqCompareType a b)) => HasEqAsymmetric a b where
     type EqCompareType a b = Bool -- default
     equalTo :: a -> b -> (EqCompareType a b)
     -- default equalToA via Prelude for (->) and Bool:
-    default equalTo :: (EqCompareType a b ~ Bool, a~b, P.Eq a) => a -> b -> Bool
+    default equalTo :: (EqCompareType a b ~ Bool, a~b, P.Eq a) => a -> b -> EqCompareType a b
     equalTo = (P.==)
     notEqualTo :: a -> b -> (EqCompareType a b)
     -- default notEqualToA via equalToA for Bool:

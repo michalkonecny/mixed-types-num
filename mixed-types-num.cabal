@@ -10,7 +10,7 @@ license:        BSD3
 license-file:   LICENSE
 extra-source-files:  changelog.md
 stability:      experimental
-tested-with:    GHC==7.10.3, GHC==8.0.2
+tested-with:    GHC==7.10.3, GHC==8.0.2, GHC==8.2.1
 category:       Math
 synopsis:       Alternative Prelude with numeric and logic expressions typed bottom-up
 Description:
@@ -28,11 +28,10 @@ source-repository head
   type:     git
   location: https://github.com/mikkonecny/mixed-types-num
 
-
 library
   hs-source-dirs:  src
   build-depends:
-    base >= 4.8 && < 4.10
+    base >= 4.8 && < 4.11
     , convertible >= 1.1.1.0 && < 1.2
     , template-haskell
     , hspec >= 2.1 && < 2.5

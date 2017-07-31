@@ -59,9 +59,9 @@ class CanMinMaxAsymmetric t1 t2 where
   type MinMaxType t1 t2 = t1 -- default
   min :: t1 -> t2 -> MinMaxType t1 t2
   max :: t1 -> t2 -> MinMaxType t1 t2
-  default min :: (MinMaxType t1 t2 ~ t1, t1~t2, P.Ord t1) => t1 -> t1 -> t1
+  default min :: (MinMaxType t1 t2 ~ t1, t1~t2, P.Ord t1) => t1 -> t2 -> MinMaxType t1 t2
   min = P.min
-  default max :: (MinMaxType t1 t2 ~ t1, t1~t2, P.Ord t1) => t1 -> t1 -> t1
+  default max :: (MinMaxType t1 t2 ~ t1, t1~t2, P.Ord t1) => t1 -> t2 -> MinMaxType t1 t2
   max = P.max
 
 type CanMinMaxThis t1 t2 =
@@ -328,7 +328,7 @@ class CanAbs t where
   type AbsType t
   type AbsType t = t -- default
   abs :: t -> AbsType t
-  default abs :: (AbsType t ~ t, P.Num t) => t -> t
+  default abs :: (AbsType t ~ t, P.Num t) => t -> AbsType t
   abs = P.abs
 
 type CanAbsSameType t = (CanAbs t, AbsType t ~ t)

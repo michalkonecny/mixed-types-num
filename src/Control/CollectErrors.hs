@@ -199,7 +199,7 @@ class
     (EnsureCE es a ~ CollectErrors es a)
     =>
     Maybe a ->
-    es -> CollectErrors es a
+    es -> EnsureCE es a
   noValueECE _ = noValueCE
 
   prependErrorsECE ::

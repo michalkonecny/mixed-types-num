@@ -56,7 +56,7 @@ class CanSqrt t where
   type SqrtType t
   type SqrtType t = t -- default
   sqrt :: t -> SqrtType t
-  default sqrt :: (SqrtType t ~ t, P.Floating t) => t -> t
+  default sqrt :: (SqrtType t ~ t, P.Floating t) => t -> SqrtType t
   sqrt = P.sqrt
 
 type CanSqrtSameType t = (CanSqrt t, SqrtType t ~ t)
@@ -122,7 +122,7 @@ class CanExp t where
   type ExpType t
   type ExpType t = t -- default
   exp :: t -> ExpType t
-  default exp :: (ExpType t ~ t, P.Floating t) => t -> t
+  default exp :: (ExpType t ~ t, P.Floating t) => t -> ExpType t
   exp = P.exp
 
 type CanExpSameType t = (CanExp t, ExpType t ~ t)
@@ -208,7 +208,7 @@ class CanLog t where
   type LogType t
   type LogType t = t -- default
   log :: t -> LogType t
-  default log :: (LogType t ~ t, P.Floating t) => t -> t
+  default log :: (LogType t ~ t, P.Floating t) => t -> LogType t
   log = P.log
 
 type CanLogSameType t = (CanLog t, LogType t ~ t)
@@ -342,10 +342,10 @@ class CanSinCos t where
   type SinCosType t
   type SinCosType t = t -- default
   cos :: t -> SinCosType t
-  default cos :: (SinCosType t ~ t, P.Floating t) => t -> t
+  default cos :: (SinCosType t ~ t, P.Floating t) => t -> SinCosType t
   cos = P.cos
   sin :: t -> SinCosType t
-  default sin :: (SinCosType t ~ t, P.Floating t) => t -> t
+  default sin :: (SinCosType t ~ t, P.Floating t) => t -> SinCosType t
   sin = P.sin
 
 type CanSinCosSameType t = (CanSinCos t, SinCosType t ~ t)

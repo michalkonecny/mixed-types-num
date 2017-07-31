@@ -92,9 +92,10 @@ class CanDiv t1 t2 where
   type DivType t1 t2 = EnsureCN (DivTypeNoCN t1 t2)
   divide :: t1 -> t2 -> DivType t1 t2
   default divide ::
-    (CanTestZero t2, CanEnsureCN (DivTypeNoCN t1 t2))
+    (CanTestZero t2, CanEnsureCN (DivTypeNoCN t1 t2)
+    , DivType t1 t2 ~ EnsureCN (DivTypeNoCN t1 t2))
     =>
-    t1 -> t2 -> EnsureCN (DivTypeNoCN t1 t2)
+    t1 -> t2 -> DivType t1 t2
   divide = divideCN divideNoCN
 
 divideCN ::

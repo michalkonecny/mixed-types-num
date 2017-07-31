@@ -76,7 +76,7 @@ class (IsBool (OrderCompareType a b)) => HasOrderAsymmetric a b where
     type OrderCompareType a b = Bool -- default
     lessThan :: a -> b -> (OrderCompareType a b)
     -- default lessThan via Prelude for Bool:
-    default lessThan :: (OrderCompareType a b ~ Bool, a~b, P.Ord a) => a -> b -> Bool
+    default lessThan :: (OrderCompareType a b ~ Bool, a~b, P.Ord a) => a -> b -> OrderCompareType a b
     lessThan = (P.<)
     greaterThan :: a -> b -> (OrderCompareType a b)
     default greaterThan ::
@@ -85,7 +85,7 @@ class (IsBool (OrderCompareType a b)) => HasOrderAsymmetric a b where
     greaterThan a b = lessThan b a
     leq :: a -> b -> (OrderCompareType a b)
     -- default lessThan via Prelude for Bool:
-    default leq :: (OrderCompareType a b ~ Bool, a~b, P.Ord a) => a -> b -> Bool
+    default leq :: (OrderCompareType a b ~ Bool, a~b, P.Ord a) => a -> b -> OrderCompareType a b
     leq = (P.<=)
     geq :: a -> b -> (OrderCompareType a b)
     default geq ::
