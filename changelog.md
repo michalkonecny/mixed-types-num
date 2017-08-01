@@ -1,3 +1,6 @@
+* v 0.3.0.1 2017-08-01
+  * improve package documentation in module MixedTypesNumPrelude
+
 * v 0.3 2017-08-01
   * renamed the main module to MixedTypesNumPrelude
   * much faster compilation
