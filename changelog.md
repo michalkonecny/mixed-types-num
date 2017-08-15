@@ -1,3 +1,6 @@
+* v 0.3.1 2017-08-15
+  * provided compatible versions of take, drop, length, replicate, splitAt
+
 * v 0.3.0.1 2017-08-01
   * improve package documentation in module MixedTypesNumPrelude
 

@@ -18,7 +18,8 @@ where
 
 import Prelude hiding
   (
-    fromInteger, fromRational, (!!)
+    fromInteger, fromRational
+    , (!!), length, replicate, take, drop, splitAt
     , Eq(..), Ord(..), Num(..), Fractional(..), RealFrac(..), Floating(..)
     , not, (&&), (||), and, or
     , (^), (^^)

@@ -46,11 +46,13 @@ module Numeric.MixedTypes.Literals
   , CanBeDouble, double, doubles
   , ConvertibleExactly(..), convertExactly, convertExactlyTargetSample
   , ConvertResult, ConvertError, convError
-  -- * Generic list index
-  , (!!), specCanBeInteger, printArgsIfFails2
+  -- * Prelude List operations versions without Int
+  , (!!), length, replicate, take, drop, splitAt
   -- * Testing support functions
   , T(..), tInt, tInteger, tRational, tDouble
   , tBool, tMaybe, tMaybeBool, tMaybeMaybeBool
+  , specCanBeInteger
+  , printArgsIfFails2
   -- * Helper functions
   , convertFirst, convertSecond
   , convertFirstUsing, convertSecondUsing
@@ -118,9 +120,24 @@ type HasIntegers t = ConvertibleExactly Integer t
 fromInteger_ :: (HasIntegers t) => Integer -> t
 fromInteger_ = convertExactly
 
-(!!) :: (CanBeInteger t) => [a] -> t -> a
+(!!) :: (CanBeInteger n) => [a] -> n -> a
 list !! ix = List.genericIndex list (integer ix)
 -- list !! ix = List.genericIndex list (P.max 0 ((integer ix) P.- 1)) -- deliberately wrong - test the test!
+
+length :: (Foldable t) => t a -> Integer
+length = integer . P.length
+
+replicate :: (CanBeInteger n) => n -> a -> [a]
+replicate = P.replicate . int . integer
+
+take :: (CanBeInteger n) => n -> [a] -> [a]
+take = P.take . int . integer
+
+drop :: (CanBeInteger n) => n -> [a] -> [a]
+drop = P.drop . int . integer
+
+splitAt :: (CanBeInteger n) => n -> [a] -> ([a],[a])
+splitAt = P.splitAt . int . integer
 
 {-|
   HSpec properties that each implementation of CanBeInteger should satisfy.
