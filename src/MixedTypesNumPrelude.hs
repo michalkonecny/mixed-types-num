@@ -231,6 +231,16 @@ is inconclusive are the union of the balls computed by both branches.
       Eg @Natural@ and @Float@ are not supported at present,
       but @Double@ is supported.
 
+    * Many common operations such as @fromEnum@, @threadDelay@ give or require
+      an @Int@ value, which means we sometimes need to convert:
+
+      > threadDelay (int 1000000)
+      > integer (fromEnum True)
+
+      Prelude functions such as @take@, @!!@ and @length@ that use @Int@ in Prelude
+      are shadowed in @MixedTypesNumPrelude@ with more compatible/flexible versions.
+      Beware that @Data.List.length@ clashes with @length@ in @MixedTypesNumPrelude@.
+
     * Inferred types can be very large. Eg for @f a b c = sqrt (a + b * c + 1)@ the inferred type is:
 
     >  f: (CanMulAsymmetric t1 t2, CanAddAsymmetric t4 (MulType t1 t2),
