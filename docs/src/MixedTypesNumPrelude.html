@@ -95,14 +95,14 @@
 
 === Dividing integers, dealing with potential error
 
-&gt;&gt;&gt; :t let n = 1 :: Integer in n/(n+1)
+&gt;&gt;&gt; :t let n = 1 in n/(n+1)
 ... :: CollectErrors [(ErrorCertaintyLevel, NumError)] Rational
 
 A shorter synonym of this type is @CN Rational@.
 We use the shorter form below for better readability of this documentation
 although ghci usually prints the longer version:
 
-&gt;&gt;&gt; :t let n = 1 :: Integer in n/(n+1)
+&gt;&gt;&gt; :t let n = 1 in n/(n+1)
 ... :: CN Rational
 
 The @CN@ wrapper here indicates that integer division can fail for some values:
@@ -231,17 +231,6 @@ is inconclusive are the union of the balls computed by both branches.
       Eg @Natural@ and @Float@ are not supported at present,
       but @Double@ is supported.
 
-    * Prelude operations such as @length@, @take@ are exported unchanged,
-      which sometimes requires one to write extra conversions such as:
-
-      &gt; take (int 5) list
-      &gt; (integer (length list))
-
-      It is planned to shadow these functions with more flexible equivalents.
-      The operator @!!@ is already shadowed by a more flexible version,
-      allowing the index to be of type @Integer@ as well as @Int@.
-
-
     * Inferred types can be very large. Eg for @f a b c = sqrt (a + b * c + 1)@ the inferred type is:
 
     &gt;  f: (CanMulAsymmetric t1 t2, CanAddAsymmetric t4 (MulType t1 t2),
@@ -258,12 +247,12 @@ is inconclusive are the union of the balls computed by both branches.
       or use an explicit parameter, eg @add1 x = x + 1@.
 
 -}</span><span>
-</span><a name="line-261"></a><span>
-</span><a name="line-262"></a><span class="hs-comment">{- $origin
+</span><a name="line-250"></a><span>
+</span><a name="line-251"></a><span class="hs-comment">{- $origin
 
     The idea of having numeric expressions in Haskell with types
     derived bottom-up was initially suggested and implemented by Pieter Collins.
     This version is a fresh rewrite by Michal Kone&#269;n&#253;.
 
 -}</span><span>
-</span><a name="line-269"></a></pre></body></html>
+</span><a name="line-258"></a></pre></body></html>
