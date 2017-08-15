@@ -95,14 +95,14 @@ import Numeric.MixedTypes.Complex
 
 === Dividing integers, dealing with potential error
 
->>> :t let n = 1 :: Integer in n/(n+1)
+>>> :t let n = 1 in n/(n+1)
 ... :: CollectErrors [(ErrorCertaintyLevel, NumError)] Rational
 
 A shorter synonym of this type is @CN Rational@.
 We use the shorter form below for better readability of this documentation
 although ghci usually prints the longer version:
 
->>> :t let n = 1 :: Integer in n/(n+1)
+>>> :t let n = 1 in n/(n+1)
 ... :: CN Rational
 
 The @CN@ wrapper here indicates that integer division can fail for some values:
@@ -230,17 +230,6 @@ is inconclusive are the union of the balls computed by both branches.
     * Not all Prelude numerical types are supported yet.
       Eg @Natural@ and @Float@ are not supported at present,
       but @Double@ is supported.
-
-    * Prelude operations such as @length@, @take@ are exported unchanged,
-      which sometimes requires one to write extra conversions such as:
-
-      > take (int 5) list
-      > (integer (length list))
-
-      It is planned to shadow these functions with more flexible equivalents.
-      The operator @!!@ is already shadowed by a more flexible version,
-      allowing the index to be of type @Integer@ as well as @Int@.
-
 
     * Inferred types can be very large. Eg for @f a b c = sqrt (a + b * c + 1)@ the inferred type is:
 
