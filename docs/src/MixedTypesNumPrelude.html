@@ -231,6 +231,16 @@ is inconclusive are the union of the balls computed by both branches.
       Eg @Natural@ and @Float@ are not supported at present,
       but @Double@ is supported.
 
+    * Many common operations such as @fromEnum@, @threadDelay@ give or require
+      an @Int@ value, which means we sometimes need to convert:
+
+      &gt; threadDelay (int 1000000)
+      &gt; integer (fromEnum True)
+
+      Prelude functions such as @take@, @!!@ and @length@ that use @Int@ in Prelude
+      are shadowed in @MixedTypesNumPrelude@ with more compatible/flexible versions.
+      Beware that @Data.List.length@ clashes with @length@ in @MixedTypesNumPrelude@.
+
     * Inferred types can be very large. Eg for @f a b c = sqrt (a + b * c + 1)@ the inferred type is:
 
     &gt;  f: (CanMulAsymmetric t1 t2, CanAddAsymmetric t4 (MulType t1 t2),
@@ -247,12 +257,12 @@ is inconclusive are the union of the balls computed by both branches.
       or use an explicit parameter, eg @add1 x = x + 1@.
 
 -}</span><span>
-</span><a name="line-250"></a><span>
-</span><a name="line-251"></a><span class="hs-comment">{- $origin
+</span><a name="line-260"></a><span>
+</span><a name="line-261"></a><span class="hs-comment">{- $origin
 
     The idea of having numeric expressions in Haskell with types
     derived bottom-up was initially suggested and implemented by Pieter Collins.
     This version is a fresh rewrite by Michal Kone&#269;n&#253;.
 
 -}</span><span>
-</span><a name="line-258"></a></pre></body></html>
+</span><a name="line-268"></a></pre></body></html>
