@@ -31,7 +31,7 @@ source-repository head
 library
   hs-source-dirs:  src
   build-depends:
-    base >= 4.8
+    base >= 4.8 && < 5
     , convertible >= 1.1.1.0
     , template-haskell
     , hspec >= 2.1
