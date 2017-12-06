@@ -1,3 +1,3 @@
 # mixed-types-num
 
-Package Haddock documentation: <https://michalkonecny.github.io/mixed-types-num/>
+Hackage page including haddock: <https://hackage.haskell.org/package/mixed-types-num>

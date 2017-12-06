@@ -1,6 +1,7 @@
+* v 0.3.1.4 2017-12-06
+  * removed upper bounds for dependencies
 * v 0.3.1.3 2017-08-22
   * fixed bound on base in test suite
-
 * v 0.3.1.2 2017-08-15
   * provided compatible versions of take, drop, length, replicate, splitAt
   * added missing mixed-type subtraction combination to Ring etc.
