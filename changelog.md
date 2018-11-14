@@ -1,3 +1,5 @@
+* v 0.3.1.5 2018-11-14
+  * improved documentation
 * v 0.3.1.4 2017-12-06
   * removed upper bounds for dependencies
 * v 0.3.1.3 2017-08-22
