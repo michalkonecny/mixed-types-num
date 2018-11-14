@@ -20,6 +20,7 @@
 module MixedTypesNumPrelude
 (
   -- * Feature highlights
+
   -- ** Basics
   -- $basics
 
@@ -74,108 +75,134 @@ import Numeric.MixedTypes.Complex
 
 {- $basics
 
+To replicate the below in ghci using stack, start it as follows:
+
+>> stack ghci mixed-types-num:lib
+>...> :add MixedTypesNumPrelude
+
 === Literals have a fixed type
 
->>> :t 1
-... Integer
+>...> :t 1
+>... Integer
 
->>> :t 1.0
-... Rational
+>...> :t 1.0
+>... Rational
 
->>> 1 :: Rational
-... Couldn't match type ‘Integer’ with ‘GHC.Real.Ratio Integer’ ...
+>...> 1 :: Rational
+>... Couldn't match type ‘Integer’ with ‘GHC.Real.Ratio Integer’ ...
 
 === Mixed-type operations
 
->>> :t 1.5 + 1
-... :: Rational
+>...> :t 1.5 + 1
+>... :: Rational
 
->>> :t 1.5 * (length [[]])
-... :: Rational
+>...> :t 1.5 * (length [[]])
+>... :: Rational
 
 === Dividing integers, dealing with potential error
 
->>> :t let n = 1 in n/(n+1)
-... :: CollectErrors [(ErrorCertaintyLevel, NumError)] Rational
+>...> :t let n = 1 in n/(n+1)
+>... :: CollectErrors [(ErrorCertaintyLevel, NumError)] Rational
 
 A shorter synonym of this type is @CN Rational@.
 We use the shorter form below for better readability of this documentation
 although ghci usually prints the longer version:
 
->>> :t let n = 1 in n/(n+1)
-... :: CN Rational
+>...> :t let n = 1 in n/(n+1)
+>... :: CN Rational
 
 The @CN@ wrapper here indicates that integer division can fail for some values:
 
->>> 1/0
-{[(ERROR,division by 0)]}
+>...> 1/0
+>{[(ERROR,division by 0)]}
 
 Note that when evaluating @1/0@, it evaluates to the error value printed above.
 This is not an exception, but a special value.
 
-When one is certain the division is well defined, one can remove @CN@ in two ways:
+When one is certain the division is well defined, one can remove @CN@ as follows:
 
->>> :t (1/!2)
-... :: Rational
+>...> :t (1/!2)
+>... :: Rational
 
->>> :t (~!) (1/2)
-... :: Rational
+Note that if one gets it wrong, it can lead to an exception:
+
+>...> :t (1/!0)
+>*** Exception: Ratio has zero denominator
+
+More generally, one can remove @CN@ as follows:
+
+>...> :t (~!) (1/2)
+>... :: Rational
 
 The operator @(/!)@ stands for division which throws an exception is the
 denominator is 0.  It "propagates" any potential errors
 from the sub-expressions.  For example:
 
->>> :t 1/!(1 - 1/n)
-... :: CN Rational
+>...> :t 1/!(1 - 1/n)
+>... :: CN Rational
 
 The above expression will throw an error exception when evaluated with @n=1@
 but when @n=0@, it will not throw an excetion but return an error value.
 
 The @(~!)@ operator removes CN from any type, throwing an exception if some errors have certainly occurred:
 
->>> :t (~!) (1/(1 - 1/n))
-... :: Rational
+>...> :t (~!) (1/(1 - 1/n))
+>... :: Rational
 
-Potential errors are ignored by @(~!)@:
+The following examples require also package <https://github.com/michalkonecny/aern2 aern2-real>.
+To get access to this via stack, you can start ghci eg as follows:
 
-(These examples require also package <https://github.com/michalkonecny/aern2 aern2-real>.)
+> stack ghci aern2-real:lib
+>...> :add AERN2.Real
 
->>> (~!) sqrt (pi-pi)
-[7.395570986446986e-32 ± <2^(-103)]
+Also other harmless potential errors can be ignored using @(~!)@:
 
->>> sqrt (pi-pi)
-[7.395570986446986e-32 ± <2^(-103)]{[(POTENTIAL ERROR,out of range: sqrt: argument must be >= 0: [0 ± <2^(-204)])]}
+>...> (~!) $ sqrt (pi-pi)
+>[7.395570986446986e-32 ± <2^(-103)]
+
+>...> sqrt (pi-pi)
+>[7.395570986446986e-32 ± <2^(-103)]{[(POTENTIAL ERROR,out of range: sqrt: argument must be >= 0: [0 ± <2^(-240)])]}
 
 
 === Natural, integer and fractional powers
 
->>> :t 2^2
-...CN Integer
+>...> :t 2^2
+>...CN Integer
 
->>> :t 2.0^(-2)
-...CN Rational
+>...> :t 2.0^(-2)
+>...CN Rational
 
->>> :t (double 2)^(1/!2)
-...Double
+>...> :t (double 2)^(1/!2)
+>...Double
 
 The following examples require package <https://github.com/michalkonecny/aern2 aern2-real>:
 
->>> :t 2^(1/2)
-...CauchyRealCN
+>...> :t 2^(1/2)
+>...CauchyRealCN
 
->>> :t pi
-...CauchyReal
+>...> :t pi
+>...CauchyReal
 
->>> :t sqrt 2
-...CauchyRealCN
+>...> :t sqrt 2
+>...CauchyRealCN
 
 === Comparing an integer with an (exact) real number
 
->>> let abs2 x = if x < 0 then -x else x in (abs2 (pi - pi)) ? (bitsS 100)
-[0 ± <2^(-103)]{[(POTENTIAL ERROR,numeric error: union of enclosures: not enclosing the same value)]}
+>...> let abs2 x = if x < 0 then -x else x in (abs2 (pi - pi)) ? (bitsS 100)
+>[0 ± <2^(-103)]{[(POTENTIAL ERROR,numeric error: union of enclosures: not enclosing the same value)]}
 
->>> let abs2 x = (~!) (if x < 0 then -x else x) in (abs2 (pi - pi)) ? (bitsS 100)
-[0 ± <2^(-103)]
+The potential error means that both branches were executed in parallel because
+the condition could not be decided, and it was moreover impossible to guarantee
+(in general) that both branches will return the same number.  If we make a mistake,
+this error may appear with certainty, eg:
+
+>...> let abs2 x = if x < 0 then 1-x else x in (abs2 (pi - pi)) ? (bitsS 100)
+>*** Exception: WithGlobalParam ensureNoCE: [(ERROR,numeric error: union of enclosures: not enclosing the same value)]
+
+If we are certain such errors will never appear, we can silence the potential error warnings:
+
+>...> let abs2 x = (~!) (if x < 0 then -x else x) in (abs2 (pi - pi)) ? (bitsS 100)
+>[0 ± <2^(-103)]
 
 In these examples, @if@ is overloaded so that it works for conditions
 of other types than @Bool@.  Here the condition has the type @Sequence (Maybe Bool)@.
