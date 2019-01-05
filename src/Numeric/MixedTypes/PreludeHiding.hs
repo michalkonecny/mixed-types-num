@@ -20,7 +20,7 @@ import Prelude hiding
   (
     fromInteger, fromRational
     , (!!), length, replicate, take, drop, splitAt
-    , Eq(..), Ord(..), Num(..), Fractional(..), RealFrac(..), Floating(..)
+    , Eq(..), Ord(..), Num(..), Fractional(..), RealFrac(..), Floating(..), Integral(..)
     , not, (&&), (||), and, or
     , (^), (^^)
     , minimum, maximum, sum, product

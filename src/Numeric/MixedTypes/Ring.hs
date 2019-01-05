@@ -402,9 +402,9 @@ powUsingMul one x nPre
     aux m
       | m == 1 = x
       | even m =
-        let s = aux (m `div` 2) in s * s
+        let s = aux (m `P.div` 2) in s * s
       | otherwise =
-        let s = aux ((m-1) `div` 2) in x * s * s
+        let s = aux ((m-1) `P.div` 2) in x * s * s
 
 type CanPowBy t1 t2 =
   (CanPow t1 t2, PowType t1 t2 ~ t1, PowTypeNoCN t1 t2 ~ t1)

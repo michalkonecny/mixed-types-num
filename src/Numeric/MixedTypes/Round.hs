@@ -12,21 +12,27 @@
 
 module Numeric.MixedTypes.Round
 (
-  -- * Rounding operations
-  CanRound(..), HasIntegerBounds(..)
+  -- * Rounded division + modulus
+  CanDivIMod(..), CanDivIModIntegerSameType, modNoCN, divINoCN, divIModNoCN
+  -- * Rounding
+  , CanRound(..), HasIntegerBounds(..)
   -- ** Tests
-  , specCanRound, specHasIntegerBounds
+  , specCanDivIMod, specCanRound, specHasIntegerBounds
 )
 where
 
 import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 import Text.Printf
+import Data.Fixed (divMod')
 
 -- import qualified Data.List as List
 
 import Test.Hspec
 import Test.QuickCheck as QC
+
+import Numeric.CollectErrors
+-- import Control.CollectErrors
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -34,6 +40,126 @@ import Numeric.MixedTypes.Eq
 import Numeric.MixedTypes.Ord
 -- import Numeric.MixedTypes.MinMaxAbs
 import Numeric.MixedTypes.AddSub
+import Numeric.MixedTypes.Ring
+
+{----  rounded division + modulo -----}
+
+class CanDivIMod t1 t2 where
+  type DivIType t1 t2
+  type DivIType t1 t2 = CN Integer
+  type ModType t1 t2
+  type ModType t1 t2 = EnsureCN t1
+  divIMod :: t1 -> t2 -> (DivIType t1 t2, ModType t1 t2)
+  mod :: t1 -> t2 -> ModType t1 t2
+  mod a b = snd $ divIMod a b
+  divI :: t1 -> t2 -> DivIType t1 t2
+  divI a b = fst $ divIMod a b
+
+type CanDivIModIntegerSameType t =
+  (CanDivIMod t t, CanEnsureCN t, DivIType t t ~ CN Integer, ModType t t ~ EnsureCN t)
+
+modNoCN :: 
+  (CanDivIMod t1 t2
+  , ModType t1 t2 ~ EnsureCN t1, CanEnsureCN t1)
+  => 
+  t1 -> t2 -> t1
+modNoCN x m = 
+  case deEnsureCN $ x `mod` m of
+    Left err -> error $ show err
+    Right xm -> xm
+
+divINoCN :: 
+  (CanDivIMod t1 t2, DivIType t1 t2 ~ CN Integer)
+  => 
+  t1 -> t2 -> Integer
+divINoCN x m = (~!) $ x `divI` m
+
+divIModNoCN :: 
+  (CanDivIMod t1 t2
+  , ModType t1 t2 ~ EnsureCN t1, CanEnsureCN t1
+  , DivIType t1 t2 ~ CN Integer)
+  => 
+  t1 -> t2 -> (Integer, t1)
+divIModNoCN x m = 
+  case deEnsureCN xm of
+    Left err -> error $ show err
+    Right xm2 -> ((~!) d, xm2)
+  where
+  (d,xm) = divIMod x m
+
+instance CanDivIMod Integer Integer where
+  divIMod x m 
+    | m > 0 = (cn d, cn xm)
+    | otherwise = (err, err)
+    where
+    (d,xm) = P.divMod x m
+    err = noValueNumErrorCertainECN sample_v $ OutOfRange $ "modulus not positive: " ++ show m
+    sample_v = Just x
+
+instance CanDivIMod Rational Rational where
+  divIMod x m 
+    | m > 0 = (cn d, cn xm)
+    | otherwise = (err (d :: Integer), err xm)
+    where
+    (d,xm) = divMod' x m
+    err :: (CanEnsureCN t) => t -> EnsureCN t
+    err s = noValueNumErrorCertainECN (Just s) $ OutOfRange $ "modulus not positive: " ++ show m
+
+instance CanDivIMod Rational Integer where
+  divIMod x m = divIMod x (rational m)
+
+instance CanDivIMod Double Double where
+  divIMod x m 
+    | m > 0 = (cn d, cn xm)
+    | otherwise = (err (d :: Integer), err xm)
+    where
+    (d,xm) = divMod' x m
+    err :: (CanEnsureCN t) => t -> EnsureCN t
+    err s = noValueNumErrorCertainECN (Just s) $ OutOfRange $ "modulus not positive: " ++ show m
+
+instance CanDivIMod Double Integer where
+  divIMod x m = divIMod x (double m)
+
+type CanDivIModX t =
+  (CanDivIMod t t,
+   ModType t t ~ EnsureCN t,
+   DivIType t t ~ CN Integer,
+   EnsureNoCN t ~ t,
+   CanEnsureCN t,
+   CanMulBy t Integer,
+   CanAddSameType t,
+   HasOrderCertainly t Integer,
+   HasOrderCertainly t t,
+   HasEqCertainly t t,
+   CanTestFinite t,
+   Show t, Arbitrary t)
+
+{-|
+  HSpec properties that each implementation of CanRound should satisfy.
+ -}
+specCanDivIMod ::
+  (CanDivIModX t, HasIntegers t)
+  =>
+  T t -> Spec
+specCanDivIMod (T typeName :: T t) =
+  describe (printf "CanDivMod %s %s" typeName typeName) $ do
+    it "holds 0 <= x `mod` m < m" $ do
+      property $ \ (x :: t)  (m :: t) ->
+        isFinite x && m !>! 0 ==>
+          let xm = x `modNoCN` m in
+          (0 ?<=?$ xm) .&&. (xm ?<?$ m)
+    it "holds x == (x `div'` m)*m + (x `mod` m)" $ do
+      property $ \ (x :: t)  (m :: t) ->
+        isFinite x && m !>! 0 ==>
+          let (d,xm) = divIModNoCN x m in
+          (x ?==?$ (d*m + xm))
+  where
+  (?<=?$) :: (HasOrderCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?<=?$) = printArgsIfFails2 "?<=?" (?<=?)
+  (?<?$) :: (HasOrderCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?<?$) = printArgsIfFails2 "?<?" (?<?)
+  (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
+  (?==?$) = printArgsIfFails2 "?==?" (?==?)
 
 {----  rounding -----}
 

@@ -17,5 +17,7 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
+  specCanDivIMod tInteger
+  specCanDivIMod tRational
   specCanRound tRational
   -- specCanRound tDouble

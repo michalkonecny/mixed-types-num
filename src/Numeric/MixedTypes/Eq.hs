@@ -312,8 +312,13 @@ class CanTestFinite t where
 instance CanTestNaN Double
 instance CanTestFinite Double
 
+instance CanTestNaN Integer where
+  isNaN = const False
 instance CanTestNaN Rational where
   isNaN = const False
+instance CanTestFinite Integer where
+  isInfinite = const False
+  isFinite = const True
 instance CanTestFinite Rational where
   isInfinite = const False
   isFinite = const True
