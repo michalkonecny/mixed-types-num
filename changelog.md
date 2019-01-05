@@ -1,3 +1,5 @@
+* 
+  * added divI and mod
 * v 0.3.1.5 2018-11-14
   * improved documentation
 * v 0.3.1.4 2017-12-06
