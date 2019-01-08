@@ -41,10 +41,13 @@ import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
 import Numeric.MixedTypes.Eq
 import Numeric.MixedTypes.Ord
--- import Numeric.MixedTypes.MinMaxSqrt
+-- import Numeric.MixedTypes.MinMaxAbs
 import Numeric.MixedTypes.AddSub
 import Numeric.MixedTypes.Ring
 import Numeric.MixedTypes.Field
+-- import Numeric.MixedTypes.Round
+
+import Utils.Test.EnforceRange 
 
 {----  sqrt -----}
 
@@ -155,13 +158,14 @@ specCanExpReal ::
    HasOrderAsymmetric Integer t, CanAddAsymmetric t t,
    CanMulAsymmetric (ExpType t) (ExpType t),
    CanDiv Integer (ExpType t), CanExp t, CanExp (AddType t t),
-   NegType t ~ t) =>
+   NegType t ~ t, 
+   CanEnforceRange t Integer) =>
    T t -> Spec
 specCanExpReal (T typeName :: T t) =
   describe (printf "CanExp %s" typeName) $ do
     it "exp(x) >= 0" $ do
-      property $ \ (x :: t) ->
-        ((-100000) !<! x && x !<! 100000) ==>
+      property $ \ (x_ :: t) ->
+        let x = enforceRange (Just (-100000), Just 100000) x_ in
           exp x ?>=?$ 0
     it "exp(-x) == 1/(exp x)" $ do
       property $ \ (x :: t) ->

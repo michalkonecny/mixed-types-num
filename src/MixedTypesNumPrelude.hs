@@ -52,6 +52,7 @@ module MixedTypesNumPrelude
   module Numeric.MixedTypes.Complex,
   module Numeric.CollectErrors,
   module Utils.TH.DeclForTypes,
+  module Utils.Test.EnforceRange,
   -- * Re-export for convenient Rational literals
   (%)
 )
@@ -59,6 +60,7 @@ where
 
 import Data.Ratio ((%))
 import Utils.TH.DeclForTypes
+import Utils.Test.EnforceRange
 import Numeric.CollectErrors
 import Numeric.MixedTypes.PreludeHiding
 import Numeric.MixedTypes.Literals

@@ -63,6 +63,7 @@ library
     UndecidableInstances
   exposed-modules:
     Utils.TH.DeclForTypes
+    Utils.Test.EnforceRange
     Control.CollectErrors
     Numeric.CollectErrors
     Numeric.MixedTypes.PreludeHiding
