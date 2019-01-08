@@ -1,5 +1,9 @@
-* 
+# mixed-types-num change log
+
+* v 0.3.2 2019-01-08
   * added divI and mod
+  * added enforceRange
+  * used enforceRange in exp tests
 * v 0.3.1.5 2018-11-14
   * improved documentation
 * v 0.3.1.4 2017-12-06
