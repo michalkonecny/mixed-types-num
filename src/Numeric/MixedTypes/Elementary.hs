@@ -168,13 +168,15 @@ specCanExpReal (T typeName :: T t) =
         let x = enforceRange (Just (-100000), Just 100000) x_ in
           exp x ?>=?$ 0
     it "exp(-x) == 1/(exp x)" $ do
-      property $ \ (x :: t) ->
-        ((-100000) !<! x && x !<! 100000) ==>
-          (exp x !>! 0) ==>
-            (ensureCN $ exp (-x)) ?==?$ 1/(exp x)
+      property $ \ (x_ :: t) ->
+        let x = enforceRange (Just (-100000), Just 100000) x_ in
+        let ex = exp x in
+          (ex !>! 0) ==>
+            (ensureCN $ exp (-x)) ?==?$ 1/ex
     it "exp(x+y) = exp(x)*exp(y)" $ do
-      property $ \ (x :: t)  (y :: t) ->
-        ((-100000) !<! x && x !<! 100000 && (-100000) !<! y && y !<! 100000) ==>
+      property $ \ (x_ :: t)  (y_ :: t) ->
+        let x = enforceRange (Just (-100000), Just 100000) x_ in
+        let y = enforceRange (Just (-100000), Just 100000) y_ in
           (exp $ x + y) ?==?$ (exp x) * (exp y)
   where
   infix 4 ?==?$
@@ -230,6 +232,7 @@ specCanLogReal ::
    CanTestCertainly
      (EqCompareType (LogType (DivType Integer t)) (LogType t)),
    CanTestCertainly (OrderCompareType (MulType t t) Integer),
+   CanTestCertainly (OrderCompareType (ExpType t) Integer),
    CanTestCertainly
      (EqCompareType
         (LogType (MulType t t)) (AddType (LogType t) (LogType t))),
@@ -243,11 +246,13 @@ specCanLogReal ::
    HasOrderAsymmetric t Integer,
    HasOrderAsymmetric (DivType Integer t) Integer,
    HasOrderAsymmetric (MulType t t) Integer,
+   HasOrderAsymmetric (ExpType t) Integer,
    HasOrderAsymmetric Integer t,
    CanAddAsymmetric (LogType t) (LogType t), CanMulAsymmetric t t,
    CanDiv Integer t, CanExp t, CanLog t, CanLog (DivType Integer t),
    CanLog (MulType t t), CanLog (ExpType t),
-   LogType t ~ NegType (LogType t)) =>
+   LogType t ~ NegType (LogType t),
+   CanEnforceRange t Integer) =>
   T t -> Spec
 specCanLogReal (T typeName :: T t) =
   describe (printf "CanLog %s" typeName) $ do
@@ -256,13 +261,17 @@ specCanLogReal (T typeName :: T t) =
         x !>! 0 && (1/x) !>! 0  ==>
           log (1/x) ?==?$ -(log x)
     it "log(x*y) = log(x)+log(y)" $ do
-      property $ \ (x :: t)  (y :: t) ->
-        x !>! 0 && y !>! 0 && x*y !>! 0  ==>
+      property $ \ (x_ :: t)  (y_ :: t) ->
+        let x = enforceRange (Just 0, Nothing) x_ in
+        let y = enforceRange (Just 0, Nothing) y_ in
+        x*y !>! 0  ==>
           (log $ x * y) ?==?$ (log x) + (log y)
     it "log(exp x) == x" $ do
-      property $ \ (x :: t) ->
-        ((-100000) !<! x && x !<! 100000) ==>
-          log (exp x) ?==?$ x
+      property $ \ (x_ :: t) ->
+        let x = enforceRange (Just (-1000), Just 100000) x_ in
+        let ex = exp x in
+          (ex !>! 0) ==>
+            log ex ?==?$ x
   where
   infix 4 ?==?$
   (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
