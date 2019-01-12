@@ -26,10 +26,11 @@ import Numeric.MixedTypes.Ord
 import Numeric.MixedTypes.MinMaxAbs
 import Numeric.MixedTypes.AddSub
 import Numeric.MixedTypes.Ring
+import Numeric.MixedTypes.Field
 import Numeric.MixedTypes.Round
 
 type CanEnforceRange t b =
-    (CanAddSubMulBy t Integer
+    (CanAddSubMulDivCNBy t Integer
     , CanAddSameType t, CanSubSameType t, CanAbsSameType t
     , CanDivIModIntegerSameType t
     , ConvertibleExactly b t
@@ -44,12 +45,14 @@ type CanEnforceRange t b =
 enforceRange ::
     (CanEnforceRange t b) => (Maybe b, Maybe b) -> t -> t
 enforceRange (Just l_, Just u_) (a::t) 
-    | not (l + 1 !<! u) = error "enforceRange: inconsistent range"
+    | not (l !<! u) = error "enforceRange: inconsistent range"
     | l !<! a && a !<! u = a
-    | otherwise = l + 1 + ((abs a) `modNoCN` (u-l-1))
+    | l !<! b && b !<! u = b
+    | otherwise = (u-l)/!2
     where
     l = convertExactly l_ :: t
     u = convertExactly u_ :: t
+    b = l + ((abs a) `modNoCN` (u-l))
 enforceRange (Just l_, _) (a::t)
     | l !<! a = a
     | otherwise = (2*l-a+1)
