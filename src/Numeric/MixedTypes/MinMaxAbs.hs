@@ -97,6 +97,7 @@ specCanMinMax ::
     (EqCompareType
        (MinMaxType t1 (MinMaxType t2 t3))
        (MinMaxType (MinMaxType t1 t2) t3)),
+  CanTestFinite t1, CanTestFinite t2, CanTestFinite t3,
   HasEqAsymmetric t1 t1, HasEqAsymmetric t2 t2,
   HasEqAsymmetric t3 t3,
   HasEqAsymmetric (MinMaxType t1 t2) (MinMaxType t2 t1),
@@ -116,35 +117,43 @@ specCanMinMax (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) 
   describe (printf "CanMinMax %s %s, CanMinMax %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "`min` is not larger than its arguments" $ do
       property $ \ (x :: t1) (y :: t2) ->
-        (x ?==? x) && (y ?==? y) ==> -- avoid NaN
+        -- (x ?==? x) && (y ?==? y) ==> -- avoid NaN
+        (isFinite x) && (isFinite y) ==>
           let m = x `min` y in (m ?<=?$ y) .&&. (m ?<=?$ x)
     it "`max` is not smaller than its arguments" $ do
       property $ \ (x :: t1) (y :: t2) ->
-        (x ?==? x) && (y ?==? y) ==> -- avoid NaN
+        -- (x ?==? x) && (y ?==? y) ==> -- avoid NaN
+        (isFinite x) && (isFinite y) ==>
           let m = x `max` y in (m ?>=?$ y) .&&. (m ?>=?$ x)
     it "has idempotent `min`" $ do
       property $ \ (x :: t1) ->
-        (x ?==? x) ==> -- avoid NaN
+        -- (x ?==? x) ==> -- avoid NaN
+        (isFinite x) ==>
           (x `min` x) ?==?$ x
     it "has idempotent `max`" $ do
       property $ \ (x :: t1) ->
-        (x ?==? x) ==> -- avoid NaN
+        -- (x ?==? x) ==> -- avoid NaN
+        (isFinite x) ==>
           (x `max` x) ?==?$ x
     it "has commutative `min`" $ do
       property $ \ (x :: t1) (y :: t2) ->
-        (x ?==? x) && (y ?==? y) ==> -- avoid NaN
+        -- (x ?==? x) && (y ?==? y) ==> -- avoid NaN
+        (isFinite x) && (isFinite y) ==>
           (x `min` y) ?==?$ (y `min` x)
     it "has commutative `max`" $ do
       property $ \ (x :: t1) (y :: t2) ->
-        (x ?==? x) && (y ?==? y) ==> -- avoid NaN
+        -- (x ?==? x) && (y ?==? y) ==> -- avoid NaN
+        (isFinite x) && (isFinite y) ==>
           (x `max` y) ?==?$ (y `max` x)
     it "has associative `min`" $ do
       property $ \ (x :: t1) (y :: t2) (z :: t3) ->
-        (x ?==? x) && (y ?==? y) && (z ?==? z) ==> -- avoid NaN
+        -- (x ?==? x) && (y ?==? y) && (z ?==? z) ==> -- avoid NaN
+        (isFinite x) && (isFinite y) && (isFinite z) ==>
             (x `min` (y `min` z)) ?==?$ ((x `min` y) `min` z)
     it "has associative `max`" $ do
       property $ \ (x :: t1) (y :: t2) (z :: t3) ->
-        (x ?==? x) && (y ?==? y) && (z ?==? z) ==> -- avoid NaN
+        -- (x ?==? x) && (y ?==? y) && (z ?==? z) ==> -- avoid NaN
+        (isFinite x) && (isFinite y) && (isFinite z) ==>
             (x `max` (y `max` z)) ?==?$ ((x `max` y) `max` z)
   where
   (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
@@ -170,6 +179,7 @@ specCanMinMaxNotMixed ::
     (EqCompareType
        (MinMaxType t (MinMaxType t t))
        (MinMaxType (MinMaxType t t) t)),
+  CanTestFinite t,
   HasEqAsymmetric t t, HasEqAsymmetric (MinMaxType t t) t,
   HasEqAsymmetric (MinMaxType t t) (MinMaxType t t),
   HasEqAsymmetric
@@ -290,6 +300,7 @@ specCanNegNum ::
    ConvertibleExactly Integer t,
    HasEqCertainly t t,
    HasEqCertainly t (NegType t),
+   CanTestFinite t,
    CanTestPosNeg t,
    CanTestPosNeg (NegType t)
   )
@@ -305,9 +316,11 @@ specCanNegNum (T typeName :: T t) =
       let z = convertExactly 0 :: t in negate z ?==? z
     it "takes positive to negative" $ do
       property $ \ (x :: t) ->
+        (isFinite x) ==> -- avoid NaN
         (isCertainlyPositive x) ==> (isCertainlyNegative (negate x))
     it "takes negative to positive" $ do
       property $ \ (x :: t) ->
+        (isFinite x) ==> -- avoid NaN
         (isCertainlyNegative x) ==> (isCertainlyPositive (negate x))
   where
   (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
@@ -362,7 +375,7 @@ type CanAbsX t =
   HSpec properties that each implementation of CanAbs should satisfy.
  -}
 specCanAbs ::
-  (CanAbsX t, CanAbsX (AbsType t))
+  (CanAbsX t, CanAbsX (AbsType t), CanTestFinite t)
   =>
   T t -> Spec
 specCanAbs (T typeName :: T t) =
@@ -373,12 +386,16 @@ specCanAbs (T typeName :: T t) =
           (abs (abs x)) ?==?$ (abs x)
     it "is identity on non-negative arguments" $ do
       property $ \ (x :: t) ->
+        (isFinite x) ==>
         isCertainlyNonNegative x  ==> x ?==?$ (abs x)
     it "is negation on non-positive arguments" $ do
       property $ \ (x :: t) ->
+        (isFinite x) ==>
         isCertainlyNonPositive x  ==> (negate x) ?==?$ (abs x)
     it "does not give negative results" $ do
-      property $ \ (x :: t) -> not $ isCertainlyNegative (abs x)
+      property $ \ (x :: t) -> 
+        (isFinite x) ==>
+        not $ isCertainlyNegative (abs x)
   where
   (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
