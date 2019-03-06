@@ -269,7 +269,7 @@ specCanLogReal (T typeName :: T t) =
           (log $ x * y) ?==?$ (log x) + (log y)
     it "log(exp x) == x" $ do
       property $ \ (x_ :: t) ->
-        let x = enforceRange (Just (-1000), Just 100000) x_ in
+        let x = enforceRange (Just (-1000), Just 10000) x_ in
         let ex = exp x in
           (ex !>! 0) ==>
             log ex ?==?$ x
