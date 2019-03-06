@@ -257,14 +257,15 @@ specCanLogReal ::
 specCanLogReal (T typeName :: T t) =
   describe (printf "CanLog %s" typeName) $ do
     it "log(1/x) == -(log x)" $ do
-      property $ \ (x :: t) ->
+      property $ \ (x_ :: t) ->
+        let x = enforceRange (Just 0, Nothing) x_ in
         x !>! 0 && (1/x) !>! 0  ==>
           log (1/x) ?==?$ -(log x)
     it "log(x*y) = log(x)+log(y)" $ do
       property $ \ (x_ :: t)  (y_ :: t) ->
         let x = enforceRange (Just 0, Nothing) x_ in
         let y = enforceRange (Just 0, Nothing) y_ in
-        x*y !>! 0  ==>
+        x !>! 0 && y !>! 0 && x*y !>! 0  ==>
           (log $ x * y) ?==?$ (log x) + (log y)
     it "log(exp x) == x" $ do
       property $ \ (x_ :: t) ->
