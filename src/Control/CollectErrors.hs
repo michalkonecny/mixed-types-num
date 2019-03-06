@@ -315,7 +315,7 @@ getValueOrThrowErrorsNCE ::
 getValueOrThrowErrorsNCE sample_es v =
   case ensureNoCE sample_es v of
     (Just vNCE, es) | not (hasCertainError es) -> vNCE
-    (_, es) -> error (show es)
+    _ -> error (show v)
 
 {-|
   Add error collection support to an unary function whose
