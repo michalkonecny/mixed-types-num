@@ -30,7 +30,8 @@ import Control.Monad (join)
 import Data.Monoid
 import Data.Maybe (fromJust)
 
-import Data.Convertible
+-- import Data.Convertible
+import Data.Convertible.Base
 import Data.Typeable
 
 -- import Language.Haskell.TH

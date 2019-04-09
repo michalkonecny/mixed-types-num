@@ -65,7 +65,9 @@ import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 import Text.Printf
 
-import Data.Convertible (Convertible(..), convert, ConvertResult, ConvertError, convError)
+-- import Data.Convertible (Convertible(..), convert, ConvertResult, ConvertError, convError)
+import Data.Convertible.Base
+import Data.Convertible.Instances.Num ()
 
 import qualified Data.List as List
 
