@@ -56,7 +56,9 @@ boundedConversion (func :: (a -> ConvertResult b)) inp =
           else return result :: ConvertResult b
 
 ifThenElse :: Bool -> t -> t -> t
-ifThenElse b c d = if b then c else d
+ifThenElse b c d 
+   | b = c
+   | otherwise = d
 
 {- | Useful for defining conversions that are implemented in terms of other
 conversions via an intermediary type. Instead of:
