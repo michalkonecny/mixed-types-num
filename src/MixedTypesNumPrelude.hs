@@ -38,6 +38,8 @@ module MixedTypesNumPrelude
 
   -- * Re-exporting Prelude, hiding the operators we are changing
   module Numeric.MixedTypes.PreludeHiding,
+  -- * A part of package ``convertible''
+  module Data.Convertible.Base,
   -- * Modules with Prelude alternatives
   module Numeric.MixedTypes.Literals,
   module Numeric.MixedTypes.Bool,
@@ -59,6 +61,8 @@ module MixedTypesNumPrelude
 where
 
 import Data.Ratio ((%))
+import Data.Convertible.Instances.Num()
+import Data.Convertible.Base
 import Utils.TH.DeclForTypes
 import Utils.Test.EnforceRange
 import Numeric.CollectErrors
