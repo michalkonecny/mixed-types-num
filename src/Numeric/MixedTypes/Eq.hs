@@ -316,6 +316,9 @@ instance CanTestNaN Integer where
   isNaN = const False
 instance CanTestNaN Rational where
   isNaN = const False
+instance CanTestFinite Int where
+  isInfinite = const False
+  isFinite = const True
 instance CanTestFinite Integer where
   isInfinite = const False
   isFinite = const True
