@@ -1,5 +1,7 @@
 # mixed-types-num change log
 
+* v 0.4.0 2019-04-10
+  * eliminated dependency on convertible, improving ghcjs compatibility
 * v 0.3.2 2019-01-08
   * added divI and mod
   * added enforceRange
