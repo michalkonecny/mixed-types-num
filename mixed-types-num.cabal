@@ -109,7 +109,7 @@ test-suite spec
     Numeric.MixedTypes.RingSpec
     Numeric.MixedTypes.RoundSpec
   build-depends:
-    base >= 4.8
+    base >= 4.8 && < 5
     , mixed-types-num
     , hspec >= 2.1
     , hspec-smallcheck >= 0.3
