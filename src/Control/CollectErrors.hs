@@ -10,7 +10,7 @@ module Control.CollectErrors
 -- * Tools for avoiding @CollectErrors(CollectErrors t)@ and putting CE inside containers
 , CanEnsureCE(..)
 , getValueOrThrowErrorsNCE
-, lift1CE, lift2CE, lift2TCE, lift2TLCE
+, lift1CE, lift2CE, lift2TCE, lift2TLCE, lift3CE
 -- ** Tools for pulling errors out of structures
 , CanExtractCE(..)
 )
@@ -396,6 +396,30 @@ lift2TLCE ::
   (a -> b -> c) ->
   a -> (CollectErrors es b) -> (EnsureCE es c)
 lift2TLCE f = flip $ lift2TCE (flip f)
+
+{-|
+  Add error collection support to a binary function whose
+  result may already have collected errors.
+-}
+lift3CE ::
+  (SuitableForCE es
+  , CanEnsureCE es a, CanEnsureCE es b, CanEnsureCE es c, CanEnsureCE es d)
+  =>
+  (a -> b -> c -> d) ->
+  (CollectErrors es a) -> (CollectErrors es b) -> (CollectErrors es c) -> (EnsureCE es d)
+lift3CE fn aCE bCE cCE =
+  case (ma, mb, mc) of
+    (Just a, Just b, Just c) ->
+      prependErrorsECE sample_d abc_es $ ensureCE sample_es $ fn a b c
+    _ ->
+      noValueECE sample_d abc_es
+  where
+  CollectErrors ma a_es = aCE
+  CollectErrors mb b_es = bCE
+  CollectErrors mc c_es = cCE
+  abc_es = a_es <> b_es <> c_es
+  sample_es = Just a_es
+  sample_d = fn <$> ma <*> mb <*> mc
 
 
 {-|
