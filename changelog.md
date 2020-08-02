@@ -1,6 +1,9 @@
 # mixed-types-num change log
 
-* v 0.4.1 2019-04-11
+* v 0.4.0.2 2020-08-02
+  * remove smallcheck version upper bound
+  * update to cabal-version >= 1.10
+* v 0.4.0.1 2019-04-11
   * fix infinite loop in some conversions
 * v 0.4.0 2019-04-10
   * eliminated dependency on convertible, improving ghcjs compatibility
