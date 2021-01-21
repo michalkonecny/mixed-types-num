@@ -1,5 +1,7 @@
 # mixed-types-num change log
 
+* v 0.4.1 2021-01-21
+  * add hasErrorCE and hasErrorCN for testing if CE/CN values contain errors
 * v 0.4.0.2 2020-08-02
   * remove smallcheck version upper bound
   * update to cabal-version >= 1.10
