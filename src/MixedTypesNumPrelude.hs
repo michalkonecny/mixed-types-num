@@ -125,6 +125,25 @@ The @CN@ wrapper here indicates that integer division can fail for some values:
 Note that when evaluating @1/0@, it evaluates to the error value printed above.
 This is not an exception, but a special value.
 
+All arithmetic operations have been extended to CN types so that it is possible to
+have expressions that operate exclusively on CN types:
+
+>...> f (n :: CN Integer) = 1/(1/(n-1) + 1/n) :: CN Rational
+>...> f (cn 0)
+>{[(ERROR,division by 0)]}
+>...> f (cn 1)
+>{[(ERROR,division by 0)]}
+>...> f (cn 2)
+>2 % 3
+
+The function hasErrorCN can be used to check whether any error occurred:
+
+>...> hasErrorCN (1/0)
+>True
+
+>...> hasErrorCN (1/1)
+>False
+
 When one is certain the division is well defined, one can remove @CN@ as follows:
 
 >...> :t (1/!2)
@@ -163,11 +182,19 @@ To get access to this via stack, you can start ghci eg as follows:
 
 Also other harmless potential errors can be ignored using @(~!)@:
 
->...> (~!) $ sqrt (pi-pi)
->[7.395570986446986e-32 ± <2^(-103)]
+>...> (~!) $ sqrt (pi-pi) ? (bitsS 10)
+> [0.000007629... ± 7.6294e-6 <2^(-17)]
 
->...> sqrt (pi-pi)
->[7.395570986446986e-32 ± <2^(-103)]{[(POTENTIAL ERROR,out of range: sqrt: argument must be >= 0: [0 ± <2^(-240)])]}
+>...> sqrt (pi-pi) ? (bitsS 10)
+> [0.000007629... ± 7.6294e-6 <2^(-17)]{[(POTENTIAL ERROR,out of range: sqrt: argument must be >= 0: [0 ± 2.3283e-10 <2^(-32)])]}
+
+When an error is present (which can be checked using hasErrorCN), the function hasCertainErrorCN can be used to further distinguish cases where the error is certain or potential:
+
+>...> hasCertainErrorCN (sqrt (-1) ? (bitsS 10))
+>True
+
+>...> hasCertainErrorCN (sqrt (pi-pi) ? (bitsS 10))
+>False
 
 
 === Natural, integer and fractional powers

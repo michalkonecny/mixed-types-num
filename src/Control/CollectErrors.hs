@@ -4,6 +4,7 @@ module Control.CollectErrors
 -- * Monad for collecting errors in expressions
   CollectErrors(..), SuitableForCE
 , CanTestErrorsCertain(..), hasCertainErrorCE
+, CanTestErrorsPresent(..), hasErrorCE
 , noValueCE, prependErrorsCE
 , filterValuesWithoutErrorCE, getValueIfNoErrorCE
 , ce2ConvertResult
@@ -60,6 +61,12 @@ class CanTestErrorsCertain es where
 
 hasCertainErrorCE :: (CanTestErrorsCertain es) => (CollectErrors es v) -> Bool
 hasCertainErrorCE (CollectErrors _ es) = hasCertainError es
+
+class CanTestErrorsPresent es where
+  hasError :: es -> Bool
+
+hasErrorCE :: (CanTestErrorsPresent es) => (CollectErrors es v) -> Bool
+hasErrorCE (CollectErrors _ es) = hasError es
 
 type SuitableForCE es = (Monoid es, Eq es, Show es, CanTestErrorsCertain es)
 

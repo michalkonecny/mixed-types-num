@@ -17,6 +17,7 @@ module Numeric.CollectErrors
   -- * Specialisation to numeric errors
 , CN
 , hasCertainError, hasCertainErrorCN
+, hasError, hasErrorCN
 , noValueCN
 , noValueNumErrorCertainCN, noValueNumErrorPotentialCN
 , getMaybeValueCN, getErrorsCN, prependErrorsCN
@@ -31,7 +32,7 @@ module Numeric.CollectErrors
 where
 
 import Prelude
-  (Show(..), Eq(..), Bool, String, Maybe(..), Either(..), (++), (.), or, map, fst, ($))
+  (Show(..), Eq(..), Bool, String, Maybe(..), Either(..), (++), (.), or, map, fst, ($), null, not)
 
 import Control.CollectErrors
 
@@ -60,6 +61,12 @@ instance CanTestErrorsCertain NumErrors where
 
 hasCertainErrorCN :: CN v -> Bool
 hasCertainErrorCN = hasCertainErrorCE
+
+instance CanTestErrorsPresent NumErrors where
+  hasError = not . null
+
+hasErrorCN :: CN v -> Bool
+hasErrorCN = hasErrorCE
 
 sample_NumErrors :: Maybe [(ErrorCertaintyLevel, NumError)]
 sample_NumErrors = Nothing
