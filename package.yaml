@@ -1,0 +1,61 @@
+name:                mixed-types-num
+version:             0.5.0.0
+github:              "michalkonecny/mixed-types-num"
+license:             BSD3
+author:              "Michal Konecny"
+maintainer:          "mikkonecny@gmail.com"
+copyright:           "2015-2021 Michal Konecny"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+synopsis:            Alternative Prelude with numeric and logic expressions typed bottom-up
+category:            Math
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/michalkonecny/mixed-types-num#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- hspec >= 2.1
+- hspec-smallcheck >= 0.3
+- smallcheck >= 1.1
+- QuickCheck >= 2.7
+
+default-extensions:
+- RebindableSyntax
+- PostfixOperators
+- ScopedTypeVariables
+- TypeFamilies
+- TypeOperators
+- ConstraintKinds
+- DefaultSignatures
+- MultiParamTypeClasses
+- FlexibleContexts
+- FlexibleInstances
+- UndecidableInstances
+
+other-extensions:
+- TemplateHaskell
+
+library:
+  source-dirs: src
+  dependencies:
+  - template-haskell
+  - mtl
+
+
+tests:
+  mixed-types-num-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - mixed-types-num
