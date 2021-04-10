@@ -12,6 +12,7 @@
     Instances for "Data.Complex".
 -}
 
+{-# OPTIONS_GHC -Wno-orphans #-}
 module Numeric.MixedTypes.Complex
 (
   tComplex
@@ -32,7 +33,9 @@ import Numeric.MixedTypes.Eq
 import Numeric.MixedTypes.MinMaxAbs
 import Numeric.MixedTypes.AddSub
 import Numeric.MixedTypes.Ring
-import Numeric.MixedTypes.Field
+import Numeric.MixedTypes.Div
+-- import Numeric.MixedTypes.Power
+-- import Numeric.MixedTypes.Field
 import Numeric.MixedTypes.Elementary
 
 tComplex :: T t -> T (Complex t)
@@ -116,10 +119,6 @@ instance
   divide (a1 :+ i1) (a2 :+ i2) =
     let d = a2*a2 + i2*i2 in
     ((a1*a2 + i1*i2)/d) :+ ((i1*a2-a1*i2)/d)
-  type DivTypeNoCN (Complex a) (Complex b) = Complex (DivTypeNoCN (MulType a b) (MulType b b))
-  divideNoCN (a1 :+ i1) (a2 :+ i2) =
-    let d = a2*a2 + i2*i2 in
-    ((a1*a2 + i1*i2)/!d) :+ ((i1*a2-a1*i2)/!d)
 
 instance
   (CanMulAsymmetric t t
@@ -194,16 +193,10 @@ $(declForTypes
       divide n (a2 :+ i2) =
         let d = a2*a2 + i2*i2 in
         ((n*a2)/d) :+ (((-n)*i2)/d)
-      type DivTypeNoCN $t (Complex b) = Complex (DivTypeNoCN (MulType $t b) (MulType b b))
-      divideNoCN n (a2 :+ i2) =
-        let d = a2*a2 + i2*i2 in
-        ((n*a2)/!d) :+ (((-n)*i2)/!d)
 
     instance
       (CanDiv a $t) => CanDiv (Complex a) $t
       where
       type DivType (Complex a) $t = Complex (DivType a $t)
       divide (a1 :+ i1) n = (a1/n) :+ (i1/n)
-      type DivTypeNoCN (Complex a) $t = Complex (DivTypeNoCN a $t)
-      divideNoCN (a1 :+ i1) n = (a1/!n) :+ (i1/!n)
   |]))

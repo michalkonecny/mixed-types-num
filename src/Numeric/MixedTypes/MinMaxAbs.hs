@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-|
     Module      :  Numeric.MixedType.MinMaxAbs
@@ -36,8 +37,8 @@ import qualified Data.List as List
 import Test.Hspec
 import Test.QuickCheck
 
--- import Numeric.CollectErrors
-import Control.CollectErrors
+import Control.CollectErrors ( CollectErrors, CanBeErrors )
+import qualified Control.CollectErrors as CE
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -240,47 +241,38 @@ instance (CanMinMaxAsymmetric a b) => CanMinMaxAsymmetric (Maybe a) (Maybe b) wh
   max _ _ = Nothing
 
 instance
-  (CanMinMaxAsymmetric a b
-  , CanEnsureCE es a, CanEnsureCE es b
-  , CanEnsureCE es (MinMaxType a b)
-  , SuitableForCE es)
+  (CanMinMaxAsymmetric a b, CanBeErrors es)
   =>
   CanMinMaxAsymmetric (CollectErrors es a) (CollectErrors es  b)
   where
   type MinMaxType (CollectErrors es a) (CollectErrors es b) =
-    EnsureCE es (MinMaxType a b)
-  min = lift2CE min
-  max = lift2CE max
+    CollectErrors es (MinMaxType a b)
+  min = CE.lift2 min
+  max = CE.lift2 max
 
 $(declForTypes
   [[t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
   (\ t -> [d|
 
     instance
-      (CanMinMaxAsymmetric $t b
-      , CanEnsureCE es b
-      , CanEnsureCE es (MinMaxType $t b)
-      , SuitableForCE es)
+      (CanMinMaxAsymmetric $t b, CanBeErrors es)
       =>
       CanMinMaxAsymmetric $t (CollectErrors es  b)
       where
       type MinMaxType $t (CollectErrors es  b) =
-        EnsureCE es (MinMaxType $t b)
-      min = lift2TLCE min
-      max = lift2TLCE max
+        CollectErrors es (MinMaxType $t b)
+      min = CE.liftT1 min
+      max = CE.liftT1 max
 
     instance
-      (CanMinMaxAsymmetric a $t
-      , CanEnsureCE es a
-      , CanEnsureCE es (MinMaxType a $t)
-      , SuitableForCE es)
+      (CanMinMaxAsymmetric a $t, CanBeErrors es)
       =>
       CanMinMaxAsymmetric (CollectErrors es a) $t
       where
       type MinMaxType (CollectErrors es  a) $t =
-        EnsureCE es (MinMaxType a $t)
-      min = lift2TCE min
-      max = lift2TCE max
+        CollectErrors es (MinMaxType a $t)
+      min = CE.lift1T min
+      max = CE.lift1T max
 
   |]))
 
@@ -352,15 +344,12 @@ instance CanAbs Rational
 instance CanAbs Double
 
 instance
-  (CanAbs a
-  , CanEnsureCE es a
-  , CanEnsureCE es (AbsType a)
-  , SuitableForCE es)
+  (CanAbs a, CanBeErrors es)
   =>
   CanAbs (CollectErrors es a)
   where
-  type AbsType (CollectErrors es a) = EnsureCE es (AbsType a)
-  abs = lift1CE abs
+  type AbsType (CollectErrors es a) = CollectErrors es (AbsType a)
+  abs = CE.lift abs
 
 type CanAbsX t =
   (CanAbs t,

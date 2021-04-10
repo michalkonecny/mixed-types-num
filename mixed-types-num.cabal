@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 031d6b5d1e1a5089904a7d1db3d6e335fe11f11f441f1faa06e411b3de305d59
+-- hash: 6004a76fb1d4ae92c633dc364a4d260b479a5c9b258a6a7d861fffe7d6036bfe
 
 name:           mixed-types-num
 version:        0.5.0.0
@@ -29,21 +29,21 @@ source-repository head
 
 library
   exposed-modules:
-      Control.CollectErrors
       Data.Convertible.Base
       Data.Convertible.Instances.Num
       Data.Convertible.Utils
       MixedTypesNumPrelude
-      Numeric.CollectErrors
       Numeric.MixedTypes.AddSub
       Numeric.MixedTypes.Bool
       Numeric.MixedTypes.Complex
+      Numeric.MixedTypes.Div
       Numeric.MixedTypes.Elementary
       Numeric.MixedTypes.Eq
       Numeric.MixedTypes.Field
       Numeric.MixedTypes.Literals
       Numeric.MixedTypes.MinMaxAbs
       Numeric.MixedTypes.Ord
+      Numeric.MixedTypes.Power
       Numeric.MixedTypes.PreludeHiding
       Numeric.MixedTypes.Ring
       Numeric.MixedTypes.Round
@@ -55,9 +55,11 @@ library
       src
   default-extensions: RebindableSyntax PostfixOperators ScopedTypeVariables TypeFamilies TypeOperators ConstraintKinds DefaultSignatures MultiParamTypeClasses FlexibleContexts FlexibleInstances UndecidableInstances
   other-extensions: TemplateHaskell
+  ghc-options: -Wall
   build-depends:
       QuickCheck >=2.7
     , base >=4.7 && <5
+    , collect-errors ==0.1.*
     , hspec >=2.1
     , hspec-smallcheck >=0.3
     , mtl
@@ -82,10 +84,11 @@ test-suite mixed-types-num-test
       test
   default-extensions: RebindableSyntax PostfixOperators ScopedTypeVariables TypeFamilies TypeOperators ConstraintKinds DefaultSignatures MultiParamTypeClasses FlexibleContexts FlexibleInstances UndecidableInstances
   other-extensions: TemplateHaskell
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:
       QuickCheck >=2.7
     , base >=4.7 && <5
+    , collect-errors ==0.1.*
     , hspec >=2.1
     , hspec-smallcheck >=0.3
     , mixed-types-num

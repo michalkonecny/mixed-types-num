@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
 {-|
     Module      :  Numeric.MixedType.Bool
     Description :  Bottom-up typed Boolean operations
@@ -9,7 +10,6 @@
     Portability :  portable
 
 -}
-
 module Numeric.MixedTypes.Bool
 (
   IsBool, specIsBool
@@ -35,8 +35,8 @@ import Text.Printf
 
 import qualified Data.List as List
 
--- import Numeric.CollectErrors
-import Control.CollectErrors
+import Control.CollectErrors ( CollectErrors, CanBeErrors )
+import qualified Control.CollectErrors as CE
 
 import Numeric.MixedTypes.Literals
 
@@ -121,11 +121,11 @@ instance (CanTestCertainly t) => CanTestCertainly (Maybe t) where
   isCertainlyFalse (Just b) = isCertainlyFalse b
   isCertainlyFalse _ = False
 
-instance (CanTestCertainly t, SuitableForCE es) => CanTestCertainly (CollectErrors es t) where
+instance (CanTestCertainly t, CanBeErrors es) => CanTestCertainly (CollectErrors es t) where
   isCertainlyTrue vCE =
-    getValueIfNoErrorCE vCE isCertainlyTrue (const False)
+    CE.withErrorOrValue (const False) isCertainlyTrue vCE
   isCertainlyFalse vCE =
-    getValueIfNoErrorCE vCE isCertainlyFalse (const False)
+    CE.withErrorOrValue (const False) isCertainlyFalse vCE
 
 
 {---- Negation ----}
@@ -185,11 +185,11 @@ _testNeg1 :: Maybe Bool
 _testNeg1 = not (Just True)
 
 instance
-  (CanNeg t, SuitableForCE es, CanEnsureCE es t, CanEnsureCE es (NegType t))
+  (CanNeg t, CanBeErrors es)
   =>
   CanNeg (CollectErrors es t) where
-  type NegType (CollectErrors es t) = EnsureCE es (NegType t)
-  negate = lift1CE negate
+  type NegType (CollectErrors es t) = CollectErrors es (NegType t)
+  negate = fmap negate
 
 {---- And/Or ----}
 
@@ -363,34 +363,31 @@ _testAndOr3 :: Maybe Bool
 _testAndOr3 = and [Just True, Nothing, Just False]
 
 instance
-  (CanAndOrAsymmetric t1 t2, SuitableForCE es
-  , CanEnsureCE es t1, CanEnsureCE es t2, CanEnsureCE es (AndOrType t1 t2))
+  (CanAndOrAsymmetric t1 t2, CanBeErrors es)
   =>
   CanAndOrAsymmetric (CollectErrors es t1) (CollectErrors es t2)
   where
-  type AndOrType (CollectErrors es t1) (CollectErrors es t2) = EnsureCE es (AndOrType t1 t2)
-  and2 = lift2CE and2
-  or2 = lift2CE or2
+  type AndOrType (CollectErrors es t1) (CollectErrors es t2) = CollectErrors es (AndOrType t1 t2)
+  and2 = CE.lift2 and2
+  or2 = CE.lift2 or2
 
 instance
-  (CanAndOrAsymmetric t1 Bool, SuitableForCE es
-  , CanEnsureCE es t1, CanEnsureCE es (AndOrType t1 Bool))
+  (CanAndOrAsymmetric t1 Bool, CanBeErrors es)
   =>
   CanAndOrAsymmetric (CollectErrors es t1) Bool
   where
-  type AndOrType (CollectErrors es t1) Bool = EnsureCE es (AndOrType t1 Bool)
-  and2 = lift2TCE and2
-  or2 = lift2TCE or2
+  type AndOrType (CollectErrors es t1) Bool = CollectErrors es (AndOrType t1 Bool)
+  and2 = CE.lift1T and2
+  or2 = CE.lift1T or2
 
 instance
-  (CanAndOrAsymmetric Bool t2, SuitableForCE es
-  , CanEnsureCE es t2, CanEnsureCE es (AndOrType Bool t2))
+  (CanAndOrAsymmetric Bool t2, CanBeErrors es)
   =>
   CanAndOrAsymmetric Bool (CollectErrors es t2)
   where
-  type AndOrType Bool (CollectErrors es t2) = EnsureCE es (AndOrType Bool t2)
-  and2 = lift2TLCE and2
-  or2 = lift2TLCE or2
+  type AndOrType Bool (CollectErrors es t2) = CollectErrors es (AndOrType Bool t2)
+  and2 = CE.liftT1 and2
+  or2 = CE.liftT1 or2
 
 {-|
   A type constraint synonym that stipulates that the type behaves very

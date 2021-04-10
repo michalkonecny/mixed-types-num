@@ -25,6 +25,7 @@ dependencies:
 - hspec-smallcheck >= 0.3
 - smallcheck >= 1.1
 - QuickCheck >= 2.7
+- collect-errors == 0.1.*
 
 default-extensions:
 - RebindableSyntax
@@ -44,6 +45,8 @@ other-extensions:
 
 library:
   source-dirs: src
+  ghc-options:
+  - -Wall
   dependencies:
   - template-haskell
   - mtl
@@ -57,5 +60,6 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -Wall
     dependencies:
     - mixed-types-num

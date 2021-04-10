@@ -37,8 +37,8 @@ import qualified Data.List as List
 import Test.Hspec
 import Test.QuickCheck
 
--- import Numeric.CollectErrors
-import Control.CollectErrors
+import Control.CollectErrors ( CollectErrors, CanBeErrors )
+import qualified Control.CollectErrors as CE
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -235,16 +235,13 @@ instance (CanAddAsymmetric a b) => CanAddAsymmetric (Maybe a) (Maybe b) where
   add _ _ = Nothing
 
 instance
-  (CanAddAsymmetric a b
-  , CanEnsureCE es a, CanEnsureCE es b
-  , CanEnsureCE es (AddType a b)
-  , SuitableForCE es)
+  (CanAddAsymmetric a b, CanBeErrors es)
   =>
   CanAddAsymmetric (CollectErrors es a) (CollectErrors es  b)
   where
   type AddType (CollectErrors es a) (CollectErrors es b) =
-    EnsureCE es (AddType a b)
-  add = lift2CE add
+    CollectErrors es (AddType a b)
+  add = CE.lift2 add
 
 -- TH for ground type instances at is the end of the file due to a bug in TH
 
@@ -380,66 +377,51 @@ instance (CanSub a b) => CanSub (Maybe a) (Maybe b) where
 
 
 instance
-  (CanSub a b
-  , CanEnsureCE es a, CanEnsureCE es b
-  , CanEnsureCE es (SubType a b)
-  , SuitableForCE es)
+  (CanSub a b, CanBeErrors es)
   =>
   CanSub (CollectErrors es a) (CollectErrors es  b)
   where
   type SubType (CollectErrors es a) (CollectErrors es b) =
-    EnsureCE es (SubType a b)
-  sub = lift2CE sub
+    CollectErrors es (SubType a b)
+  sub = CE.lift2 sub
 
 $(declForTypes
   [[t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
   (\ t -> [d|
 
     instance
-      (CanSub $t b
-      , CanEnsureCE es b
-      , CanEnsureCE es (SubType $t b)
-      , SuitableForCE es)
+      (CanSub $t b, CanBeErrors es)
       =>
       CanSub $t (CollectErrors es  b)
       where
       type SubType $t (CollectErrors es  b) =
-        EnsureCE es (SubType $t b)
-      sub = lift2TLCE sub
+        CollectErrors es (SubType $t b)
+      sub = CE.liftT1 sub
 
     instance
-      (CanSub a $t
-      , CanEnsureCE es a
-      , CanEnsureCE es (SubType a $t)
-      , SuitableForCE es)
+      (CanSub a $t, CanBeErrors es)
       =>
       CanSub (CollectErrors es a) $t
       where
       type SubType (CollectErrors es  a) $t =
-        EnsureCE es (SubType a $t)
-      sub = lift2TCE sub
+        CollectErrors es (SubType a $t)
+      sub = CE.lift1T sub
 
     instance
-      (CanAddAsymmetric $t b
-      , CanEnsureCE es b
-      , CanEnsureCE es (AddType $t b)
-      , SuitableForCE es)
+      (CanAddAsymmetric $t b, CanBeErrors es)
       =>
       CanAddAsymmetric $t (CollectErrors es  b)
       where
       type AddType $t (CollectErrors es  b) =
-        EnsureCE es (AddType $t b)
-      add = lift2TLCE add
+        CollectErrors es (AddType $t b)
+      add = CE.liftT1 add
 
     instance
-      (CanAddAsymmetric a $t
-      , CanEnsureCE es a
-      , CanEnsureCE es (AddType a $t)
-      , SuitableForCE es)
+      (CanAddAsymmetric a $t, CanBeErrors es)
       =>
       CanAddAsymmetric (CollectErrors es a) $t
       where
       type AddType (CollectErrors es  a) $t =
-        EnsureCE es (AddType a $t)
-      add = lift2TCE add
+        CollectErrors es (AddType a $t)
+      add = CE.lift1T add
   |]))

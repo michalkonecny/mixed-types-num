@@ -49,6 +49,8 @@ module MixedTypesNumPrelude
   module Numeric.MixedTypes.AddSub,
   module Numeric.MixedTypes.Round,
   module Numeric.MixedTypes.Ring,
+  module Numeric.MixedTypes.Div,
+  module Numeric.MixedTypes.Power,
   module Numeric.MixedTypes.Field,
   module Numeric.MixedTypes.Elementary,
   module Numeric.MixedTypes.Complex,
@@ -75,6 +77,8 @@ import Numeric.MixedTypes.MinMaxAbs
 import Numeric.MixedTypes.AddSub
 import Numeric.MixedTypes.Round
 import Numeric.MixedTypes.Ring
+import Numeric.MixedTypes.Div
+import Numeric.MixedTypes.Power
 import Numeric.MixedTypes.Field
 import Numeric.MixedTypes.Elementary
 import Numeric.MixedTypes.Complex
