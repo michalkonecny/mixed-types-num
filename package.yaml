@@ -8,7 +8,7 @@ copyright:           "2015-2021 Michal Konecny"
 
 extra-source-files:
 - README.md
-- changeLog.md
+- changelog.md
 
 # Metadata used when publishing your package
 synopsis:            Alternative Prelude with numeric and logic expressions typed bottom-up

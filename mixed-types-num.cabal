@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6004a76fb1d4ae92c633dc364a4d260b479a5c9b258a6a7d861fffe7d6036bfe
+-- hash: 696b2ccc7061fb916a31b179c91fbf6dd8a5914833e31850cf108118b63257eb
 
 name:           mixed-types-num
 version:        0.5.0.0
@@ -21,7 +21,7 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
-    ChangeLog.md
+    changelog.md
 
 source-repository head
   type: git
