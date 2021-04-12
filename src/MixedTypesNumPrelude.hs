@@ -112,71 +112,44 @@ To replicate the below in ghci using stack, start it as follows:
 === Dividing integers, dealing with potential error
 
 >...> :t let n = 1 in n/(n+1)
->... :: CollectErrors [(ErrorCertaintyLevel, NumError)] Rational
+>... :: Rational
 
-A shorter synonym of this type is @CN Rational@.
-We use the shorter form below for better readability of this documentation
-although ghci usually prints the longer version:
+To avoid runtime exceptions, it is recommended to use the CN error-collecting wrapper from package collect-errors:
 
->...> :t let n = 1 in n/(n+1)
+>...> :t let n = cn 1 in n/(n+1)
 >... :: CN Rational
 
-The @CN@ wrapper here indicates that integer division can fail for some values:
+@CN@ is a synonym for @CollectErrors [(ErrorCertaintyLevel, NumError)] Rational@ as defined in module "Numeric.CollectErrors".
+The @CN@ wrapper indicates that integer division can fail for some values:
 
->...> 1/0
->{[(ERROR,division by 0)]}
+>...> let n = cn 1 in n/(n-1)
+>{[(division by 0,ERROR)]}
 
-Note that when evaluating @1/0@, it evaluates to the error value printed above.
-This is not an exception, but a special value.
+Note that the error printed above is not an exception, but a special value.
 
 All arithmetic operations have been extended to CN types so that it is possible to
 have expressions that operate exclusively on CN types:
 
 >...> f (n :: CN Integer) = 1/(1/(n-1) + 1/n) :: CN Rational
 >...> f (cn 0)
->{[(ERROR,division by 0)]}
+>{[(division by 0,POTENTIAL ERROR),(division by 0,ERROR)]}
 >...> f (cn 1)
->{[(ERROR,division by 0)]}
+>{[(division by 0,POTENTIAL ERROR),(division by 0,ERROR)]}
 >...> f (cn 2)
 >2 % 3
 
-The function hasErrorCN can be used to check whether any error occurred:
+The function @hasError@ can be used to check whether any error occurred:
 
->...> hasErrorCN (1/0)
+>...> hasError (cn 1/0)
 >True
 
->...> hasErrorCN (1/1)
+>...> hasError (cn 1/1)
 >False
 
-When one is certain the division is well defined, one can remove @CN@ as follows:
+To extract a value from the CN wrapper, one can use function @withErrorOrValue@:
 
->...> :t (1/!2)
->... :: Rational
-
-Note that if one gets it wrong, it can lead to an exception:
-
->...> :t (1/!0)
->*** Exception: Ratio has zero denominator
-
-More generally, one can remove @CN@ as follows:
-
->...> :t (~!) (1/2)
->... :: Rational
-
-The operator @(/!)@ stands for division which throws an exception is the
-denominator is 0.  It "propagates" any potential errors
-from the sub-expressions.  For example:
-
->...> :t 1/!(1 - 1/n)
->... :: CN Rational
-
-The above expression will throw an error exception when evaluated with @n=1@
-but when @n=0@, it will not throw an excetion but return an error value.
-
-The @(~!)@ operator removes CN from any type, throwing an exception if some errors have certainly occurred:
-
->...> :t (~!) (1/(1 - 1/n))
->... :: Rational
+>...> withErrorOrValue (const 0.0) id (cn 1/2)
+>1 % 2
 
 The following examples require also package <https://github.com/michalkonecny/aern2 aern2-real>.
 To get access to this via stack, you can start ghci eg as follows:
