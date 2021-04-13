@@ -1,7 +1,8 @@
 # mixed-types-num change log
 
-* v 0.5.0 2021-04-10
+* v 0.5.0 2021-04-13
   * use package collect-errors with a much simpler CN wrapper
+  * replace Maybe Bool by Kleenean (a new type)
 * v 0.4.1 2021-01-21
   * add hasErrorCE and hasErrorCN for testing if CE/CN values contain errors
 * v 0.4.0.2 2020-08-02

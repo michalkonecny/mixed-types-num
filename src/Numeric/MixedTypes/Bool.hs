@@ -109,18 +109,6 @@ instance CanTestCertainly Bool where
   isCertainlyTrue = id
   isCertainlyFalse = not
 
-instance (ConvertibleExactly Bool t) => ConvertibleExactly Bool (Maybe t) where
-  safeConvertExactly b =
-    case (safeConvertExactly b) of
-      Left _ -> Right Nothing
-      Right r -> Right (Just r)
-
-instance (CanTestCertainly t) => CanTestCertainly (Maybe t) where
-  isCertainlyTrue (Just b) = isCertainlyTrue b
-  isCertainlyTrue _ = False
-  isCertainlyFalse (Just b) = isCertainlyFalse b
-  isCertainlyFalse _ = False
-
 instance (CanTestCertainly t, CanBeErrors es) => CanTestCertainly (CollectErrors es t) where
   isCertainlyTrue vCE =
     CE.withErrorOrValue (const False) isCertainlyTrue vCE
@@ -176,13 +164,6 @@ specCanNegBool (T typeName :: T t) =
 
 
 instance CanNeg Bool where negate = P.not
-
-instance CanNeg t => CanNeg (Maybe t) where
-  type NegType (Maybe t) = Maybe (NegType t)
-  negate = fmap negate
-
-_testNeg1 :: Maybe Bool
-_testNeg1 = not (Just True)
 
 instance
   (CanNeg t, CanBeErrors es)
@@ -314,54 +295,6 @@ instance CanAndOrAsymmetric Bool Bool where
   and2 = (P.&&)
   or2 = (P.||)
 
-instance (CanAndOrAsymmetric t1 t2, CanTestCertainly t1, CanTestCertainly t2, CanTestCertainly (AndOrType t1 t2)) =>
-  CanAndOrAsymmetric (Maybe t1) (Maybe t2)
-  where
-  type AndOrType (Maybe t1) (Maybe t2) = Maybe (AndOrType t1 t2)
-  and2 (Just b1) _ | isCertainlyFalse b1 = Just (convertExactly False)
-  and2 _ (Just b2) | isCertainlyFalse b2 = Just (convertExactly False)
-  and2 (Just b1) (Just b2) = Just (b1 && b2)
-  and2 _ _ = Nothing
-  or2 (Just b1) _ | isCertainlyTrue b1 = Just (convertExactly True)
-  or2 _ (Just b2) | isCertainlyTrue b2 = Just (convertExactly True)
-  or2 (Just b1) (Just b2) = Just (b1 || b2)
-  or2 _ _ = Nothing
-
-instance (CanAndOrAsymmetric Bool t2, CanTestCertainly t2, CanTestCertainly (AndOrType Bool t2)) =>
-  CanAndOrAsymmetric Bool (Maybe t2)
-  where
-  type AndOrType Bool (Maybe t2) = Maybe (AndOrType Bool t2)
-  and2 False _ = Just (convertExactly False)
-  and2 _ (Just b2) | isCertainlyFalse b2 = Just (convertExactly False)
-  and2 b1 (Just b2) = Just (b1 && b2)
-  and2 _ _ = Nothing
-  or2 True _ = Just (convertExactly True)
-  or2 _ (Just b2) | isCertainlyTrue b2 = Just (convertExactly True)
-  or2 b1 (Just b2) = Just (b1 || b2)
-  or2 _ _ = Nothing
-
-instance (CanAndOrAsymmetric t1 Bool, CanTestCertainly t1, CanTestCertainly (AndOrType t1 Bool)) =>
-  CanAndOrAsymmetric (Maybe t1) Bool
-  where
-  type AndOrType (Maybe t1) Bool = Maybe (AndOrType t1 Bool)
-  and2 _ False = Just (convertExactly False)
-  and2 (Just b1) _ | isCertainlyFalse b1 = Just (convertExactly False)
-  and2 (Just b1) b2 = Just (b1 && b2)
-  and2 _ _ = Nothing
-  or2 _ True = Just (convertExactly True)
-  or2 (Just b1) _ | isCertainlyTrue b1 = Just (convertExactly True)
-  or2 (Just b1) b2 = Just (b1 || b2)
-  or2 _ _ = Nothing
-
-_testAndOr1 :: Maybe Bool
-_testAndOr1 = (Just True) && False
-
-_testAndOr2 :: Maybe (Maybe Bool)
-_testAndOr2 = (Just (Just True)) || False
-
-_testAndOr3 :: Maybe Bool
-_testAndOr3 = and [Just True, Nothing, Just False]
-
 instance
   (CanAndOrAsymmetric t1 t2, CanBeErrors es)
   =>
@@ -392,9 +325,9 @@ instance
 {-|
   A type constraint synonym that stipulates that the type behaves very
   much like Bool, except it does not necessarily satisfy the law of excluded middle,
-  which means that the type can contain a "do-not-know" value.
+  which means that the type can contain a "do-not-know" value or an error.
 
-  Examples: @Bool@, @Maybe Bool@, @Maybe (Maybe Bool)@, @CollectErrors Bool@
+  Examples: @Bool@, @Kleenean@, @CollectErrors Bool@
 -}
 type IsBool t =
   (HasBools t, CanNegSameType t, CanAndOrSameType t)

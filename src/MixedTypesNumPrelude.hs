@@ -43,6 +43,7 @@ module MixedTypesNumPrelude
   -- * Modules with Prelude alternatives
   module Numeric.MixedTypes.Literals,
   module Numeric.MixedTypes.Bool,
+  module Numeric.MixedTypes.Kleenean,
   module Numeric.MixedTypes.Eq,
   module Numeric.MixedTypes.Ord,
   module Numeric.MixedTypes.MinMaxAbs,
@@ -54,7 +55,7 @@ module MixedTypesNumPrelude
   module Numeric.MixedTypes.Field,
   module Numeric.MixedTypes.Elementary,
   module Numeric.MixedTypes.Complex,
-  module Numeric.CollectErrors,
+  -- module Numeric.CollectErrors,
   module Utils.TH.DeclForTypes,
   module Utils.Test.EnforceRange,
   -- * Re-export for convenient Rational literals
@@ -67,10 +68,10 @@ import Data.Convertible.Instances.Num()
 import Data.Convertible.Base
 import Utils.TH.DeclForTypes
 import Utils.Test.EnforceRange
-import Numeric.CollectErrors
 import Numeric.MixedTypes.PreludeHiding
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
+import Numeric.MixedTypes.Kleenean
 import Numeric.MixedTypes.Eq
 import Numeric.MixedTypes.Ord
 import Numeric.MixedTypes.MinMaxAbs

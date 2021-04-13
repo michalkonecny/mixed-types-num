@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 696b2ccc7061fb916a31b179c91fbf6dd8a5914833e31850cf108118b63257eb
+-- hash: f0e1753d675ddfefd0ce0438e5ba2e6d728bd7ba50809083d6121331f075af37
 
 name:           mixed-types-num
 version:        0.5.0.0
@@ -40,6 +40,7 @@ library
       Numeric.MixedTypes.Elementary
       Numeric.MixedTypes.Eq
       Numeric.MixedTypes.Field
+      Numeric.MixedTypes.Kleenean
       Numeric.MixedTypes.Literals
       Numeric.MixedTypes.MinMaxAbs
       Numeric.MixedTypes.Ord
