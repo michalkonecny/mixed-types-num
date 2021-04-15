@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-|
     Module      :  Numeric.MixedType.Div
@@ -95,25 +97,7 @@ type CanDivSameType t =
   HSpec properties that each implementation of CanDiv should satisfy.
  -}
 specCanDiv ::
-  (Show t1, Show t2, Show (DivType Integer (DivType Integer t1)),
-   Show (DivType t1 t2), Show (DivType t1 t1),
-   Show (MulType t1 (DivType t1 t2)), Arbitrary t1, Arbitrary t2,
-   ConvertibleExactly Integer t1, ConvertibleExactly Integer t2,
-   CanTestCertainly
-     (EqCompareType (DivType Integer (DivType Integer t1)) t1),
-   CanTestCertainly (EqCompareType (DivType t1 t2) t1),
-   CanTestCertainly (EqCompareType (DivType t1 t1) t1),
-   CanTestCertainly
-     (EqCompareType (DivType t1 t2) (MulType t1 (DivType t1 t2))),
-   HasEqAsymmetric (DivType Integer (DivType Integer t1)) t1,
-   HasEqAsymmetric (DivType t1 t2) t1,
-   HasEqAsymmetric (DivType t1 t2) (MulType t1 (DivType t1 t2)),
-   HasEqAsymmetric (DivType t1 t1) t1, CanTestZero t1, CanTestZero t2,
-   CanTestZero (DivType Integer t1),
-   CanMulAsymmetric t1 (DivType t1 t2), CanDiv t1 t1, CanDiv t1 t2,
-   CanDiv Integer t1, CanDiv Integer (DivType Integer t1))
-  =>
-  T t1 -> T t2 -> Spec
+  _ => T t1 -> T t2 -> Spec
 specCanDiv (T typeName1 :: T t1) (T typeName2 :: T t2) =
   describe (printf "CanDiv %s %s" typeName1 typeName2) $ do
     it "recip(recip x) = x" $ do
@@ -139,22 +123,7 @@ specCanDiv (T typeName1 :: T t1) (T typeName2 :: T t2) =
   HSpec properties that each implementation of CanDiv should satisfy.
  -}
 specCanDivNotMixed ::
-  (Show t, Show (DivType Integer (DivType Integer t)),
-   Show (DivType t t), Show (MulType t (DivType t t)), Arbitrary t,
-   ConvertibleExactly Integer t,
-   CanTestCertainly
-     (EqCompareType (DivType Integer (DivType Integer t)) t),
-   CanTestCertainly (EqCompareType (DivType t t) t),
-   CanTestCertainly
-     (EqCompareType (DivType t t) (MulType t (DivType t t))),
-   HasEqAsymmetric (DivType Integer (DivType Integer t)) t,
-   HasEqAsymmetric (DivType t t) t,
-   HasEqAsymmetric (DivType t t) (MulType t (DivType t t)),
-   CanTestZero t, CanTestZero (DivType Integer t),
-   CanMulAsymmetric t (DivType t t), CanDiv t t, CanDiv Integer t,
-   CanDiv Integer (DivType Integer t))
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specCanDivNotMixed (t :: T t) = specCanDiv t t
 
 instance CanDiv Int Int where

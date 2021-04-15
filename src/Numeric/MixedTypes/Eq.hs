@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-|
     Module      :  Numeric.MixedType.Eq
@@ -99,19 +101,8 @@ notCertainlyDifferentFrom a b = isNotFalse $ a == b
 {-|
   HSpec properties that each implementation of HasEq should satisfy.
  -}
-specHasEq ::
- (Show t1, Show t2, Show t3, Arbitrary t1, Arbitrary t2,
-  Arbitrary t3, CanTestCertainly (EqCompareType t1 t1),
-  CanTestCertainly (EqCompareType t1 t2),
-  CanTestCertainly (EqCompareType t2 t1),
-  CanTestCertainly (EqCompareType t2 t3),
-  CanTestCertainly
-    (AndOrType (EqCompareType t1 t2) (EqCompareType t2 t3)),
-  CanAndOrAsymmetric (EqCompareType t1 t2) (EqCompareType t2 t3),
-  HasEqAsymmetric t1 t1, HasEqAsymmetric t1 t2,
-  HasEqAsymmetric t2 t1, HasEqAsymmetric t2 t3)
-  =>
-  T t1 -> T t2 -> T t3 -> Spec
+specHasEq :: 
+  _ => T t1 -> T t2 -> T t3 -> Spec
 specHasEq (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "HasEq %s %s, HasEq %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "has reflexive ==" $ do
@@ -129,12 +120,7 @@ specHasEq (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   HSpec properties that each implementation of HasEq should satisfy.
  -}
 specHasEqNotMixed ::
-  (Show t, Arbitrary t, CanTestCertainly (EqCompareType t t),
-   CanTestCertainly
-     (AndOrType (EqCompareType t t) (EqCompareType t t)),
-   HasEqAsymmetric t t)
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specHasEqNotMixed (t :: T t) = specHasEq t t t
 
 {-|

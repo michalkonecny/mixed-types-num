@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-|
     Module      :  Numeric.MixedType.Ring
@@ -118,36 +120,7 @@ product xs = List.foldl' mul (convertExactly 1) xs
   HSpec properties that each implementation of CanMul should satisfy.
  -}
 specCanMul ::
-  (Show t1, Show t2, Show t3, Show (MulType t1 t2),
-   Show (MulType t2 t1), Show (MulType t1 (MulType t2 t3)),
-   Show (MulType (MulType t1 t2) t3),
-   Show (MulType t1 (AddType t2 t3)),
-   Show (AddType (MulType t1 t2) (MulType t1 t3)), Arbitrary t1,
-   Arbitrary t2, Arbitrary t3, ConvertibleExactly Integer t2,
-   CanTestCertainly (EqCompareType (MulType t1 t2) t1),
-   CanTestCertainly (EqCompareType (MulType t1 t2) (MulType t2 t1)),
-   CanTestCertainly
-     (EqCompareType
-        (MulType t1 (MulType t2 t3)) (MulType (MulType t1 t2) t3)),
-   CanTestCertainly
-     (EqCompareType
-        (MulType t1 (AddType t2 t3))
-        (AddType (MulType t1 t2) (MulType t1 t3))),
-   HasEqAsymmetric (MulType t1 t2) t1,
-   HasEqAsymmetric (MulType t1 t2) (MulType t2 t1),
-   HasEqAsymmetric
-     (MulType t1 (MulType t2 t3)) (MulType (MulType t1 t2) t3),
-   HasEqAsymmetric
-     (MulType t1 (AddType t2 t3))
-     (AddType (MulType t1 t2) (MulType t1 t3)),
-   CanAddAsymmetric t2 t3,
-   CanAddAsymmetric (MulType t1 t2) (MulType t1 t3),
-   CanMulAsymmetric t1 t2, CanMulAsymmetric t1 t3,
-   CanMulAsymmetric t1 (MulType t2 t3),
-   CanMulAsymmetric t1 (AddType t2 t3), CanMulAsymmetric t2 t1,
-   CanMulAsymmetric t2 t3, CanMulAsymmetric (MulType t1 t2) t3)
-  =>
-  T t1 -> T t2 -> T t3 -> Spec
+  _ => T t1 -> T t2 -> T t3 -> Spec
 specCanMul (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "CanMul %s %s, CanMul %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "absorbs 1" $ do
@@ -169,30 +142,7 @@ specCanMul (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   HSpec properties that each implementation of CanMul should satisfy.
  -}
 specCanMulNotMixed ::
-  (Show t, Show (MulType t t), Show (MulType t (MulType t t)),
-   Show (MulType (MulType t t) t), Show (MulType t (AddType t t)),
-   Show (AddType (MulType t t) (MulType t t)), Arbitrary t,
-   ConvertibleExactly Integer t,
-   CanTestCertainly (EqCompareType (MulType t t) t),
-   CanTestCertainly (EqCompareType (MulType t t) (MulType t t)),
-   CanTestCertainly
-     (EqCompareType
-        (MulType t (MulType t t)) (MulType (MulType t t) t)),
-   CanTestCertainly
-     (EqCompareType
-        (MulType t (AddType t t)) (AddType (MulType t t) (MulType t t))),
-   HasEqAsymmetric (MulType t t) t,
-   HasEqAsymmetric (MulType t t) (MulType t t),
-   HasEqAsymmetric
-     (MulType t (MulType t t)) (MulType (MulType t t) t),
-   HasEqAsymmetric
-     (MulType t (AddType t t)) (AddType (MulType t t) (MulType t t)),
-   CanAddAsymmetric t t, CanAddAsymmetric (MulType t t) (MulType t t),
-   CanMulAsymmetric t t, CanMulAsymmetric t (MulType t t),
-   CanMulAsymmetric t (AddType t t),
-   CanMulAsymmetric (MulType t t) t)
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specCanMulNotMixed (t :: T t) = specCanMul t t t
 
 {-|

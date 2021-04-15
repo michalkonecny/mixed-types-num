@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-|
     Module      :  Numeric.MixedType.Elementary
     Description :  Bottom-up typed pi, sqrt, cos, etc
@@ -9,7 +11,6 @@
     Portability :  portable
 
 -}
-
 module Numeric.MixedTypes.Elementary
 (
   -- * Square root
@@ -69,15 +70,7 @@ type CanSqrtSameType t = (CanSqrt t, SqrtType t ~ t)
   HSpec properties that each implementation of CanSqrt should satisfy.
  -}
 specCanSqrtReal ::
-  (Show t, Show (SqrtType t), Show (PowType (SqrtType t) Integer),
-    Arbitrary t,
-    CanTestCertainly (OrderCompareType (SqrtType t) Integer),
-    CanTestCertainly (EqCompareType (PowType (SqrtType t) Integer) t),
-    HasEqAsymmetric (PowType (SqrtType t) Integer) t,
-    HasOrderAsymmetric (SqrtType t) Integer, CanTestPosNeg t,
-    CanPow (SqrtType t) Integer, CanSqrt t)
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specCanSqrtReal (T typeName :: T t) =
   describe (printf "CanSqrt %s" typeName) $ do
     it "sqrt(x) >= 0" $ do
@@ -142,32 +135,7 @@ type CanExpSameType t = (CanExp t, ExpType t ~ t)
   HSpec properties that each implementation of CanExp should satisfy.
  -}
 specCanExpReal ::
-  (Show t, Show (ExpType t), Show (DivType Integer (ExpType t)),
-   Show (ExpType (AddType t t)),
-   Show (MulType (ExpType t) (ExpType t)),
-   Arbitrary t,
-   CanTestCertainly (OrderCompareType Integer t),
-   CanTestCertainly (OrderCompareType t Integer),
-   CanTestCertainly (OrderCompareType (ExpType t) Integer),
-   CanTestCertainly
-     (EqCompareType
-        (ExpType t) (DivType Integer (ExpType t))),
-   CanTestCertainly
-     (EqCompareType
-        (ExpType (AddType t t)) (MulType (ExpType t) (ExpType t))),
-   CanNeg t,
-   HasEqAsymmetric
-     (ExpType (AddType t t)) (MulType (ExpType t) (ExpType t)),
-   HasEqAsymmetric
-     (ExpType t) (DivType Integer (ExpType t)),
-   HasOrderAsymmetric t Integer,
-   HasOrderAsymmetric (ExpType t) Integer,
-   HasOrderAsymmetric Integer t, CanAddAsymmetric t t,
-   CanMulAsymmetric (ExpType t) (ExpType t),
-   CanDiv Integer (ExpType t), CanExp t, CanExp (AddType t t),
-   NegType t ~ t, 
-   CanEnforceRange t Integer) =>
-   T t -> Spec
+  _ => T t -> Spec
 specCanExpReal (T typeName :: T t) =
   describe (printf "CanExp %s" typeName) $ do
     it "exp(x) >= 0" $ do
@@ -225,36 +193,7 @@ type CanLogSameType t = (CanLog t, LogType t ~ t)
   HSpec properties that each implementation of CanLog should satisfy.
  -}
 specCanLogReal ::
-  (Show t, Show (LogType t), Show (LogType (DivType Integer t)),
-   Show (LogType (MulType t t)),
-   Show (AddType (LogType t) (LogType t)), Show (LogType (ExpType t)),
-   Arbitrary t, CanTestCertainly (OrderCompareType t Integer),
-   CanTestCertainly (OrderCompareType (DivType Integer t) Integer),
-   CanTestCertainly
-     (EqCompareType (LogType (DivType Integer t)) (LogType t)),
-   CanTestCertainly (OrderCompareType (MulType t t) Integer),
-   CanTestCertainly (OrderCompareType (ExpType t) Integer),
-   CanTestCertainly
-     (EqCompareType
-        (LogType (MulType t t)) (AddType (LogType t) (LogType t))),
-   CanTestCertainly (OrderCompareType Integer t),
-   CanTestCertainly (EqCompareType (LogType (ExpType t)) t),
-   CanNeg (LogType t),
-   HasEqAsymmetric (LogType (DivType Integer t)) (LogType t),
-   HasEqAsymmetric
-     (LogType (MulType t t)) (AddType (LogType t) (LogType t)),
-   HasEqAsymmetric (LogType (ExpType t)) t,
-   HasOrderAsymmetric t Integer,
-   HasOrderAsymmetric (DivType Integer t) Integer,
-   HasOrderAsymmetric (MulType t t) Integer,
-   HasOrderAsymmetric (ExpType t) Integer,
-   HasOrderAsymmetric Integer t,
-   CanAddAsymmetric (LogType t) (LogType t), CanMulAsymmetric t t,
-   CanDiv Integer t, CanExp t, CanLog t, CanLog (DivType Integer t),
-   CanLog (MulType t t), CanLog (ExpType t),
-   LogType t ~ NegType (LogType t),
-   CanEnforceRange t Integer) =>
-  T t -> Spec
+  _ => T t -> Spec
 specCanLogReal (T typeName :: T t) =
   describe (printf "CanLog %s" typeName) $ do
     it "log(1/x) == -(log x)" $ do
@@ -347,81 +286,7 @@ type CanSinCosSameType t = (CanSinCos t, SinCosType t ~ t)
   http://math.stackexchange.com/questions/1303044/axiomatic-definition-of-sin-and-cos
  -}
 specCanSinCosReal ::
- (Show t, Show (SinCosType t),
-  Show
-    (AddType
-       (PowType (SinCosType t) Integer) (PowType (SinCosType t) Integer)),
-  Show (SinCosType (SubType t t)),
-  Show
-    (SubType
-       (MulType (SinCosType t) (SinCosType t))
-       (MulType (SinCosType t) (SinCosType t))),
-  Show
-    (AddType
-       (MulType (SinCosType t) (SinCosType t))
-       (MulType (SinCosType t) (SinCosType t))),
-  Show (DivType (SinCosType t) (SinCosType t)),
-  Arbitrary t,
-  CanTestCertainly (OrderCompareType Integer (SinCosType t)),
-  CanTestCertainly (OrderCompareType (SinCosType t) Integer),
-  CanTestCertainly
-    (EqCompareType
-       (AddType
-          (PowType (SinCosType t) Integer)
-          (PowType (SinCosType t) Integer))
-       Integer),
-  CanTestCertainly
-    (EqCompareType
-       (SinCosType (SubType t t))
-       (SubType
-          (MulType (SinCosType t) (SinCosType t))
-          (MulType (SinCosType t) (SinCosType t)))),
-  CanTestCertainly
-    (EqCompareType
-       (SinCosType (SubType t t))
-       (AddType
-          (MulType (SinCosType t) (SinCosType t))
-          (MulType (SinCosType t) (SinCosType t)))),
-  CanTestCertainly (OrderCompareType t Integer),
-  CanTestCertainly (OrderCompareType t Rational),
-  CanTestCertainly (OrderCompareType (SinCosType t) t),
-  CanTestCertainly
-    (OrderCompareType
-       t (DivType (SinCosType t) (SinCosType t))),
-  HasEqAsymmetric
-    (AddType
-       (PowType (SinCosType t) Integer) (PowType (SinCosType t) Integer))
-    Integer,
-  HasEqAsymmetric
-    (SinCosType (SubType t t))
-    (SubType
-       (MulType (SinCosType t) (SinCosType t))
-       (MulType (SinCosType t) (SinCosType t))),
-  HasEqAsymmetric
-    (SinCosType (SubType t t))
-    (AddType
-       (MulType (SinCosType t) (SinCosType t))
-       (MulType (SinCosType t) (SinCosType t))),
-  HasOrderAsymmetric t Integer, HasOrderAsymmetric t Rational,
-  HasOrderAsymmetric (SinCosType t) t,
-  HasOrderAsymmetric (SinCosType t) Integer,
-  HasOrderAsymmetric
-    t (DivType (SinCosType t) (SinCosType t)),
-  HasOrderAsymmetric Integer (SinCosType t), CanSub t t,
-  CanSub
-    (MulType (SinCosType t) (SinCosType t))
-    (MulType (SinCosType t) (SinCosType t)),
-  CanAddAsymmetric
-    (PowType (SinCosType t) Integer) (PowType (SinCosType t) Integer),
-  CanAddAsymmetric
-    (MulType (SinCosType t) (SinCosType t))
-    (MulType (SinCosType t) (SinCosType t)),
-  CanPow (SinCosType t) Integer,
-  CanMulAsymmetric (SinCosType t) (SinCosType t),
-  CanDiv (SinCosType t) (SinCosType t), CanSinCos t,
-  CanSinCos (SubType t t))
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specCanSinCosReal (T typeName :: T t) =
   describe (printf "CanSinCos %s" typeName) $ do
     it "-1 <= sin(x) <= 1" $ do

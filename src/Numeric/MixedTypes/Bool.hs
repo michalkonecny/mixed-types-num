@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-|
     Module      :  Numeric.MixedType.Bool
@@ -145,12 +147,7 @@ type CanTestCertainlyX t = (CanTestCertainly t, Show t, SCS.Serial IO t)
   HSpec properties that each Boolean implementation of CanNeg should satisfy.
  -}
 specCanNegBool ::
-  (Show t, Show (NegType (NegType t)), SCS.Serial IO t,
-   CanTestCertainly t, CanTestCertainly (NegType t),
-   CanTestCertainly (NegType (NegType t)), CanNeg t,
-   CanNeg (NegType t))
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specCanNegBool (T typeName :: T t) =
   describe (printf "CanNeg %s" typeName) $ do
     it "ignores double negation" $ do
@@ -213,31 +210,7 @@ or = List.foldl' (||) (convertExactly False)
 {-|
   HSpec properties that each implementation of CanAndOr should satisfy.
  -}
-specCanAndOr ::
-  (Show t1, Show t2, Show t3, Show (AndOrType t1 t1),
-   Show (AndOrType t1 t2), Show (AndOrType t2 t1),
-   Show (AndOrType t1 (AndOrType t2 t3)),
-   Show (AndOrType (AndOrType t1 t2) t3),
-   Show (AndOrType (AndOrType t1 t2) (AndOrType t1 t3)),
-   Show (NegType (AndOrType t1 t2)),
-   Show (AndOrType (NegType t1) (NegType t2)), SCS.Serial IO t1,
-   SCS.Serial IO t2, SCS.Serial IO t3, CanTestCertainly t1,
-   CanTestCertainly (AndOrType t1 t1),
-   CanTestCertainly (AndOrType t1 t2),
-   CanTestCertainly (AndOrType t2 t1),
-   CanTestCertainly (AndOrType t1 (AndOrType t2 t3)),
-   CanTestCertainly (AndOrType (AndOrType t1 t2) t3),
-   CanTestCertainly (AndOrType (AndOrType t1 t2) (AndOrType t1 t3)),
-   CanTestCertainly (NegType (AndOrType t1 t2)),
-   CanTestCertainly (AndOrType (NegType t1) (NegType t2)), CanNeg t1,
-   CanNeg t2, CanNeg (AndOrType t1 t2), CanAndOrAsymmetric t1 t1,
-   CanAndOrAsymmetric t1 t2, CanAndOrAsymmetric t1 t3,
-   CanAndOrAsymmetric t1 (AndOrType t2 t3), CanAndOrAsymmetric t2 t1,
-   CanAndOrAsymmetric t2 t3, CanAndOrAsymmetric (AndOrType t1 t2) t3,
-   CanAndOrAsymmetric (AndOrType t1 t2) (AndOrType t1 t3),
-   CanAndOrAsymmetric (NegType t1) (NegType t2))
-  =>
-  T t1 -> T t2 -> T t3 -> Spec
+specCanAndOr :: _ => T t1 -> T t2 -> T t3 -> Spec
 specCanAndOr (T typeName1 ::T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "CanAndOr %s %s, CanAndOr %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "has idempotent ||" $ do
@@ -268,26 +241,7 @@ specCanAndOr (T typeName1 ::T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
 {-|
   HSpec properties that each implementation of CanAndOr should satisfy.
  -}
-specCanAndOrNotMixed ::
-  (Show t, Show (AndOrType t t),
-   Show (AndOrType t (AndOrType t t)),
-   Show (AndOrType (AndOrType t t) t),
-   Show (AndOrType (AndOrType t t) (AndOrType t t)),
-   Show (NegType (AndOrType t t)),
-   Show (AndOrType (NegType t) (NegType t)), SCS.Serial IO t,
-   CanTestCertainly t, CanTestCertainly (AndOrType t t),
-   CanTestCertainly (AndOrType t (AndOrType t t)),
-   CanTestCertainly (AndOrType (AndOrType t t) t),
-   CanTestCertainly (AndOrType (AndOrType t t) (AndOrType t t)),
-   CanTestCertainly (NegType (AndOrType t t)),
-   CanTestCertainly (AndOrType (NegType t) (NegType t)), CanNeg t,
-   CanNeg (AndOrType t t), CanAndOrAsymmetric t t,
-   CanAndOrAsymmetric t (AndOrType t t),
-   CanAndOrAsymmetric (AndOrType t t) t,
-   CanAndOrAsymmetric (AndOrType t t) (AndOrType t t),
-   CanAndOrAsymmetric (NegType t) (NegType t))
-  =>
-  T t -> Spec
+specCanAndOrNotMixed :: _ => T t -> Spec
 specCanAndOrNotMixed t = specCanAndOr t t t
 
 instance CanAndOrAsymmetric Bool Bool where

@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-|
     Module      :  Numeric.MixedType.Ord
@@ -117,19 +119,7 @@ a !<=! b = isCertainlyTrue $ a <= b
   HSpec properties that each implementation of 'HasOrder' should satisfy.
  -}
 specHasOrder ::
-  (Show t1, Show t2, Show t3, QC.Arbitrary t1, QC.Arbitrary t2,
-   QC.Arbitrary t3, CanTestCertainly (OrderCompareType t1 t1),
-   CanTestCertainly (OrderCompareType t1 t2),
-   CanTestCertainly (OrderCompareType t2 t1),
-   CanTestCertainly (OrderCompareType t2 t3),
-   CanTestCertainly
-     (AndOrType (OrderCompareType t1 t2) (OrderCompareType t2 t3)),
-   CanAndOrAsymmetric
-     (OrderCompareType t1 t2) (OrderCompareType t2 t3),
-   HasOrderAsymmetric t1 t1, HasOrderAsymmetric t1 t2,
-   HasOrderAsymmetric t2 t1, HasOrderAsymmetric t2 t3)
-  =>
-  T t1 -> T t2 -> T t3 -> Spec
+  _ => T t1 -> T t2 -> T t3 -> Spec
 specHasOrder (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "HasOrd %s %s, HasOrd %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "has reflexive >=" $ do
@@ -155,12 +145,7 @@ specHasOrder (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   HSpec properties that each implementation of 'HasOrder' should satisfy.
  -}
 specHasOrderNotMixed ::
-  (Show t, QC.Arbitrary t, CanTestCertainly (OrderCompareType t t),
-   CanTestCertainly
-     (AndOrType (OrderCompareType t t) (OrderCompareType t t)),
-   HasOrderAsymmetric t t)
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specHasOrderNotMixed (t :: T t) = specHasOrder t t t
 
 instance HasOrderAsymmetric () () where

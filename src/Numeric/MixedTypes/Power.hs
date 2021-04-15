@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-|
     Module      :  Numeric.MixedType.Power
@@ -131,22 +133,7 @@ type CanPowBy t1 t2 =
   HSpec properties that each implementation of CanPow should satisfy.
  -}
 specCanPow ::
-  (Show t1, Show t2, Show (PowType t1 t2),
-   Show (MulType t1 (PowType t1 t2)),
-   Show (PowType t1 (AddType t2 Integer)), Arbitrary t1, Arbitrary t2,
-   ConvertibleExactly Integer t1, ConvertibleExactly Integer t2,
-   CanTestCertainly (EqCompareType (PowType t1 t2) t1),
-   CanTestCertainly
-     (EqCompareType
-        (MulType t1 (PowType t1 t2)) (PowType t1 (AddType t2 Integer))),
-   HasEqAsymmetric (PowType t1 t2) t1,
-   HasEqAsymmetric
-     (MulType t1 (PowType t1 t2)) (PowType t1 (AddType t2 Integer)),
-   CanTestPosNeg t2, CanAddAsymmetric t2 Integer, CanPow t1 t2,
-   CanPow t1 (AddType t2 Integer),
-   CanMulAsymmetric t1 (PowType t1 t2))
-  =>
-  T t1 -> T t2 -> Spec
+  _ => T t1 -> T t2 -> Spec
 specCanPow (T typeName1 :: T t1) (T typeName2 :: T t2) =
   describe (printf "CanPow %s %s" typeName1 typeName2) $ do
     it "x^0 = 1" $ do

@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-|
     Module      :  Numeric.MixedType.Round
@@ -127,25 +129,11 @@ instance CanDivIMod Double Integer where
   type DivIType Double Integer = Integer
   divIMod x m = divIMod x (double m)
 
-type CanDivIModX t =
-  (CanDivIMod t t,
-   ModType t t ~ t,
-   DivIType t t ~ CN Integer,
-   CanMulBy t (CN Integer),
-   CanAddSameType t,
-   HasOrderCertainly t Integer,
-   HasOrderCertainly t t,
-   HasEqCertainly t t,
-   CanTestFinite t,
-   Show t, Arbitrary t)
-
 {-|
   HSpec properties that each implementation of CanRound should satisfy.
  -}
 specCanDivIMod ::
-  (CanDivIModX t, HasIntegers t)
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specCanDivIMod (T typeName :: T t) =
   describe (printf "CanDivMod %s %s" typeName typeName) $ do
     it "holds 0 <= x `mod` m < m" $ do
@@ -218,26 +206,11 @@ instance CanRound Double where
   ceiling = P.ceiling
   floor = P.floor
 
-type CanRoundX t =
-  (CanRound t,
-   CanNegSameType t,
-   CanTestPosNeg t,
-   HasOrderCertainly t Integer,
-   CanTestFinite t,
-   Show t, Arbitrary t)
-
 {-|
   HSpec properties that each implementation of CanRound should satisfy.
  -}
 specCanRound ::
-  (CanRoundX t, HasIntegers t, Show (RoundType t)
-  , HasOrderCertainly t (RoundType t)
-  , HasOrderCertainly Integer (RoundType t)
-  , HasOrderCertainly (RoundType t) (RoundType t)
-  , HasEqCertainly (RoundType t) (RoundType t)
-  , CanSubSameType (RoundType t))
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specCanRound (T typeName :: T t) =
   describe (printf "CanRound %s" typeName) $ do
     it "holds floor x <= x <= ceiling x" $ do
@@ -278,22 +251,11 @@ instance HasIntegerBounds Integer where
 instance HasIntegerBounds Int where
   integerBounds n = (n',n') where n' = integer n
 
-type HasIntegerBoundsX t =
-  (HasIntegerBounds t,
-  --  CanNegSameType t,
-  --  CanTestPosNeg t,
-   HasOrderCertainly t Integer,
-   CanTestFinite t,
-   Show t, Arbitrary t)
-
-
 {-|
   HSpec properties that each implementation of CanRound should satisfy.
  -}
 specHasIntegerBounds ::
-  (HasIntegerBoundsX t)
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specHasIntegerBounds (T typeName :: T t) =
   describe (printf "HasIntegerBounds %s" typeName) $ do
     it "holds l <= x <= r" $ do
