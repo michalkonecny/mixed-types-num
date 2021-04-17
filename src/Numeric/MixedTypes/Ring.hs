@@ -52,12 +52,17 @@ import Numeric.MixedTypes.AddSub
 type CanAddSubMulBy t s =
   (CanAddThis t s, CanSubThis t s, CanSub s t, SubType s t ~ t, CanMulBy t s)
 
-type Ring t =
+class
   (CanNegSameType t, CanAddSameType t, CanSubSameType t, CanMulSameType t,
    HasEq t t,
    HasEq t Integer, CanAddSubMulBy t Integer,
    HasEq t Int, CanAddSubMulBy t Int,
-   HasIntegers t)
+   HasIntegers t) => Ring t
+
+instance Ring Integer
+instance Ring (CN Integer)
+instance Ring Rational
+instance Ring (CN Rational)
 
 class
   (Ring t
