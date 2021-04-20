@@ -36,6 +36,9 @@ type CanBeKleenean t = ConvertibleExactly t Kleenean
 kleenean :: (CanBeKleenean t) => t -> Kleenean
 kleenean = convertExactly
 
+instance ConvertibleExactly Kleenean Kleenean where
+  safeConvertExactly = Right
+
 instance ConvertibleExactly Bool Kleenean where
   safeConvertExactly True = Right CertainTrue
   safeConvertExactly False = Right CertainFalse
