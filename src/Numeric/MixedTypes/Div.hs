@@ -54,6 +54,7 @@ import Numeric.MixedTypes.Ring
 -}
 class CanDiv t1 t2 where
   type DivType t1 t2
+  type DivType t1 t2 = t1
   divide :: t1 -> t2 -> DivType t1 t2
 
 divideCN ::
@@ -148,18 +149,15 @@ instance CanDiv Int Rational where
   type DivType Int Rational = Rational
   divide = convertFirst divide
 instance CanDiv Rational Int where
-  type DivType Rational Int = Rational
   divide = convertSecond divide
 
 instance CanDiv Integer Rational where
   type DivType Integer Rational = Rational
   divide = convertFirst divide
 instance CanDiv Rational Integer where
-  type DivType Rational Integer = Rational
   divide = convertSecond divide
 
 instance CanDiv Double Double where
-  type DivType Double Double = Double
   divide = (P./)
 
 $(declForTypes
