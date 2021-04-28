@@ -42,7 +42,7 @@ import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
 import Numeric.MixedTypes.Eq
 import Numeric.MixedTypes.Ord
--- import Numeric.MixedTypes.MinMaxAbs
+import Numeric.MixedTypes.MinMaxAbs
 import Numeric.MixedTypes.AddSub
 import Numeric.MixedTypes.Ring
 import Numeric.MixedTypes.Field
@@ -97,21 +97,16 @@ specCanSqrtReal (T typeName :: T t) =
 instance CanSqrt Double -- not exact, will not pass the tests
 
 instance
-  (CanSqrt a, CanTestPosNeg a)
+  (CanSqrt a, CanTestPosNeg a, CanMinMaxThis a Integer)
   =>
   CanSqrt (CN a)
   where
   type SqrtType (CN a) = CN (SqrtType a)
   sqrt x 
-    | isCertainlyNonNegative x = sqrtx
-    | isCertainlyNegative x = noval
-    | otherwise = errPote sqrtx
+    | isCertainlyNonNegative x = CN.lift sqrt x
+    | isCertainlyNegative x = CN.noValueNumErrorCertain err
+    | otherwise = CN.prependErrorPotential err $ CN.lift sqrt $ max x 0
     where
-    sqrtx = CN.lift sqrt x
-    noval :: CN v
-    noval = CN.noValueNumErrorCertain err
-    errPote :: CN t -> CN t
-    errPote = CN.prependErrorPotential err
     err :: CN.NumError
     err = CN.OutOfDomain "negative sqrt argument"
 
@@ -233,14 +228,10 @@ instance
   type LogType (CN a) = CN (LogType a)
   log x 
     | isCertainlyPositive x = logx
-    | isCertainlyNonPositive x = noval
-    | otherwise = errPote logx
+    | isCertainlyNonPositive x = CN.noValueNumErrorCertain err
+    | otherwise = CN.noValueNumErrorPotential err
     where
     logx = CN.lift log x
-    noval :: CN v
-    noval = CN.noValueNumErrorCertain err
-    errPote :: CN t -> CN t
-    errPote = CN.prependErrorPotential err
     err :: CN.NumError
     err = CN.OutOfDomain "log argument not positive"
 
