@@ -65,13 +65,9 @@ divideCN ::
 divideCN unsafeDivide a b
   | isCertainlyZero b = CN.noValueNumErrorCertain e
   | isCertainlyNonZero b = r
-  | otherwise = errPote r
+  | otherwise = CN.noValueNumErrorPotential e
   where
   r = CN.lift2 unsafeDivide a b
-  -- errCert :: CN t -> CN t
-  -- errCert = CN.prependErrorCertain e
-  errPote :: CN t -> CN t
-  errPote = CN.prependErrorPotential e
   e :: CN.NumError
   e = CN.DivByZero
 
