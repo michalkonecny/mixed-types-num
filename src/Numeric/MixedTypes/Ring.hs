@@ -36,8 +36,7 @@ import qualified Data.List as List
 import Test.Hspec
 import Test.QuickCheck
 
-import Control.CollectErrors ( CollectErrors, CanBeErrors )
-import qualified Control.CollectErrors as CE
+import qualified Numeric.CollectErrors as CN
 import Numeric.CollectErrors ( CN )
 
 import Numeric.MixedTypes.Literals
@@ -46,6 +45,7 @@ import Numeric.MixedTypes.Eq
 import Numeric.MixedTypes.Ord
 -- import Numeric.MixedTypes.MinMaxAbs
 import Numeric.MixedTypes.AddSub
+import Numeric.MixedTypes.Reduce
 
 {----- Ring -----}
 
@@ -231,33 +231,30 @@ instance (CanMulAsymmetric a b) => CanMulAsymmetric (Maybe a) (Maybe b) where
   mul _ _ = Nothing
 
 instance
-  (CanMulAsymmetric a b, CanBeErrors es)
+  (CanMulAsymmetric a b, CanGiveUpIfVeryInaccurate (MulType a b))
   =>
-  CanMulAsymmetric (CollectErrors es a) (CollectErrors es  b)
+  CanMulAsymmetric (CN a) (CN b)
   where
-  type MulType (CollectErrors es a) (CollectErrors es b) =
-    CollectErrors es (MulType a b)
-  mul = CE.lift2 mul
+  type MulType (CN a) (CN b) = CN (MulType a b)
+  mul a b = giveUpIfVeryInaccurate $ CN.lift2 mul a b
 
 $(declForTypes
   [[t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
   (\ t -> [d|
 
     instance
-      (CanMulAsymmetric $t b, CanBeErrors es)
+      (CanMulAsymmetric $t b, CanGiveUpIfVeryInaccurate (MulType $t b))
       =>
-      CanMulAsymmetric $t (CollectErrors es  b)
+      CanMulAsymmetric $t (CN b)
       where
-      type MulType $t (CollectErrors es  b) =
-        CollectErrors es (MulType $t b)
-      mul = CE.liftT1 mul
+      type MulType $t (CN b) = CN (MulType $t b)
+      mul a b = giveUpIfVeryInaccurate $ CN.liftT1 mul a b
 
     instance
-      (CanMulAsymmetric a $t, CanBeErrors es)
+      (CanMulAsymmetric a $t, CanGiveUpIfVeryInaccurate (MulType a $t))
       =>
-      CanMulAsymmetric (CollectErrors es a) $t
+      CanMulAsymmetric (CN a) $t
       where
-      type MulType (CollectErrors es  a) $t =
-        CollectErrors es (MulType a $t)
-      mul = CE.lift1T mul
+      type MulType (CN a) $t = CN (MulType a $t)
+      mul a b = giveUpIfVeryInaccurate $ CN.lift1T mul a b
   |]))
