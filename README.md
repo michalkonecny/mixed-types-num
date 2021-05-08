@@ -3,7 +3,13 @@
 This package provides a version of Prelude where
 unary and binary operations such as `not`, `+`, `==`
 have their result type derived from the parameter type(s)
-and thus supports mixed-type arithmetic and comparisons.
+and thus supports mixed-type arithmetic and comparisons such as:
+
+    > a = [1..10]; b = [1..11]
+    > length a > 2^((length b)/3)
+    {?(prec 36): CertainFalse}
+<!-- > (length a) `mod` 0.5
+TODO -->
 
 Partial operations such as division, sqrt and power
 do not throw exceptions even when errors such as division by zero
