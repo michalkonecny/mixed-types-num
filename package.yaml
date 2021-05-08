@@ -1,5 +1,5 @@
 name:                mixed-types-num
-version:             0.5.0.0
+version:             0.5.0.1
 github:              "michalkonecny/mixed-types-num"
 license:             BSD3
 author:              "Michal Konecny"
@@ -25,7 +25,7 @@ dependencies:
 - hspec-smallcheck >= 0.3
 - smallcheck >= 1.1
 - QuickCheck >= 2.7
-- collect-errors == 0.1.*
+- collect-errors >= 0.1.1
 
 default-extensions:
 - RebindableSyntax
