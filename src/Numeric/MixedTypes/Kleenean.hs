@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-|
     Module      :  Numeric.MixedType.Kleenean
     Description :  Three-valued logic
@@ -12,15 +13,18 @@
 -}
 module Numeric.MixedTypes.Kleenean
 (
-    Kleenean(..), kleenean
+    Kleenean(..), kleenean, tKleenean
 )
 where
 
 import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
 
+import Test.SmallCheck.Series
+import GHC.Generics
+
 import Numeric.MixedTypes.Literals
-    ( ConvertibleExactly(..), convertExactly )
+    ( ConvertibleExactly(..), convertExactly, T(T) )
 import Numeric.MixedTypes.Bool
     ( (&&),
       not,
@@ -29,8 +33,13 @@ import Numeric.MixedTypes.Bool
       CanTestCertainly(..),
       and )
 
+tKleenean :: T Kleenean
+tKleenean = T "Kleenean"
+
 data Kleenean = CertainTrue | CertainFalse | TrueOrFalse
-  deriving (P.Eq, Show)
+  deriving (P.Eq, Show, Generic)
+
+instance Serial IO Kleenean
 
 type CanBeKleenean t = ConvertibleExactly t Kleenean
 kleenean :: (CanBeKleenean t) => t -> Kleenean
