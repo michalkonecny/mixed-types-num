@@ -63,9 +63,9 @@ divideCN ::
   (t1 -> t2 -> t3) ->
   CN t1 -> CN t2 -> CN t3
 divideCN unsafeDivide a b
-  | isCertainlyZero b = CN.noValueNumErrorCertain e
+  | isCertainlyZero b = CN.removeValueErrorCertain r e
   | isCertainlyNonZero b = r
-  | otherwise = CN.noValueNumErrorPotential e
+  | otherwise = CN.removeValueErrorPotential r e
   where
   r = CN.lift2 unsafeDivide a b
   e :: CN.NumError

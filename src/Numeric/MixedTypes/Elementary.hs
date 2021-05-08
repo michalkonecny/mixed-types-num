@@ -104,9 +104,10 @@ instance
   type SqrtType (CN a) = CN (SqrtType a)
   sqrt x 
     | isCertainlyNonNegative x = CN.lift sqrt x
-    | isCertainlyNegative x = CN.noValueNumErrorCertain err
-    | otherwise = CN.prependErrorPotential err $ CN.lift sqrt $ max x 0
+    | isCertainlyNegative x = CN.removeValueErrorCertain sqrtx err
+    | otherwise = CN.prependErrorPotential err sqrtx
     where
+    sqrtx = CN.lift sqrt $ max x 0
     err :: CN.NumError
     err = CN.OutOfDomain "negative sqrt argument"
 
@@ -228,8 +229,8 @@ instance
   type LogType (CN a) = CN (LogType a)
   log x 
     | isCertainlyPositive x = logx
-    | isCertainlyNonPositive x = CN.noValueNumErrorCertain err
-    | otherwise = CN.noValueNumErrorPotential err
+    | isCertainlyNonPositive x = CN.removeValueErrorCertain logx err
+    | otherwise = CN.removeValueErrorPotential logx err
     where
     logx = CN.lift log x
     err :: CN.NumError

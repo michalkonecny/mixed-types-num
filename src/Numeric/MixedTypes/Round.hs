@@ -38,7 +38,7 @@ import Data.Fixed (divMod')
 import Test.Hspec
 import Test.QuickCheck as QC
 
-import Numeric.CollectErrors ( CN )
+import Numeric.CollectErrors ( CN, cn, unCN )
 import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
@@ -76,13 +76,13 @@ instance (CanDivIMod t1 t2, CanTestPosNeg t2) => CanDivIMod (CN t1) (CN t2) wher
   type ModType (CN t1) (CN t2) = (CN (ModType t1 t2))
   divIMod x m
     | isCertainlyPositive m = (d, xm)
-    | isCertainlyNegative m = (noval, noval)
+    | isCertainlyNegative m = (noval d, noval xm)
     | otherwise = (errPote d, errPote xm)
     where
     (d,xm) = CN.lift2pair divIMod x m
 
-noval :: CN v
-noval = CN.noValueNumErrorCertain err
+noval :: CN v -> CN v
+noval = flip CN.removeValueErrorCertain err
 errPote :: CN t -> CN t
 errPote = CN.prependErrorPotential err
 err :: CN.NumError
@@ -97,7 +97,7 @@ $(declForTypes
       type ModType (CN t1) $t = (CN (ModType t1 $t))
       divIMod x m
         | isCertainlyPositive m = (d, xm)
-        | isCertainlyNegative m = (noval, noval)
+        | isCertainlyNegative m = (noval d, noval xm)
         | otherwise = (errPote d, errPote xm)
         where
         (d,xm) = CN.lift1Tpair divIMod x m
@@ -107,7 +107,7 @@ $(declForTypes
       type ModType $t (CN t2) = (CN (ModType $t t2))
       divIMod x m
         | isCertainlyPositive m = (d, xm)
-        | isCertainlyNegative m = (noval, noval)
+        | isCertainlyNegative m = (noval d, noval xm)
         | otherwise = (errPote d, errPote xm)
         where
         (d,xm) = CN.liftT1pair divIMod x m
