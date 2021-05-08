@@ -8,8 +8,6 @@ and thus supports mixed-type arithmetic and comparisons such as:
     > a = [1..10]; b = [1..11]
     > length a > 2^((length b)/3)
     {?(prec 36): CertainFalse}
-<!-- > (length a) `mod` 0.5
-TODO -->
 
 Partial operations such as division, sqrt and power
 do not throw exceptions even when errors such as division by zero
@@ -265,11 +263,6 @@ f :: (CanSqrt (AddType (AddType t2 (MulType t3 t4)) Integer),
      -> t4
      -> SqrtType (AddType (AddType t2 (MulType t3 t4)) Integer)
 ```
-
-<!-- * Due to limitations of some versions of ghc, type inference sometimes fails.
-  Eg `add1 = (+ 1)` fails (eg with ghc 8.0.2) unless we explicitly declare the type
-  @add1 :: (CanAdd Integer t) => t -> AddType t Integer@
-  or use an explicit parameter, eg @add1 x = x + 1@. -->
 
 ## Credits
 
