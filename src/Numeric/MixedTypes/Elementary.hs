@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-|
     Module      :  Numeric.MixedType.Elementary
     Description :  Bottom-up typed pi, sqrt, cos, etc
@@ -9,15 +11,14 @@
     Portability :  portable
 
 -}
-
 module Numeric.MixedTypes.Elementary
 (
   -- * Square root
-  CanSqrt(..), CanSqrtSameType, CanSqrtCNSameType, specCanSqrtReal
+  CanSqrt(..), CanSqrtSameType, specCanSqrtReal
   -- * Exp
   , CanExp(..), CanExpSameType, specCanExpReal
   -- * Log
-  , CanLog(..), CanLogSameType, CanLogCNSameType, specCanLogReal
+  , CanLog(..), CanLogSameType, specCanLogReal
   , powUsingExpLog
   -- * Sine and cosine
   , CanSinCos(..), CanSinCosSameType, specCanSinCosReal
@@ -34,17 +35,18 @@ import Text.Printf
 import Test.Hspec
 import Test.QuickCheck
 
-import Numeric.CollectErrors
-import Control.CollectErrors
+import Numeric.CollectErrors ( CN )
+import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
 import Numeric.MixedTypes.Eq
 import Numeric.MixedTypes.Ord
--- import Numeric.MixedTypes.MinMaxAbs
+import Numeric.MixedTypes.MinMaxAbs
 import Numeric.MixedTypes.AddSub
 import Numeric.MixedTypes.Ring
 import Numeric.MixedTypes.Field
+import Numeric.MixedTypes.Power
 -- import Numeric.MixedTypes.Round
 
 import Utils.Test.EnforceRange 
@@ -63,21 +65,12 @@ class CanSqrt t where
   sqrt = P.sqrt
 
 type CanSqrtSameType t = (CanSqrt t, SqrtType t ~ t)
-type CanSqrtCNSameType t = (CanSqrt t, SqrtType t ~ EnsureCN t)
 
 {-|
   HSpec properties that each implementation of CanSqrt should satisfy.
  -}
 specCanSqrtReal ::
-  (Show t, Show (SqrtType t), Show (PowType (SqrtType t) Integer),
-    Arbitrary t,
-    CanTestCertainly (OrderCompareType (SqrtType t) Integer),
-    CanTestCertainly (EqCompareType (PowType (SqrtType t) Integer) t),
-    HasEqAsymmetric (PowType (SqrtType t) Integer) t,
-    HasOrderAsymmetric (SqrtType t) Integer, CanTestPosNeg t,
-    CanPow (SqrtType t) Integer, CanSqrt t)
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specCanSqrtReal (T typeName :: T t) =
   describe (printf "CanSqrt %s" typeName) $ do
     it "sqrt(x) >= 0" $ do
@@ -104,15 +97,19 @@ specCanSqrtReal (T typeName :: T t) =
 instance CanSqrt Double -- not exact, will not pass the tests
 
 instance
-  (CanSqrt a
-  , CanEnsureCE es a
-  , CanEnsureCE es (SqrtType a)
-  , SuitableForCE es)
+  (CanSqrt a, CanTestPosNeg a, CanMinMaxThis a Integer)
   =>
-  CanSqrt (CollectErrors es a)
+  CanSqrt (CN a)
   where
-  type SqrtType (CollectErrors es a) = EnsureCE es (SqrtType a)
-  sqrt = lift1CE sqrt
+  type SqrtType (CN a) = CN (SqrtType a)
+  sqrt x 
+    | isCertainlyNonNegative x = CN.lift sqrt x
+    | isCertainlyNegative x = CN.removeValueErrorCertain sqrtx err
+    | otherwise = CN.prependErrorPotential err sqrtx
+    where
+    sqrtx = CN.lift sqrt $ max x 0
+    err :: CN.NumError
+    err = CN.OutOfDomain "negative sqrt argument"
 
 
 {----  exp -----}
@@ -134,33 +131,7 @@ type CanExpSameType t = (CanExp t, ExpType t ~ t)
   HSpec properties that each implementation of CanExp should satisfy.
  -}
 specCanExpReal ::
-  (Show t, Show (ExpType t), Show (DivType Integer (ExpType t)),
-   Show (ExpType (AddType t t)),
-   Show (MulType (ExpType t) (ExpType t)),
-   Show (EnsureCN (ExpType t)), Arbitrary t,
-   CanEnsureCN (ExpType t),
-   CanTestCertainly (OrderCompareType Integer t),
-   CanTestCertainly (OrderCompareType t Integer),
-   CanTestCertainly (OrderCompareType (ExpType t) Integer),
-   CanTestCertainly
-     (EqCompareType
-        (EnsureCN (ExpType t)) (DivType Integer (ExpType t))),
-   CanTestCertainly
-     (EqCompareType
-        (ExpType (AddType t t)) (MulType (ExpType t) (ExpType t))),
-   CanNeg t,
-   HasEqAsymmetric
-     (ExpType (AddType t t)) (MulType (ExpType t) (ExpType t)),
-   HasEqAsymmetric
-     (EnsureCN (ExpType t)) (DivType Integer (ExpType t)),
-   HasOrderAsymmetric t Integer,
-   HasOrderAsymmetric (ExpType t) Integer,
-   HasOrderAsymmetric Integer t, CanAddAsymmetric t t,
-   CanMulAsymmetric (ExpType t) (ExpType t),
-   CanDiv Integer (ExpType t), CanExp t, CanExp (AddType t t),
-   NegType t ~ t, 
-   CanEnforceRange t Integer) =>
-   T t -> Spec
+  _ => T t -> Spec
 specCanExpReal (T typeName :: T t) =
   describe (printf "CanExp %s" typeName) $ do
     it "exp(x) >= 0" $ do
@@ -172,7 +143,7 @@ specCanExpReal (T typeName :: T t) =
         let x = enforceRange (Just (-100000), Just 100000) x_ in
         let ex = exp x in
           (ex !>! 0) ==>
-            (ensureCN $ exp (-x)) ?==?$ 1/ex
+            (exp (-x)) ?==?$ 1/ex
     it "exp(x+y) = exp(x)*exp(y)" $ do
       property $ \ (x_ :: t)  (y_ :: t) ->
         let x = enforceRange (Just (-100000), Just 100000) x_ in
@@ -194,15 +165,10 @@ specCanExpReal (T typeName :: T t) =
 instance CanExp Double -- not exact, will not pass the tests
 
 instance
-  (CanExp a
-  , CanEnsureCE es a
-  , CanEnsureCE es (ExpType a)
-  , SuitableForCE es)
-  =>
-  CanExp (CollectErrors es a)
+  (CanExp a) => CanExp (CN a)
   where
-  type ExpType (CollectErrors es a) = EnsureCE es (ExpType a)
-  exp = lift1CE exp
+  type ExpType (CN a) = CN (ExpType a)
+  exp = CN.lift exp
 
 {----  log -----}
 
@@ -218,42 +184,12 @@ class CanLog t where
   log = P.log
 
 type CanLogSameType t = (CanLog t, LogType t ~ t)
-type CanLogCNSameType t = (CanLog t, LogType t ~ EnsureCN t)
 
 {-|
   HSpec properties that each implementation of CanLog should satisfy.
  -}
 specCanLogReal ::
-  (Show t, Show (LogType t), Show (LogType (DivType Integer t)),
-   Show (LogType (MulType t t)),
-   Show (AddType (LogType t) (LogType t)), Show (LogType (ExpType t)),
-   Arbitrary t, CanTestCertainly (OrderCompareType t Integer),
-   CanTestCertainly (OrderCompareType (DivType Integer t) Integer),
-   CanTestCertainly
-     (EqCompareType (LogType (DivType Integer t)) (LogType t)),
-   CanTestCertainly (OrderCompareType (MulType t t) Integer),
-   CanTestCertainly (OrderCompareType (ExpType t) Integer),
-   CanTestCertainly
-     (EqCompareType
-        (LogType (MulType t t)) (AddType (LogType t) (LogType t))),
-   CanTestCertainly (OrderCompareType Integer t),
-   CanTestCertainly (EqCompareType (LogType (ExpType t)) t),
-   CanNeg (LogType t),
-   HasEqAsymmetric (LogType (DivType Integer t)) (LogType t),
-   HasEqAsymmetric
-     (LogType (MulType t t)) (AddType (LogType t) (LogType t)),
-   HasEqAsymmetric (LogType (ExpType t)) t,
-   HasOrderAsymmetric t Integer,
-   HasOrderAsymmetric (DivType Integer t) Integer,
-   HasOrderAsymmetric (MulType t t) Integer,
-   HasOrderAsymmetric (ExpType t) Integer,
-   HasOrderAsymmetric Integer t,
-   CanAddAsymmetric (LogType t) (LogType t), CanMulAsymmetric t t,
-   CanDiv Integer t, CanExp t, CanLog t, CanLog (DivType Integer t),
-   CanLog (MulType t t), CanLog (ExpType t),
-   LogType t ~ NegType (LogType t),
-   CanEnforceRange t Integer) =>
-  T t -> Spec
+  _ => T t -> Spec
 specCanLogReal (T typeName :: T t) =
   describe (printf "CanLog %s" typeName) $ do
     it "log(1/x) == -(log x)" $ do
@@ -286,65 +222,36 @@ specCanLogReal (T typeName :: T t) =
 instance CanLog Double -- not exact, will not pass the tests
 
 instance
-  (CanLog a
-  , CanEnsureCE es a
-  , CanEnsureCE es (LogType a)
-  , SuitableForCE es)
+  (CanLog a, CanTestPosNeg a)
   =>
-  CanLog (CollectErrors es a)
+  CanLog (CN a)
   where
-  type LogType (CollectErrors es a) = EnsureCE es (LogType a)
-  log = lift1CE log
+  type LogType (CN a) = CN (LogType a)
+  log x 
+    | isCertainlyPositive x = logx
+    | isCertainlyNonPositive x = CN.removeValueErrorCertain logx err
+    | otherwise = CN.removeValueErrorPotential logx err
+    where
+    logx = CN.lift log x
+    err :: CN.NumError
+    err = CN.OutOfDomain "log argument not positive"
 
-instance CanPow Double Double where
-  powNoCN = (P.**)
-  type PowType Double Double = Double
-  pow = (P.**)
-instance CanPow Double Rational where
-  powNoCN b e = b ^! (double e)
-  type PowType Double Rational = Double
-  pow b e = b ^ (double e)
-instance CanPow Rational Double where
-  type PowTypeNoCN Rational Double = Double
-  powNoCN b e = (double b) ^! e
-  type PowType Rational Double = Double
-  pow b e = (double b) ^ e
-instance CanPow Integer Double where
-  type PowTypeNoCN Integer Double = Double
-  powNoCN b e = (double b) ^! e
-  type PowType Integer Double = Double
-  pow b e = (double b) ^ e
-instance CanPow Int Double where
-  type PowTypeNoCN Int Double = Double
-  powNoCN b e = (double b) ^! e
-  type PowType Int Double = Double
-  pow b e = (double b) ^ e
 
 powUsingExpLog ::
-  (CanTestPosNeg t,
-   CanEnsureCN t,
-   CanEnsureCN (EnsureCN t),
-   EnsureCN t ~ EnsureCN (EnsureCN t),
-   CanLogCNSameType t,
+  (CanLogSameType t,
+   CanExpSameType t,
    CanMulSameType t,
-   CanMulSameType (EnsureCN t),
-   CanExpSameType (EnsureCN t),
    CanTestInteger t,
    CanTestZero t,
-   CanRecipCNSameType t)
+   CanRecipSameType t)
   =>
-  t -> t -> t -> t -> EnsureCN t
-powUsingExpLog zero one b e =
+  t -> t -> t -> t
+powUsingExpLog one b e =
   case certainlyIntegerGetIt e of
     Just n ->
       powUsingMulRecip one b n
-    Nothing
-      | isCertainlyZero b && isCertainlyPositive e -> cn zero
-      | isCertainlyNonNegative b -> exp ((log b) * (ensureCN e))
-      | isCertainlyNegative b && certainlyNotInteger e -> noValueNumErrorCertainECN (Just b) err
-      | otherwise -> noValueNumErrorPotentialECN (Just b) err
-  where
-  err = NumError "powUsingExpLog: illegal power a^b with negative a and non-integer b"
+    Nothing ->
+      exp ((log b) * (e))
 
 {----  sine and cosine -----}
 
@@ -371,81 +278,7 @@ type CanSinCosSameType t = (CanSinCos t, SinCosType t ~ t)
   http://math.stackexchange.com/questions/1303044/axiomatic-definition-of-sin-and-cos
  -}
 specCanSinCosReal ::
- (Show t, Show (SinCosType t),
-  Show
-    (AddType
-       (PowType (SinCosType t) Integer) (PowType (SinCosType t) Integer)),
-  Show (SinCosType (SubType t t)),
-  Show
-    (SubType
-       (MulType (SinCosType t) (SinCosType t))
-       (MulType (SinCosType t) (SinCosType t))),
-  Show
-    (AddType
-       (MulType (SinCosType t) (SinCosType t))
-       (MulType (SinCosType t) (SinCosType t))),
-  Show (DivType (SinCosType t) (SinCosType t)),
-  Show (EnsureCN t), Arbitrary t, CanEnsureCN t,
-  CanTestCertainly (OrderCompareType Integer (SinCosType t)),
-  CanTestCertainly (OrderCompareType (SinCosType t) Integer),
-  CanTestCertainly
-    (EqCompareType
-       (AddType
-          (PowType (SinCosType t) Integer)
-          (PowType (SinCosType t) Integer))
-       Integer),
-  CanTestCertainly
-    (EqCompareType
-       (SinCosType (SubType t t))
-       (SubType
-          (MulType (SinCosType t) (SinCosType t))
-          (MulType (SinCosType t) (SinCosType t)))),
-  CanTestCertainly
-    (EqCompareType
-       (SinCosType (SubType t t))
-       (AddType
-          (MulType (SinCosType t) (SinCosType t))
-          (MulType (SinCosType t) (SinCosType t)))),
-  CanTestCertainly (OrderCompareType t Integer),
-  CanTestCertainly (OrderCompareType t Rational),
-  CanTestCertainly (OrderCompareType (SinCosType t) t),
-  CanTestCertainly
-    (OrderCompareType
-       (EnsureCN t) (DivType (SinCosType t) (SinCosType t))),
-  HasEqAsymmetric
-    (AddType
-       (PowType (SinCosType t) Integer) (PowType (SinCosType t) Integer))
-    Integer,
-  HasEqAsymmetric
-    (SinCosType (SubType t t))
-    (SubType
-       (MulType (SinCosType t) (SinCosType t))
-       (MulType (SinCosType t) (SinCosType t))),
-  HasEqAsymmetric
-    (SinCosType (SubType t t))
-    (AddType
-       (MulType (SinCosType t) (SinCosType t))
-       (MulType (SinCosType t) (SinCosType t))),
-  HasOrderAsymmetric t Integer, HasOrderAsymmetric t Rational,
-  HasOrderAsymmetric (SinCosType t) t,
-  HasOrderAsymmetric (SinCosType t) Integer,
-  HasOrderAsymmetric
-    (EnsureCN t) (DivType (SinCosType t) (SinCosType t)),
-  HasOrderAsymmetric Integer (SinCosType t), CanSub t t,
-  CanSub
-    (MulType (SinCosType t) (SinCosType t))
-    (MulType (SinCosType t) (SinCosType t)),
-  CanAddAsymmetric
-    (PowType (SinCosType t) Integer) (PowType (SinCosType t) Integer),
-  CanAddAsymmetric
-    (MulType (SinCosType t) (SinCosType t))
-    (MulType (SinCosType t) (SinCosType t)),
-  CanPow (SinCosType t) Integer,
-  CanMulAsymmetric (SinCosType t) (SinCosType t),
-  CanDiv (SinCosType t) (SinCosType t), CanSinCos t,
-  CanSinCos (SubType t t))
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specCanSinCosReal (T typeName :: T t) =
   describe (printf "CanSinCos %s" typeName) $ do
     it "-1 <= sin(x) <= 1" $ do
@@ -466,7 +299,7 @@ specCanSinCosReal (T typeName :: T t) =
     it "sin(x) < x < tan(x) for x in [0,pi/2]" $ do
       property $ \ (x :: t) ->
         x !>=! 0 && x !<=! 1.57 && (cos x) !>! 0 ==>
-          (sin x) ?<=?$ x .&&. (ensureCN x) ?<=?$ (sin x)/(cos x)
+          (sin x) ?<=?$ x .&&. (x) ?<=?$ (sin x)/(cos x)
   where
   infix 4 ?==?$
   (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
@@ -483,16 +316,11 @@ specCanSinCosReal (T typeName :: T t) =
 instance CanSinCos Double -- not exact, will not pass the tests
 
 instance
-  (CanSinCos a
-  , CanEnsureCE es a
-  , CanEnsureCE es (SinCosType a)
-  , SuitableForCE es)
-  =>
-  CanSinCos (CollectErrors es a)
+  (CanSinCos a) => CanSinCos (CN a)
   where
-  type SinCosType (CollectErrors es a) = EnsureCE es (SinCosType a)
-  sin = lift1CE sin
-  cos = lift1CE cos
+  type SinCosType (CN a) = CN (SinCosType a)
+  sin = CN.lift sin
+  cos = CN.lift cos
 
 {-|
   Approximate pi, synonym for Prelude's `P.pi`.

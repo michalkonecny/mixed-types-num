@@ -1,3 +1,6 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-|
     Module      :  Numeric.MixedType.MinMaxAbs
@@ -36,8 +39,8 @@ import qualified Data.List as List
 import Test.Hspec
 import Test.QuickCheck
 
--- import Numeric.CollectErrors
-import Control.CollectErrors
+import Control.CollectErrors ( CollectErrors, CanBeErrors )
+import qualified Control.CollectErrors as CE
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -81,38 +84,7 @@ minimum [] = error $ "minimum: empty list"
   HSpec properties that each implementation of CanMinMax should satisfy.
  -}
 specCanMinMax ::
- (Show t1, Show t2, Show t3, Show (MinMaxType t1 t2),
-  Show (MinMaxType t1 t1), Show (MinMaxType t2 t1),
-  Show (MinMaxType t1 (MinMaxType t2 t3)),
-  Show (MinMaxType (MinMaxType t1 t2) t3), Arbitrary t1,
-  Arbitrary t2, Arbitrary t3, CanTestCertainly (EqCompareType t1 t1),
-  CanTestCertainly (EqCompareType t2 t2),
-  CanTestCertainly (OrderCompareType (MinMaxType t1 t2) t2),
-  CanTestCertainly (OrderCompareType (MinMaxType t1 t2) t1),
-  CanTestCertainly (EqCompareType (MinMaxType t1 t1) t1),
-  CanTestCertainly
-    (EqCompareType (MinMaxType t1 t2) (MinMaxType t2 t1)),
-  CanTestCertainly (EqCompareType t3 t3),
-  CanTestCertainly
-    (EqCompareType
-       (MinMaxType t1 (MinMaxType t2 t3))
-       (MinMaxType (MinMaxType t1 t2) t3)),
-  CanTestFinite t1, CanTestFinite t2, CanTestFinite t3,
-  HasEqAsymmetric t1 t1, HasEqAsymmetric t2 t2,
-  HasEqAsymmetric t3 t3,
-  HasEqAsymmetric (MinMaxType t1 t2) (MinMaxType t2 t1),
-  HasEqAsymmetric (MinMaxType t1 t1) t1,
-  HasEqAsymmetric
-    (MinMaxType t1 (MinMaxType t2 t3))
-    (MinMaxType (MinMaxType t1 t2) t3),
-  HasOrderAsymmetric (MinMaxType t1 t2) t1,
-  HasOrderAsymmetric (MinMaxType t1 t2) t2,
-  CanMinMaxAsymmetric t1 t1, CanMinMaxAsymmetric t1 t2,
-  CanMinMaxAsymmetric t1 (MinMaxType t2 t3),
-  CanMinMaxAsymmetric t2 t1, CanMinMaxAsymmetric t2 t3,
-  CanMinMaxAsymmetric (MinMaxType t1 t2) t3)
-  =>
-  T t1 -> T t2 -> T t3 -> Spec
+  _ => T t1 -> T t2 -> T t3 -> Spec
 specCanMinMax (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "CanMinMax %s %s, CanMinMax %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "`min` is not larger than its arguments" $ do
@@ -167,30 +139,7 @@ specCanMinMax (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) 
   HSpec properties that each implementation of CanMinMax should satisfy.
  -}
 specCanMinMaxNotMixed ::
- (Show t, Show (MinMaxType t t),
-  Show (MinMaxType t (MinMaxType t t)),
-  Show (MinMaxType (MinMaxType t t) t), Arbitrary t,
-  CanTestCertainly (EqCompareType t t),
-  CanTestCertainly (OrderCompareType (MinMaxType t t) t),
-  CanTestCertainly (EqCompareType (MinMaxType t t) t),
-  CanTestCertainly
-    (EqCompareType (MinMaxType t t) (MinMaxType t t)),
-  CanTestCertainly
-    (EqCompareType
-       (MinMaxType t (MinMaxType t t))
-       (MinMaxType (MinMaxType t t) t)),
-  CanTestFinite t,
-  HasEqAsymmetric t t, HasEqAsymmetric (MinMaxType t t) t,
-  HasEqAsymmetric (MinMaxType t t) (MinMaxType t t),
-  HasEqAsymmetric
-    (MinMaxType t (MinMaxType t t))
-    (MinMaxType (MinMaxType t t) t),
-  HasOrderAsymmetric (MinMaxType t t) t,
-  CanMinMaxAsymmetric t t,
-  CanMinMaxAsymmetric t (MinMaxType t t),
-  CanMinMaxAsymmetric (MinMaxType t t) t)
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specCanMinMaxNotMixed t = specCanMinMax t t t
 
 instance CanMinMaxAsymmetric Int Int
@@ -240,54 +189,41 @@ instance (CanMinMaxAsymmetric a b) => CanMinMaxAsymmetric (Maybe a) (Maybe b) wh
   max _ _ = Nothing
 
 instance
-  (CanMinMaxAsymmetric a b
-  , CanEnsureCE es a, CanEnsureCE es b
-  , CanEnsureCE es (MinMaxType a b)
-  , SuitableForCE es)
+  (CanMinMaxAsymmetric a b, CanBeErrors es)
   =>
   CanMinMaxAsymmetric (CollectErrors es a) (CollectErrors es  b)
   where
   type MinMaxType (CollectErrors es a) (CollectErrors es b) =
-    EnsureCE es (MinMaxType a b)
-  min = lift2CE min
-  max = lift2CE max
+    CollectErrors es (MinMaxType a b)
+  min = CE.lift2 min
+  max = CE.lift2 max
 
 $(declForTypes
   [[t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
   (\ t -> [d|
 
     instance
-      (CanMinMaxAsymmetric $t b
-      , CanEnsureCE es b
-      , CanEnsureCE es (MinMaxType $t b)
-      , SuitableForCE es)
+      (CanMinMaxAsymmetric $t b, CanBeErrors es)
       =>
       CanMinMaxAsymmetric $t (CollectErrors es  b)
       where
       type MinMaxType $t (CollectErrors es  b) =
-        EnsureCE es (MinMaxType $t b)
-      min = lift2TLCE min
-      max = lift2TLCE max
+        CollectErrors es (MinMaxType $t b)
+      min = CE.liftT1 min
+      max = CE.liftT1 max
 
     instance
-      (CanMinMaxAsymmetric a $t
-      , CanEnsureCE es a
-      , CanEnsureCE es (MinMaxType a $t)
-      , SuitableForCE es)
+      (CanMinMaxAsymmetric a $t, CanBeErrors es)
       =>
       CanMinMaxAsymmetric (CollectErrors es a) $t
       where
       type MinMaxType (CollectErrors es  a) $t =
-        EnsureCE es (MinMaxType a $t)
-      min = lift2TCE min
-      max = lift2TCE max
+        CollectErrors es (MinMaxType a $t)
+      min = CE.lift1T min
+      max = CE.lift1T max
 
   |]))
 
-
-{-| Compound type constraint useful for test definition. -}
-type CanNegX t =
-  (CanNeg t, Show t, Arbitrary t, Show (NegType t))
 
 {----  numeric negation tests and instances -----}
 
@@ -295,17 +231,7 @@ type CanNegX t =
   HSpec properties that each numeric implementation of CanNeg should satisfy.
  -}
 specCanNegNum ::
-  (CanNegX t, CanNegX (NegType t),
-   HasEqCertainly t (NegType (NegType t)),
-   ConvertibleExactly Integer t,
-   HasEqCertainly t t,
-   HasEqCertainly t (NegType t),
-   CanTestFinite t,
-   CanTestPosNeg t,
-   CanTestPosNeg (NegType t)
-  )
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specCanNegNum (T typeName :: T t) =
   describe (printf "CanNeg %s" typeName) $ do
     it "ignores double negation" $ do
@@ -352,32 +278,18 @@ instance CanAbs Rational
 instance CanAbs Double
 
 instance
-  (CanAbs a
-  , CanEnsureCE es a
-  , CanEnsureCE es (AbsType a)
-  , SuitableForCE es)
+  (CanAbs a, CanBeErrors es)
   =>
   CanAbs (CollectErrors es a)
   where
-  type AbsType (CollectErrors es a) = EnsureCE es (AbsType a)
-  abs = lift1CE abs
-
-type CanAbsX t =
-  (CanAbs t,
-   CanNegSameType t,
-   CanTestPosNeg t,
-   CanTestPosNeg (AbsType t),
-   HasEqCertainly t t,
-   HasEqCertainly t (AbsType t),
-   Show t, Arbitrary t, Show (AbsType t))
+  type AbsType (CollectErrors es a) = CollectErrors es (AbsType a)
+  abs = CE.lift abs
 
 {-|
   HSpec properties that each implementation of CanAbs should satisfy.
  -}
 specCanAbs ::
-  (CanAbsX t, CanAbsX (AbsType t), CanTestFinite t)
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specCanAbs (T typeName :: T t) =
   describe (printf "CanAbs %s" typeName) $ do
     it "is idempotent" $ do

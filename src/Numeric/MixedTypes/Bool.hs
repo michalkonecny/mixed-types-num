@@ -1,3 +1,6 @@
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 {-|
     Module      :  Numeric.MixedType.Bool
     Description :  Bottom-up typed Boolean operations
@@ -9,7 +12,6 @@
     Portability :  portable
 
 -}
-
 module Numeric.MixedTypes.Bool
 (
   IsBool, specIsBool
@@ -35,8 +37,8 @@ import Text.Printf
 
 import qualified Data.List as List
 
--- import Numeric.CollectErrors
-import Control.CollectErrors
+import Control.CollectErrors ( CollectErrors, CanBeErrors )
+import qualified Control.CollectErrors as CE
 
 import Numeric.MixedTypes.Literals
 
@@ -109,23 +111,11 @@ instance CanTestCertainly Bool where
   isCertainlyTrue = id
   isCertainlyFalse = not
 
-instance (ConvertibleExactly Bool t) => ConvertibleExactly Bool (Maybe t) where
-  safeConvertExactly b =
-    case (safeConvertExactly b) of
-      Left _ -> Right Nothing
-      Right r -> Right (Just r)
-
-instance (CanTestCertainly t) => CanTestCertainly (Maybe t) where
-  isCertainlyTrue (Just b) = isCertainlyTrue b
-  isCertainlyTrue _ = False
-  isCertainlyFalse (Just b) = isCertainlyFalse b
-  isCertainlyFalse _ = False
-
-instance (CanTestCertainly t, SuitableForCE es) => CanTestCertainly (CollectErrors es t) where
+instance (CanTestCertainly t, CanBeErrors es) => CanTestCertainly (CollectErrors es t) where
   isCertainlyTrue vCE =
-    getValueIfNoErrorCE vCE isCertainlyTrue (const False)
+    CE.withErrorOrValue (const False) isCertainlyTrue vCE
   isCertainlyFalse vCE =
-    getValueIfNoErrorCE vCE isCertainlyFalse (const False)
+    CE.withErrorOrValue (const False) isCertainlyFalse vCE
 
 
 {---- Negation ----}
@@ -157,12 +147,7 @@ type CanTestCertainlyX t = (CanTestCertainly t, Show t, SCS.Serial IO t)
   HSpec properties that each Boolean implementation of CanNeg should satisfy.
  -}
 specCanNegBool ::
-  (Show t, Show (NegType (NegType t)), SCS.Serial IO t,
-   CanTestCertainly t, CanTestCertainly (NegType t),
-   CanTestCertainly (NegType (NegType t)), CanNeg t,
-   CanNeg (NegType t))
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specCanNegBool (T typeName :: T t) =
   describe (printf "CanNeg %s" typeName) $ do
     it "ignores double negation" $ do
@@ -177,19 +162,12 @@ specCanNegBool (T typeName :: T t) =
 
 instance CanNeg Bool where negate = P.not
 
-instance CanNeg t => CanNeg (Maybe t) where
-  type NegType (Maybe t) = Maybe (NegType t)
-  negate = fmap negate
-
-_testNeg1 :: Maybe Bool
-_testNeg1 = not (Just True)
-
 instance
-  (CanNeg t, SuitableForCE es, CanEnsureCE es t, CanEnsureCE es (NegType t))
+  (CanNeg t, CanBeErrors es)
   =>
   CanNeg (CollectErrors es t) where
-  type NegType (CollectErrors es t) = EnsureCE es (NegType t)
-  negate = lift1CE negate
+  type NegType (CollectErrors es t) = CollectErrors es (NegType t)
+  negate = fmap negate
 
 {---- And/Or ----}
 
@@ -232,31 +210,7 @@ or = List.foldl' (||) (convertExactly False)
 {-|
   HSpec properties that each implementation of CanAndOr should satisfy.
  -}
-specCanAndOr ::
-  (Show t1, Show t2, Show t3, Show (AndOrType t1 t1),
-   Show (AndOrType t1 t2), Show (AndOrType t2 t1),
-   Show (AndOrType t1 (AndOrType t2 t3)),
-   Show (AndOrType (AndOrType t1 t2) t3),
-   Show (AndOrType (AndOrType t1 t2) (AndOrType t1 t3)),
-   Show (NegType (AndOrType t1 t2)),
-   Show (AndOrType (NegType t1) (NegType t2)), SCS.Serial IO t1,
-   SCS.Serial IO t2, SCS.Serial IO t3, CanTestCertainly t1,
-   CanTestCertainly (AndOrType t1 t1),
-   CanTestCertainly (AndOrType t1 t2),
-   CanTestCertainly (AndOrType t2 t1),
-   CanTestCertainly (AndOrType t1 (AndOrType t2 t3)),
-   CanTestCertainly (AndOrType (AndOrType t1 t2) t3),
-   CanTestCertainly (AndOrType (AndOrType t1 t2) (AndOrType t1 t3)),
-   CanTestCertainly (NegType (AndOrType t1 t2)),
-   CanTestCertainly (AndOrType (NegType t1) (NegType t2)), CanNeg t1,
-   CanNeg t2, CanNeg (AndOrType t1 t2), CanAndOrAsymmetric t1 t1,
-   CanAndOrAsymmetric t1 t2, CanAndOrAsymmetric t1 t3,
-   CanAndOrAsymmetric t1 (AndOrType t2 t3), CanAndOrAsymmetric t2 t1,
-   CanAndOrAsymmetric t2 t3, CanAndOrAsymmetric (AndOrType t1 t2) t3,
-   CanAndOrAsymmetric (AndOrType t1 t2) (AndOrType t1 t3),
-   CanAndOrAsymmetric (NegType t1) (NegType t2))
-  =>
-  T t1 -> T t2 -> T t3 -> Spec
+specCanAndOr :: _ => T t1 -> T t2 -> T t3 -> Spec
 specCanAndOr (T typeName1 ::T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "CanAndOr %s %s, CanAndOr %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "has idempotent ||" $ do
@@ -287,26 +241,7 @@ specCanAndOr (T typeName1 ::T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
 {-|
   HSpec properties that each implementation of CanAndOr should satisfy.
  -}
-specCanAndOrNotMixed ::
-  (Show t, Show (AndOrType t t),
-   Show (AndOrType t (AndOrType t t)),
-   Show (AndOrType (AndOrType t t) t),
-   Show (AndOrType (AndOrType t t) (AndOrType t t)),
-   Show (NegType (AndOrType t t)),
-   Show (AndOrType (NegType t) (NegType t)), SCS.Serial IO t,
-   CanTestCertainly t, CanTestCertainly (AndOrType t t),
-   CanTestCertainly (AndOrType t (AndOrType t t)),
-   CanTestCertainly (AndOrType (AndOrType t t) t),
-   CanTestCertainly (AndOrType (AndOrType t t) (AndOrType t t)),
-   CanTestCertainly (NegType (AndOrType t t)),
-   CanTestCertainly (AndOrType (NegType t) (NegType t)), CanNeg t,
-   CanNeg (AndOrType t t), CanAndOrAsymmetric t t,
-   CanAndOrAsymmetric t (AndOrType t t),
-   CanAndOrAsymmetric (AndOrType t t) t,
-   CanAndOrAsymmetric (AndOrType t t) (AndOrType t t),
-   CanAndOrAsymmetric (NegType t) (NegType t))
-  =>
-  T t -> Spec
+specCanAndOrNotMixed :: _ => T t -> Spec
 specCanAndOrNotMixed t = specCanAndOr t t t
 
 instance CanAndOrAsymmetric Bool Bool where
@@ -314,90 +249,39 @@ instance CanAndOrAsymmetric Bool Bool where
   and2 = (P.&&)
   or2 = (P.||)
 
-instance (CanAndOrAsymmetric t1 t2, CanTestCertainly t1, CanTestCertainly t2, CanTestCertainly (AndOrType t1 t2)) =>
-  CanAndOrAsymmetric (Maybe t1) (Maybe t2)
-  where
-  type AndOrType (Maybe t1) (Maybe t2) = Maybe (AndOrType t1 t2)
-  and2 (Just b1) _ | isCertainlyFalse b1 = Just (convertExactly False)
-  and2 _ (Just b2) | isCertainlyFalse b2 = Just (convertExactly False)
-  and2 (Just b1) (Just b2) = Just (b1 && b2)
-  and2 _ _ = Nothing
-  or2 (Just b1) _ | isCertainlyTrue b1 = Just (convertExactly True)
-  or2 _ (Just b2) | isCertainlyTrue b2 = Just (convertExactly True)
-  or2 (Just b1) (Just b2) = Just (b1 || b2)
-  or2 _ _ = Nothing
-
-instance (CanAndOrAsymmetric Bool t2, CanTestCertainly t2, CanTestCertainly (AndOrType Bool t2)) =>
-  CanAndOrAsymmetric Bool (Maybe t2)
-  where
-  type AndOrType Bool (Maybe t2) = Maybe (AndOrType Bool t2)
-  and2 False _ = Just (convertExactly False)
-  and2 _ (Just b2) | isCertainlyFalse b2 = Just (convertExactly False)
-  and2 b1 (Just b2) = Just (b1 && b2)
-  and2 _ _ = Nothing
-  or2 True _ = Just (convertExactly True)
-  or2 _ (Just b2) | isCertainlyTrue b2 = Just (convertExactly True)
-  or2 b1 (Just b2) = Just (b1 || b2)
-  or2 _ _ = Nothing
-
-instance (CanAndOrAsymmetric t1 Bool, CanTestCertainly t1, CanTestCertainly (AndOrType t1 Bool)) =>
-  CanAndOrAsymmetric (Maybe t1) Bool
-  where
-  type AndOrType (Maybe t1) Bool = Maybe (AndOrType t1 Bool)
-  and2 _ False = Just (convertExactly False)
-  and2 (Just b1) _ | isCertainlyFalse b1 = Just (convertExactly False)
-  and2 (Just b1) b2 = Just (b1 && b2)
-  and2 _ _ = Nothing
-  or2 _ True = Just (convertExactly True)
-  or2 (Just b1) _ | isCertainlyTrue b1 = Just (convertExactly True)
-  or2 (Just b1) b2 = Just (b1 || b2)
-  or2 _ _ = Nothing
-
-_testAndOr1 :: Maybe Bool
-_testAndOr1 = (Just True) && False
-
-_testAndOr2 :: Maybe (Maybe Bool)
-_testAndOr2 = (Just (Just True)) || False
-
-_testAndOr3 :: Maybe Bool
-_testAndOr3 = and [Just True, Nothing, Just False]
-
 instance
-  (CanAndOrAsymmetric t1 t2, SuitableForCE es
-  , CanEnsureCE es t1, CanEnsureCE es t2, CanEnsureCE es (AndOrType t1 t2))
+  (CanAndOrAsymmetric t1 t2, CanBeErrors es)
   =>
   CanAndOrAsymmetric (CollectErrors es t1) (CollectErrors es t2)
   where
-  type AndOrType (CollectErrors es t1) (CollectErrors es t2) = EnsureCE es (AndOrType t1 t2)
-  and2 = lift2CE and2
-  or2 = lift2CE or2
+  type AndOrType (CollectErrors es t1) (CollectErrors es t2) = CollectErrors es (AndOrType t1 t2)
+  and2 = CE.lift2 and2
+  or2 = CE.lift2 or2
 
 instance
-  (CanAndOrAsymmetric t1 Bool, SuitableForCE es
-  , CanEnsureCE es t1, CanEnsureCE es (AndOrType t1 Bool))
+  (CanAndOrAsymmetric t1 Bool, CanBeErrors es)
   =>
   CanAndOrAsymmetric (CollectErrors es t1) Bool
   where
-  type AndOrType (CollectErrors es t1) Bool = EnsureCE es (AndOrType t1 Bool)
-  and2 = lift2TCE and2
-  or2 = lift2TCE or2
+  type AndOrType (CollectErrors es t1) Bool = CollectErrors es (AndOrType t1 Bool)
+  and2 = CE.lift1T and2
+  or2 = CE.lift1T or2
 
 instance
-  (CanAndOrAsymmetric Bool t2, SuitableForCE es
-  , CanEnsureCE es t2, CanEnsureCE es (AndOrType Bool t2))
+  (CanAndOrAsymmetric Bool t2, CanBeErrors es)
   =>
   CanAndOrAsymmetric Bool (CollectErrors es t2)
   where
-  type AndOrType Bool (CollectErrors es t2) = EnsureCE es (AndOrType Bool t2)
-  and2 = lift2TLCE and2
-  or2 = lift2TLCE or2
+  type AndOrType Bool (CollectErrors es t2) = CollectErrors es (AndOrType Bool t2)
+  and2 = CE.liftT1 and2
+  or2 = CE.liftT1 or2
 
 {-|
   A type constraint synonym that stipulates that the type behaves very
   much like Bool, except it does not necessarily satisfy the law of excluded middle,
-  which means that the type can contain a "do-not-know" value.
+  which means that the type can contain a "do-not-know" value or an error.
 
-  Examples: @Bool@, @Maybe Bool@, @Maybe (Maybe Bool)@, @CollectErrors Bool@
+  Examples: @Bool@, @Kleenean@, @CollectErrors Bool@
 -}
 type IsBool t =
   (HasBools t, CanNegSameType t, CanAndOrSameType t)

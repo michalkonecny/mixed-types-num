@@ -1,3 +1,6 @@
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-|
     Module      :  Numeric.MixedType.Round
     Description :  Bottom-up typed round, floor, etc.
@@ -13,13 +16,17 @@
 module Numeric.MixedTypes.Round
 (
   -- * Rounded division + modulus
-  CanDivIMod(..), CanDivIModIntegerSameType, modNoCN, divINoCN, divIModNoCN
+  CanDivIMod(..)
+  , CanDivIModIntegerSameType
+  , CanDivIModIntegerSameTypeCN
   -- * Rounding
   , CanRound(..), HasIntegerBounds(..)
   -- ** Tests
   , specCanDivIMod, specCanRound, specHasIntegerBounds
 )
 where
+
+import Utils.TH.DeclForTypes
 
 import Numeric.MixedTypes.PreludeHiding
 import qualified Prelude as P
@@ -31,8 +38,8 @@ import Data.Fixed (divMod')
 import Test.Hspec
 import Test.QuickCheck as QC
 
-import Numeric.CollectErrors
--- import Control.CollectErrors
+import Numeric.CollectErrors ( CN, cn, unCN )
+import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -46,9 +53,8 @@ import Numeric.MixedTypes.Ring
 
 class CanDivIMod t1 t2 where
   type DivIType t1 t2
-  type DivIType t1 t2 = CN Integer
   type ModType t1 t2
-  type ModType t1 t2 = EnsureCN t1
+  type ModType t1 t2 = t1
   divIMod :: t1 -> t2 -> (DivIType t1 t2, ModType t1 t2)
   mod :: t1 -> t2 -> ModType t1 t2
   mod a b = snd $ divIMod a b
@@ -56,102 +62,89 @@ class CanDivIMod t1 t2 where
   divI a b = fst $ divIMod a b
 
 type CanDivIModIntegerSameType t =
-  (CanDivIMod t t, CanEnsureCN t, DivIType t t ~ CN Integer, ModType t t ~ EnsureCN t)
+  (CanDivIMod t t, DivIType t t ~ Integer, ModType t t ~ t)
 
-modNoCN :: 
-  (CanDivIMod t1 t2
-  , ModType t1 t2 ~ EnsureCN t1, CanEnsureCN t1)
-  => 
-  t1 -> t2 -> t1
-modNoCN x m = 
-  case deEnsureCN $ x `mod` m of
-    Left err -> error $ show err
-    Right xm -> xm
-
-divINoCN :: 
-  (CanDivIMod t1 t2, DivIType t1 t2 ~ CN Integer)
-  => 
-  t1 -> t2 -> Integer
-divINoCN x m = (~!) $ x `divI` m
-
-divIModNoCN :: 
-  (CanDivIMod t1 t2
-  , ModType t1 t2 ~ EnsureCN t1, CanEnsureCN t1
-  , DivIType t1 t2 ~ CN Integer)
-  => 
-  t1 -> t2 -> (Integer, t1)
-divIModNoCN x m = 
-  case deEnsureCN xm of
-    Left err -> error $ show err
-    Right xm2 -> ((~!) d, xm2)
-  where
-  (d,xm) = divIMod x m
+type CanDivIModIntegerSameTypeCN t =
+  (CanDivIMod t t, DivIType t t ~ CN Integer, ModType t t ~ t)
 
 instance CanDivIMod Integer Integer where
-  divIMod x m 
-    | m > 0 = (cn d, cn xm)
-    | otherwise = (err, err)
+  type DivIType Integer Integer = Integer
+  divIMod = P.divMod
+
+instance (CanDivIMod t1 t2, CanTestPosNeg t2) => CanDivIMod (CN t1) (CN t2) where
+  type DivIType (CN t1) (CN t2) = (CN (DivIType t1 t2))
+  type ModType (CN t1) (CN t2) = (CN (ModType t1 t2))
+  divIMod x m
+    | isCertainlyPositive m = (d, xm)
+    | isCertainlyNegative m = (noval d, noval xm)
+    | otherwise = (errPote d, errPote xm)
     where
-    (d,xm) = P.divMod x m
-    err = noValueNumErrorCertainECN sample_v $ OutOfRange $ "modulus not positive: " ++ show m
-    sample_v = Just x
+    (d,xm) = CN.lift2pair divIMod x m
+
+noval :: CN v -> CN v
+noval = flip CN.removeValueErrorCertain err
+errPote :: CN t -> CN t
+errPote = CN.prependErrorPotential err
+err :: CN.NumError
+err = CN.OutOfDomain "divIMod: modulus not positive"
+
+$(declForTypes
+  [[t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
+  (\ t -> [d|
+
+    instance (CanDivIMod t1 $t) => CanDivIMod (CN t1) $t where
+      type DivIType (CN t1) $t = (CN (DivIType t1 $t))
+      type ModType (CN t1) $t = (CN (ModType t1 $t))
+      divIMod x m
+        | isCertainlyPositive m = (d, xm)
+        | isCertainlyNegative m = (noval d, noval xm)
+        | otherwise = (errPote d, errPote xm)
+        where
+        (d,xm) = CN.lift1Tpair divIMod x m
+
+    instance (CanDivIMod $t t2, CanTestPosNeg t2) => CanDivIMod $t (CN t2) where
+      type DivIType $t (CN t2) = (CN (DivIType $t t2))
+      type ModType $t (CN t2) = (CN (ModType $t t2))
+      divIMod x m
+        | isCertainlyPositive m = (d, xm)
+        | isCertainlyNegative m = (noval d, noval xm)
+        | otherwise = (errPote d, errPote xm)
+        where
+        (d,xm) = CN.liftT1pair divIMod x m
+  |]))
 
 instance CanDivIMod Rational Rational where
-  divIMod x m 
-    | m > 0 = (cn d, cn xm)
-    | otherwise = (err (d :: Integer), err xm)
-    where
-    (d,xm) = divMod' x m
-    err :: (CanEnsureCN t) => t -> EnsureCN t
-    err s = noValueNumErrorCertainECN (Just s) $ OutOfRange $ "modulus not positive: " ++ show m
+  type DivIType Rational Rational = Integer
+  divIMod = divMod'
 
 instance CanDivIMod Rational Integer where
+  type DivIType Rational Integer = Integer
   divIMod x m = divIMod x (rational m)
 
 instance CanDivIMod Double Double where
-  divIMod x m 
-    | m > 0 = (cn d, cn xm)
-    | otherwise = (err (d :: Integer), err xm)
-    where
-    (d,xm) = divMod' x m
-    err :: (CanEnsureCN t) => t -> EnsureCN t
-    err s = noValueNumErrorCertainECN (Just s) $ OutOfRange $ "modulus not positive: " ++ show m
+  type DivIType Double Double = Integer
+  divIMod = divMod'
 
 instance CanDivIMod Double Integer where
+  type DivIType Double Integer = Integer
   divIMod x m = divIMod x (double m)
-
-type CanDivIModX t =
-  (CanDivIMod t t,
-   ModType t t ~ EnsureCN t,
-   DivIType t t ~ CN Integer,
-   EnsureNoCN t ~ t,
-   CanEnsureCN t,
-   CanMulBy t Integer,
-   CanAddSameType t,
-   HasOrderCertainly t Integer,
-   HasOrderCertainly t t,
-   HasEqCertainly t t,
-   CanTestFinite t,
-   Show t, Arbitrary t)
 
 {-|
   HSpec properties that each implementation of CanRound should satisfy.
  -}
 specCanDivIMod ::
-  (CanDivIModX t, HasIntegers t)
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specCanDivIMod (T typeName :: T t) =
   describe (printf "CanDivMod %s %s" typeName typeName) $ do
     it "holds 0 <= x `mod` m < m" $ do
       property $ \ (x :: t)  (m :: t) ->
         isFinite x && m !>! 0 ==>
-          let xm = x `modNoCN` m in
+          let xm = x `mod` m in
           (0 ?<=?$ xm) .&&. (xm ?<?$ m)
     it "holds x == (x `div'` m)*m + (x `mod` m)" $ do
       property $ \ (x :: t)  (m :: t) ->
         isFinite x && m !>! 0 ==>
-          let (d,xm) = divIModNoCN x m in
+          let (d,xm) = divIMod x m in
           (x ?==?$ (d*m + xm))
   where
   (?<=?$) :: (HasOrderCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
@@ -173,13 +166,15 @@ specCanDivIMod (T typeName :: T t) =
   In other cases, it is sufficient to define `properFraction`.
 -}
 class CanRound t where
-  properFraction :: t -> (Integer, t)
-  default properFraction :: (P.RealFrac t) => t -> (Integer, t)
+  type RoundType t
+  type RoundType t = Integer
+  properFraction :: t -> (RoundType t, t)
+  default properFraction :: (P.RealFrac t, RoundType t ~ Integer) => t -> (RoundType t, t)
   properFraction = P.properFraction
-  truncate :: t -> Integer
+  truncate :: t -> RoundType t
   truncate = fst . properFraction
-  round :: t -> Integer
-  default round :: (HasOrderCertainly t Rational) => t -> Integer
+  round :: t -> RoundType t
+  default round :: (HasOrderCertainly t Rational, RoundType t ~ Integer) => t -> RoundType t
   round x
     | -0.5 !<! r && r !<! 0.5 = n
     | r !<! -0.5 = n - 1
@@ -190,15 +185,15 @@ class CanRound t where
     | otherwise = error "round default defn: Bad value"
     where
     (n,r) = properFraction x
-  ceiling :: t -> Integer
-  default ceiling :: (CanTestPosNeg t) => t -> Integer
+  ceiling :: t -> RoundType t
+  default ceiling :: (CanTestPosNeg t, RoundType t ~ Integer) => t -> RoundType t
   ceiling x
     | isCertainlyPositive r = n + 1
     | otherwise = n
     where
     (n,r) = properFraction x
-  floor :: t -> Integer
-  default floor :: (CanTestPosNeg t) => t -> Integer
+  floor :: t -> RoundType t
+  default floor :: (CanTestPosNeg t, RoundType t ~ Integer) => t -> RoundType t
   floor x
     | isCertainlyNegative r = n - 1
     | otherwise = n
@@ -211,21 +206,11 @@ instance CanRound Double where
   ceiling = P.ceiling
   floor = P.floor
 
-type CanRoundX t =
-  (CanRound t,
-   CanNegSameType t,
-   CanTestPosNeg t,
-   HasOrderCertainly t Integer,
-   CanTestFinite t,
-   Show t, Arbitrary t)
-
 {-|
   HSpec properties that each implementation of CanRound should satisfy.
  -}
 specCanRound ::
-  (CanRoundX t, HasIntegers t)
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specCanRound (T typeName :: T t) =
   describe (printf "CanRound %s" typeName) $ do
     it "holds floor x <= x <= ceiling x" $ do
@@ -239,7 +224,8 @@ specCanRound (T typeName :: T t) =
     it "0 <= ceiling x - floor x <= 1" $ do
       property $ \ (x :: t) ->
         isFinite x ==>
-          (ceiling x - floor x) `elem_PF` [0,1]
+          let diffCeilingFloorX = ceiling x - floor x in
+          (0 ?<=? diffCeilingFloorX) .&&. (diffCeilingFloorX ?<=? 1)
     it "holds floor x = round x = ceiling x for integers" $ do
       property $ \ (xi :: Integer) ->
         let x = convertExactly xi :: t in
@@ -251,12 +237,11 @@ specCanRound (T typeName :: T t) =
   (!<=!$) = printArgsIfFails2 "!<=!" (!<=!)
   (!==!$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (!==!$) = printArgsIfFails2 "!==!" (!==!)
-  elem_PF = printArgsIfFails2 "elem" elem
 
 
 class HasIntegerBounds t where
   integerBounds :: t -> (Integer, Integer)
-  default integerBounds :: (CanRound t) => t -> (Integer, Integer)
+  default integerBounds :: (CanRound t, RoundType t ~ Integer) => t -> (Integer, Integer)
   integerBounds x = (floor x, ceiling x)
 
 instance HasIntegerBounds Rational
@@ -266,22 +251,11 @@ instance HasIntegerBounds Integer where
 instance HasIntegerBounds Int where
   integerBounds n = (n',n') where n' = integer n
 
-type HasIntegerBoundsX t =
-  (HasIntegerBounds t,
-  --  CanNegSameType t,
-  --  CanTestPosNeg t,
-   HasOrderCertainly t Integer,
-   CanTestFinite t,
-   Show t, Arbitrary t)
-
-
 {-|
   HSpec properties that each implementation of CanRound should satisfy.
  -}
 specHasIntegerBounds ::
-  (HasIntegerBoundsX t)
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specHasIntegerBounds (T typeName :: T t) =
   describe (printf "HasIntegerBounds %s" typeName) $ do
     it "holds l <= x <= r" $ do

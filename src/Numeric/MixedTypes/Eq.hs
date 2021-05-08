@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-|
     Module      :  Numeric.MixedType.Eq
@@ -15,7 +17,6 @@ module Numeric.MixedTypes.Eq
   -- * Equality checks
   HasEq,  HasEqAsymmetric(..), (==), (/=)
   , HasEqCertainly, HasEqCertainlyAsymmetric
-  , HasEqCertainlyCE, HasEqCertainlyCN
   , notCertainlyDifferentFrom, certainlyEqualTo, certainlyNotEqualTo
   , (?==?), (!==!), (!/=!)
   -- ** Tests
@@ -40,8 +41,8 @@ import Data.Ratio
 import Test.Hspec
 import Test.QuickCheck as QC
 
-import Numeric.CollectErrors
-import Control.CollectErrors
+import Control.CollectErrors ( CollectErrors, CanBeErrors )
+import qualified Control.CollectErrors as CE
 
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
@@ -61,19 +62,6 @@ type HasEqCertainlyAsymmetric t1 t2 =
 
 type HasEqCertainly t1 t2 =
   (HasEq t1 t2, CanTestCertainly (EqCompareType t1 t2))
-
-type HasEqCertainlyCE es t1 t2 =
-  (HasEqCertainly t1 t2,
-   HasEqCertainly (EnsureCE es t1) (EnsureCE es t2))
-  --  HasEqCertainly (WithoutCE es t1) (WithoutCE es t2),
-  --  CanTestCertainly (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))),
-  --  IsBool (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))),
-  --  CanEnsureCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2)),
-  --  CanEnsureCE es (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))),
-  --  WithoutCE es (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2)))
-  --    ~ (WithoutCE es (EqCompareType (WithoutCE es t1) (WithoutCE es t2))))
-
-type HasEqCertainlyCN t1 t2 = HasEqCertainlyCE NumErrors t1 t2
 
 class (IsBool (EqCompareType a b)) => HasEqAsymmetric a b where
     type EqCompareType a b
@@ -113,19 +101,8 @@ notCertainlyDifferentFrom a b = isNotFalse $ a == b
 {-|
   HSpec properties that each implementation of HasEq should satisfy.
  -}
-specHasEq ::
- (Show t1, Show t2, Show t3, Arbitrary t1, Arbitrary t2,
-  Arbitrary t3, CanTestCertainly (EqCompareType t1 t1),
-  CanTestCertainly (EqCompareType t1 t2),
-  CanTestCertainly (EqCompareType t2 t1),
-  CanTestCertainly (EqCompareType t2 t3),
-  CanTestCertainly
-    (AndOrType (EqCompareType t1 t2) (EqCompareType t2 t3)),
-  CanAndOrAsymmetric (EqCompareType t1 t2) (EqCompareType t2 t3),
-  HasEqAsymmetric t1 t1, HasEqAsymmetric t1 t2,
-  HasEqAsymmetric t2 t1, HasEqAsymmetric t2 t3)
-  =>
-  T t1 -> T t2 -> T t3 -> Spec
+specHasEq :: 
+  _ => T t1 -> T t2 -> T t3 -> Spec
 specHasEq (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "HasEq %s %s, HasEq %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "has reflexive ==" $ do
@@ -143,12 +120,7 @@ specHasEq (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   HSpec properties that each implementation of HasEq should satisfy.
  -}
 specHasEqNotMixed ::
-  (Show t, Arbitrary t, CanTestCertainly (EqCompareType t t),
-   CanTestCertainly
-     (AndOrType (EqCompareType t t) (EqCompareType t t)),
-   HasEqAsymmetric t t)
-  =>
-  T t -> Spec
+  _ => T t -> Spec
 specHasEqNotMixed (t :: T t) = specHasEq t t t
 
 {-|
@@ -249,47 +221,35 @@ instance (HasEqAsymmetric a b) => HasEqAsymmetric (Maybe a) (Maybe b) where
   equalTo _ _ = convertExactly False
 
 instance
-  (HasEqAsymmetric a b
-  , CanEnsureCE es (EqCompareType a b)
-  , CanEnsureCE es a, CanEnsureCE es b
-  , IsBool (EnsureCE es (EqCompareType a b))
-  , SuitableForCE es)
+  (HasEqAsymmetric a b, CanBeErrors es)
   =>
   HasEqAsymmetric (CollectErrors es a) (CollectErrors es  b)
   where
   type EqCompareType (CollectErrors es  a) (CollectErrors es  b) =
-    EnsureCE es (EqCompareType a b)
-  equalTo = lift2CE equalTo
+    CollectErrors es (EqCompareType a b)
+  equalTo = CE.lift2 equalTo
 
 $(declForTypes
   [[t| Bool |], [t| Maybe Bool |], [t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]
   (\ t -> [d|
 
     instance
-      (HasEqAsymmetric $t b
-      , CanEnsureCE es b
-      , CanEnsureCE es (EqCompareType $t b)
-      , IsBool (EnsureCE es (EqCompareType $t b))
-      , SuitableForCE es)
+      (HasEqAsymmetric $t b, CanBeErrors es)
       =>
       HasEqAsymmetric $t (CollectErrors es  b)
       where
       type EqCompareType $t (CollectErrors es  b) =
-        EnsureCE es (EqCompareType $t b)
-      equalTo = lift2TLCE equalTo
+        CollectErrors es (EqCompareType $t b)
+      equalTo = CE.liftT1 equalTo
 
     instance
-      (HasEqAsymmetric a $t
-      , CanEnsureCE es a
-      , CanEnsureCE es (EqCompareType a $t)
-      , IsBool (EnsureCE es (EqCompareType a $t))
-      , SuitableForCE es)
+      (HasEqAsymmetric a $t, CanBeErrors es)
       =>
       HasEqAsymmetric (CollectErrors es a) $t
       where
       type EqCompareType (CollectErrors es  a) $t =
-        EnsureCE es (EqCompareType a $t)
-      equalTo = lift2TCE equalTo
+        CollectErrors es (EqCompareType a $t)
+      equalTo = CE.lift1T equalTo
 
   |]))
 
@@ -326,12 +286,12 @@ instance CanTestFinite Rational where
   isInfinite = const False
   isFinite = const True
 
-instance (CanTestNaN t, SuitableForCE es) => (CanTestNaN (CollectErrors es t)) where
-  isNaN ce = getValueIfNoErrorCE ce isNaN (const False)
+instance (CanTestNaN t, CanBeErrors es) => (CanTestNaN (CollectErrors es t)) where
+  isNaN = CE.withErrorOrValue (const False) isNaN
 
-instance (CanTestFinite t, SuitableForCE es) => (CanTestFinite (CollectErrors es t)) where
-  isInfinite ce = getValueIfNoErrorCE ce isInfinite (const False)
-  isFinite ce = getValueIfNoErrorCE ce isFinite (const False)
+instance (CanTestFinite t, CanBeErrors es) => (CanTestFinite (CollectErrors es t)) where
+  isInfinite = CE.withErrorOrValue (const False) isInfinite
+  isFinite = CE.withErrorOrValue (const False) isFinite
 
 {---- Checking whether it is an integer -----}
 
@@ -369,9 +329,9 @@ instance CanTestInteger Double where
       dF = P.floor d
       dC = P.ceiling d
 
-instance (CanTestInteger t, SuitableForCE es) => (CanTestInteger (CollectErrors es t)) where
-  certainlyNotInteger ce = getValueIfNoErrorCE ce certainlyNotInteger (const False)
-  certainlyIntegerGetIt ce = getValueIfNoErrorCE ce certainlyIntegerGetIt (const Nothing)
+instance (CanTestInteger t, CanBeErrors es) => (CanTestInteger (CollectErrors es t)) where
+  certainlyNotInteger = CE.withErrorOrValue (const False) certainlyNotInteger
+  certainlyIntegerGetIt = CE.withErrorOrValue (const Nothing) certainlyIntegerGetIt
 
 {---- Checking whether it is zero -----}
 
@@ -406,9 +366,9 @@ instance CanTestZero Integer
 instance CanTestZero Rational
 instance CanTestZero Double
 
-instance (CanTestZero t, SuitableForCE es) => (CanTestZero (CollectErrors es t)) where
-  isCertainlyZero ce = getValueIfNoErrorCE ce isCertainlyZero (const False)
-  isCertainlyNonZero ce = getValueIfNoErrorCE ce isCertainlyNonZero (const False)
+instance (CanTestZero t, CanBeErrors es) => (CanTestZero (CollectErrors es t)) where
+  isCertainlyZero = CE.withErrorOrValue (const False) isCertainlyZero
+  isCertainlyNonZero = CE.withErrorOrValue (const False) isCertainlyNonZero
 
 
 class CanPickNonZero t where
@@ -457,9 +417,9 @@ instance CanPickNonZero Int
 instance CanPickNonZero Integer
 instance CanPickNonZero Rational
 
-instance (CanPickNonZero a, SuitableForCE es) => (CanPickNonZero (CollectErrors es a)) where
+instance (CanPickNonZero a, CanBeErrors es) => (CanPickNonZero (CollectErrors es a)) where
   pickNonZero =
     fmap (\(v,s) -> (pure v,s))
     . pickNonZero
-    . filterValuesWithoutErrorCE
+    . CE.filterValuesWithoutError
     . (map (\(vCN,s) -> fmap (\v -> (v,s)) vCN))

@@ -49,7 +49,7 @@ module Numeric.MixedTypes.Literals
   -- * Prelude List operations versions without Int
   , (!!), length, replicate, take, drop, splitAt
   -- * Testing support functions
-  , T(..), tInt, tInteger, tRational, tDouble
+  , T(..), tInt, tInteger, tCNInteger, tRational, tCNRational, tDouble
   , tBool, tMaybe, tMaybeBool, tMaybeMaybeBool
   , specCanBeInteger
   , printArgsIfFails2
@@ -75,7 +75,7 @@ import Test.Hspec
 import Test.QuickCheck
 -- import Control.Exception (evaluate)
 
--- import Numeric.CollectErrors
+import Numeric.CollectErrors (CN)
 import Control.CollectErrors
 
 {-| Replacement for 'Prelude.fromInteger' using the RebindableSyntax extension.
@@ -251,8 +251,14 @@ tInt = T "Int"
 tInteger :: T Integer
 tInteger = T "Integer"
 
+tCNInteger :: T (CN Integer)
+tCNInteger = T "(CN Integer)"
+
 tRational :: T Rational
 tRational = T "Rational"
+
+tCNRational :: T (CN Rational)
+tCNRational = T "(CN Rational)"
 
 tDouble :: T Double
 tDouble = T "Double"
@@ -296,7 +302,7 @@ convertSecond ::
 convertSecond = convertSecondUsing (\ _ b -> convertExactly b)
 
 -- instance
---   (ConvertibleExactly t1 t2, SuitableForCE es)
+--   (ConvertibleExactly t1 t2, CanBeErrors es)
 --   =>
 --   ConvertibleExactly t1 (CollectErrors es t2)
 --   where
@@ -308,5 +314,5 @@ $(declForTypes
   (\ t -> [d|
 
     instance (ConvertibleExactly $t t, Monoid es) => ConvertibleExactly $t (CollectErrors es t) where
-      safeConvertExactly = fmap (\v -> CollectErrors (Just v) mempty) . safeConvertExactly
+      safeConvertExactly = fmap pure . safeConvertExactly
   |]))

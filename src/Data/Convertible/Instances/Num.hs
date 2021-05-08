@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
 {- 
 Borrowed from package convertible-1.1.1.0.  
 
