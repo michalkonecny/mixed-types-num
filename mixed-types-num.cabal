@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3fd7a4d7a957c531c987ec2471e38036a8302504357a6ae2cc847fd6046f10d7
+-- hash: 46e51b8b8646d27d08cfb89dbe49874f7b1f16bce6d62ac284c8d7b4a5b0d7f4
 
 name:           mixed-types-num
-version:        0.5.0.3
+version:        0.5.0.4
 synopsis:       Alternative Prelude with numeric and logic expressions typed bottom-up
 description:    Please see the README on GitHub at <https://github.com/michalkonecny/mixed-types-num#readme>
 category:       Math
@@ -55,7 +55,7 @@ library
       Paths_mixed_types_num
   hs-source-dirs:
       src
-  default-extensions: RebindableSyntax PostfixOperators ScopedTypeVariables TypeFamilies TypeOperators ConstraintKinds DefaultSignatures MultiParamTypeClasses FlexibleContexts FlexibleInstances UndecidableInstances
+  default-extensions: RebindableSyntax ScopedTypeVariables TypeFamilies TypeOperators ConstraintKinds DefaultSignatures MultiParamTypeClasses FlexibleContexts FlexibleInstances UndecidableInstances
   other-extensions: TemplateHaskell
   ghc-options: -Wall
   build-depends:
@@ -84,7 +84,7 @@ test-suite mixed-types-num-test
       Paths_mixed_types_num
   hs-source-dirs:
       test
-  default-extensions: RebindableSyntax PostfixOperators ScopedTypeVariables TypeFamilies TypeOperators ConstraintKinds DefaultSignatures MultiParamTypeClasses FlexibleContexts FlexibleInstances UndecidableInstances
+  default-extensions: RebindableSyntax ScopedTypeVariables TypeFamilies TypeOperators ConstraintKinds DefaultSignatures MultiParamTypeClasses FlexibleContexts FlexibleInstances UndecidableInstances
   other-extensions: TemplateHaskell
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall
   build-depends:

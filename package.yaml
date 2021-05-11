@@ -1,5 +1,5 @@
 name:                mixed-types-num
-version:             0.5.0.3
+version:             0.5.0.4
 github:              "michalkonecny/mixed-types-num"
 license:             BSD3
 author:              "Michal Konecny"
@@ -29,7 +29,6 @@ dependencies:
 
 default-extensions:
 - RebindableSyntax
-- PostfixOperators
 - ScopedTypeVariables
 - TypeFamilies
 - TypeOperators
@@ -50,7 +49,6 @@ library:
   dependencies:
   - template-haskell
   - mtl
-
 
 tests:
   mixed-types-num-test:
