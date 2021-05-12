@@ -107,6 +107,17 @@ instance HasIfThenElse Bool t where
     | b = e1
     | otherwise = e2
 
+instance 
+  (HasIfThenElse b t, CanTakeErrors es (IfThenElseType b t), CanBeErrors es) 
+  =>
+  (HasIfThenElse (CollectErrors es b) t)
+  where
+  type IfThenElseType (CollectErrors es b) t = IfThenElseType b t
+  ifThenElse (CollectErrors (Just b) es) e1 e2 = 
+    takeErrors es $ ifThenElse b e1 e2
+  ifThenElse (CollectErrors _ es) _ _ = 
+    takeErrorsNoValue es
+
 _testIf1 :: String
 _testIf1 = if True then "yes" else "no"
 
