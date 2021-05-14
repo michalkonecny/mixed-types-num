@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: eb1821093c91707977b4ee4f0c4b76a00e99d826232dce07acc83bb6c0ffeb7f
+-- hash: fb5bb6100cd056ab9cf27256821a3654757d1aa586135f51cad76052f44a8068
 
 name:           mixed-types-num
-version:        0.5.1.0
+version:        0.5.2.0
 synopsis:       Alternative Prelude with numeric and logic expressions typed bottom-up
 description:    Please see the README on GitHub at <https://github.com/michalkonecny/mixed-types-num#readme>
 category:       Math
