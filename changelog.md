@@ -1,5 +1,7 @@
 # mixed-types-num change log
 
+* v 0.5.1 2021-05-14
+  * add OrdGenericBool
 * v 0.5.1 2021-05-12
   * if-then-else for CN-wrapped (see collect-error) condition
   * Documentation now in README
