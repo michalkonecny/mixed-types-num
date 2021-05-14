@@ -38,7 +38,7 @@ import Data.Fixed (divMod')
 import Test.Hspec
 import Test.QuickCheck as QC
 
-import Numeric.CollectErrors ( CN, cn, unCN )
+import Numeric.CollectErrors ( CN )
 import qualified Numeric.CollectErrors as CN
 
 import Numeric.MixedTypes.Literals
@@ -70,6 +70,20 @@ type CanDivIModIntegerSameTypeCN t =
 instance CanDivIMod Integer Integer where
   type DivIType Integer Integer = Integer
   divIMod = P.divMod
+
+instance CanDivIMod Integer Int where
+  type DivIType Integer Int = Integer
+  divIMod x m = divIMod x (integer m)
+
+instance CanDivIMod Int Integer where
+  type ModType Int Integer = Integer
+  type DivIType Int Integer = Integer
+  divIMod x m = divIMod (integer x) m
+
+instance CanDivIMod Int Int where
+  type ModType Int Int = Integer
+  type DivIType Int Int = Integer
+  divIMod x m = divIMod (integer x) (integer m)
 
 instance (CanDivIMod t1 t2, CanTestPosNeg t2) => CanDivIMod (CN t1) (CN t2) where
   type DivIType (CN t1) (CN t2) = (CN (DivIType t1 t2))
@@ -120,6 +134,20 @@ instance CanDivIMod Rational Rational where
 instance CanDivIMod Rational Integer where
   type DivIType Rational Integer = Integer
   divIMod x m = divIMod x (rational m)
+
+instance CanDivIMod Rational Int where
+  type DivIType Rational Int = Integer
+  divIMod x m = divIMod x (rational m)
+
+instance CanDivIMod Integer Rational where
+  type ModType Integer Rational = Rational
+  type DivIType Integer Rational = Integer
+  divIMod x m = divIMod (rational x) m
+
+instance CanDivIMod Int Rational where
+  type ModType Int Rational = Rational
+  type DivIType Int Rational = Integer
+  divIMod x m = divIMod (rational x) m
 
 instance CanDivIMod Double Double where
   type DivIType Double Double = Integer
