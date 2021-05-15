@@ -1,9 +1,11 @@
 # mixed-types-num change log
 
-* v 0.5.1 2021-05-14
+* v 0.5.3 2021-05-15
+  * export clearPotentialErrors (from collect-errors)
+* v 0.5.2 2021-05-14
   * add OrdGenericBool
 * v 0.5.1 2021-05-12
-  * if-then-else for CN-wrapped (see collect-error) condition
+  * if-then-else for CN-wrapped (see collect-errors) condition
   * Documentation now in README
 * v 0.5.0 2021-04-13
   * use package collect-errors with a much simpler CN wrapper
