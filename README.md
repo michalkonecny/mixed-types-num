@@ -19,7 +19,7 @@ This library (as well as collect-errors) arose while developing the
 Certain aspects are specifically tailored for interval or exact real arithmetics,
 including three-valued numerical comparisons and distinguishing potential and certain errors.
 
-## Generated documentation
+## Generated API documentation
 
 See the [Hackage page](https://hackage.haskell.org/package/mixed-types-num).
 
@@ -27,8 +27,8 @@ See the [Hackage page](https://hackage.haskell.org/package/mixed-types-num).
 
 To replicate the examples included below, start ghci as follows:
 
-    $ stack ghci mixed-types-num:lib
-    ...> :add MixedTypesNumPrelude
+    $ stack ghci mixed-types-num:lib --no-load --ghci-options MixedTypesNumPrelude
+    *MixedTypesNumPrelude>
 
 ### Main idea
 
@@ -45,7 +45,7 @@ Literals have a fixed type:
 
 Operations permit operands of mixed types, types inferred bottom-up:
 
-    ...> :t 1.5 + 1
+    ...> :t 1/2
     ... :: Rational
 
     ...> :t 1.5 * (length [[]])
@@ -53,18 +53,7 @@ Operations permit operands of mixed types, types inferred bottom-up:
 
 ### Dealing with numerical errors
 
-To avoid runtime exceptions, it is recommended to use the CN error-collecting wrapper from package collect-errors:
-
-    ...> :t let n = cn 1 in n/(n-1)
-    ... :: CN Rational
-
-`CN` is a synonym for `CollectErrors NumErrors Rational` as defined in package [collect-errors](https://hackage.haskell.org/package/collect-errors) module [Numeric.CollectErrors](https://hackage.haskell.org/package/collect-errors).
-The `CN` wrapper indicates that integer division can fail for some values:
-
-    ...> let n = cn 1 in n/(n-1)
-    {{ERROR: division by 0}}
-
-Note that the error printed above is not an exception, but a special value.
+To avoid runtime exceptions, it is recommended to use the CN error-collecting wrapper from package [collect-errors](https://hackage.haskell.org/package/collect-errors).  
 
 All arithmetic operations have been extended so that it is possible to have expressions that operate exclusively on CN-wrapped types:
 
@@ -76,54 +65,7 @@ All arithmetic operations have been extended so that it is possible to have expr
     ...> f (cn 2)
     2 % 3
 
-The function `hasError` from module [Numeric.CollectErrors](https://hackage.haskell.org/package/collect-errors) can be used to check whether any error occurred:
-
-    ...> import qualified Numeric.CollectErrors as CN
-    ... CN> CN.hasError (cn 1/0)
-    True
-
-    ...> CN.hasError (cn 1/1)
-    False
-
-To extract a value from the `CN` wrapper, one can use function `withErrorOrValue`:
-
-    ...> CN.withErrorOrValue (const 0.0) id (cn 1/2)
-    1 % 2
-
-The following examples require also package [aern2-real](https://github.com/michalkonecny/aern2).
-To get access to this via stack, you can start ghci eg as follows:
-
-    $ stack ghci aern2-real:lib
-    ...> :add AERN2.Real 
-    AERN2.Real> import MixedTypesNumPrelude
-
-    ...> :t pi
-    ...  :: CReal
-
-    ...> :t sqrt 2
-    ...  :: CReal
-
-Harmless potential errors can be ignored using `unCN`:
-
-    ...> sqrt (pi-pi) ? (prec 100)
-    [0.0000000000000000006133173666733496325755399890... ± ~6.1332e-19 ~2^(-60)]{{POTENTIAL ERROR: out of domain: negative sqrt argument}}
-
-    ...> unCN $ sqrt (pi-pi) ? (prec 100)
-    [0.0000000000000000006133173666733496325755399890... ± ~6.1332e-19 ~2^(-60)]
-
-If used unsafely, `unCN` will cause an exception:
-
-    ...> unCN $ sqrt (-1) ? (prec 100)
-    *** Exception: CollectErrors: {ERROR: out of domain: negative sqrt argument}
-
-When an error is present (which can be checked using `hasError`), the function `CN.hasCertainError` can be used to further distinguish cases where the error is certain or potential:
-
-    ...> import qualified Numeric.CollectErrors as CN
-    ...> CN.hasCertainError (sqrt (-1) ? (prec 100))
-    True
-
-    ...> CN.hasCertainError (sqrt (pi-pi) ? (prec 100))
-    False
+Note that the errors printed above are not exceptions, but special values.  See the [collect-errors](https://hackage.haskell.org/package/collect-errors) documentation for more details.
 
 ### The generalised power operator
 
@@ -139,7 +81,17 @@ When an error is present (which can be checked using `hasError`), the function `
     ...> :t (double 2)^(1/2)
     ... :: Double
 
-The following example require also package [aern2-real](https://github.com/michalkonecny/aern2).
+The following examples require also package [aern2-real](https://github.com/michalkonecny/aern2).
+To get access to this via stack, you can start ghci eg as follows:
+
+    $ stack ghci aern2-real:lib --no-load --ghci-options AERN2.Real
+    AERN2.Real> import MixedTypesNumPrelude
+
+    ...> :t pi
+    ...  :: CReal
+
+    ...> :t sqrt 2
+    ...  :: CReal
 
     ...> :t 2^(1/2)
     ... :: CReal
