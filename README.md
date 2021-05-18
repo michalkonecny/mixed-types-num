@@ -25,23 +25,18 @@ API documentation available on the [Hackage page](https://hackage.haskell.org/pa
 
 ## Table of contents <!-- omit in toc -->
 
-- [1. Generated API documentation](#1-generated-api-documentation)
-- [2. Feature highlights](#2-feature-highlights)
-  - [2.1. Main idea](#21-main-idea)
-  - [2.2. Dealing with numerical errors](#22-dealing-with-numerical-errors)
-  - [2.3. The generalised power operator](#23-the-generalised-power-operator)
-  - [2.4. Undecided comparisons](#24-undecided-comparisons)
-  - [2.5. Fuzzy if-then-else](#25-fuzzy-if-then-else)
-- [3. Type classes](#3-type-classes)
-- [4. Testable specifications](#4-testable-specifications)
-- [5. Limitations](#5-limitations)
-- [6. Credits](#6-credits)
+- [1. Examples](#1-examples)
+  - [1.1. Main idea](#11-main-idea)
+  - [1.2. Dealing with numerical errors](#12-dealing-with-numerical-errors)
+  - [1.3. The generalised power operator](#13-the-generalised-power-operator)
+  - [1.4. Undecided comparisons](#14-undecided-comparisons)
+  - [1.5. Fuzzy if-then-else](#15-fuzzy-if-then-else)
+- [2. Type classes](#2-type-classes)
+- [3. Testable specifications](#3-testable-specifications)
+- [4. Limitations](#4-limitations)
+- [5. Credits](#5-credits)
 
-## 1. Generated API documentation
-
-See the [Hackage page](https://hackage.haskell.org/package/mixed-types-num).
-
-## 2. Feature highlights
+## 1. Examples
 
 To replicate the examples included below, start ghci as follows:
 
@@ -50,7 +45,7 @@ $ stack ghci mixed-types-num:lib --no-load --ghci-options MixedTypesNumPrelude
 *MixedTypesNumPrelude>
 ```
 
-### 2.1. Main idea
+### 1.1. Main idea
 
 Literals have a fixed type:
 
@@ -75,7 +70,7 @@ Operations permit operands of mixed types, types inferred bottom-up:
 ... :: Rational
 ```
 
-### 2.2. Dealing with numerical errors
+### 1.2. Dealing with numerical errors
 
 To avoid runtime exceptions, it is recommended to use the CN error-collecting wrapper from package [collect-errors](https://hackage.haskell.org/package/collect-errors).  
 
@@ -93,7 +88,7 @@ All arithmetic operations have been extended so that it is possible to have expr
 
 Note that the errors printed above are not exceptions, but special values.  See the [collect-errors](https://hackage.haskell.org/package/collect-errors) documentation for more details.
 
-### 2.3. The generalised power operator
+### 1.3. The generalised power operator
 
 ```Text
 ...> :t 2^(-2)
@@ -109,7 +104,7 @@ Note that the errors printed above are not exceptions, but special values.  See 
 ... :: Double
 ```
 
-The following examples require also package [aern2-real](https://github.com/michalkonecny/aern2).
+The following examples require also package [aern2-real](https://hackage.haskell.org/package/aern2-real).
 To get access to this via stack, you can start ghci eg as follows:
 
 ```Text
@@ -126,7 +121,7 @@ AERN2.Real> import MixedTypesNumPrelude
 ... :: CReal
 ```
 
-### 2.4. Undecided comparisons
+### 1.4. Undecided comparisons
 
 Comparisons involving intervals are undecided when the intervals overlap:
 
@@ -147,7 +142,7 @@ The above equality cannot be decided since `pi10` is not a single number but a s
 Comparison involving real numbers are semi-decidable.  The result of such a comparison is a lazy Kleenean, ie an infinite sequence of Kleeneans.
 Please see package [aern2-real](https://github.com/michalkonecny/aern2) for further details.
 
-### 2.5. Fuzzy if-then-else
+### 1.5. Fuzzy if-then-else
 
 This package generalises the Haskell if-then-else statement so that it admits Kleenean and lazy Kleenean conditions:
 
@@ -175,7 +170,7 @@ The generalised if-then-else works also for real numbers with lazy Kleenean comp
 {?(prec 36): [0.000000000014551915228366851806640625 ± ~1.4552e-11 ~2^(-36)]}
 ```
 
-## 3. Type classes
+## 2. Type classes
 
 Mixed-type arithmetic operations are provided via multi-parameter type classes
 and the result type is given by associated
@@ -215,14 +210,14 @@ instance P.Num T where
   ...
 ```
 
-## 4. Testable specifications
+## 3. Testable specifications
 
 The arithmetic type classes are accompanied by generic hspec test suites,
 which are specialised to concrete instance types for their testing.
 These test suites include the expected algebraic properties of operations,
 such as commutativity and associativity of addition.
 
-## 5. Limitations
+## 4. Limitations
 
 - Not all numerical operations are supported yet.
   Eg `tan`, `atan` are missing at the moment.
@@ -255,7 +250,7 @@ such as commutativity and associativity of addition.
         -> SqrtType (AddType (AddType t2 (MulType t3 t4)) Integer)
     ```
 
-## 6. Credits
+## 5. Credits
 
 The idea of having numeric expressions in Haskell with types
 derived bottom-up was initially suggested and implemented by Pieter Collins.
