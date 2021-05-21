@@ -167,7 +167,7 @@ The generalised if-then-else works also for real numbers with lazy Kleenean comp
 
 ```Text
 ...> abs1 (pi - pi)
-{?(prec 36): [0.000000000014551915228366851806640625 ± ~1.4552e-11 ~2^(-36)]}
+{?(prec 36): [0.00000000001455191522836685... ± ~1.4552e-11 ~2^(-36)]}
 ```
 
 ## 2. Type classes

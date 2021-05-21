@@ -28,7 +28,6 @@ module MixedTypesNumPrelude
   -- * Modules with Prelude alternatives
   module Numeric.MixedTypes.Literals,
   module Numeric.MixedTypes.Bool,
-  module Numeric.MixedTypes.Kleenean,
   module Numeric.MixedTypes.Eq,
   module Numeric.MixedTypes.Ord,
   module Numeric.MixedTypes.MinMaxAbs,
@@ -58,7 +57,6 @@ import Utils.Test.EnforceRange
 import Numeric.MixedTypes.PreludeHiding
 import Numeric.MixedTypes.Literals
 import Numeric.MixedTypes.Bool
-import Numeric.MixedTypes.Kleenean
 import Numeric.MixedTypes.Eq
 import Numeric.MixedTypes.Ord
 import Numeric.MixedTypes.MinMaxAbs

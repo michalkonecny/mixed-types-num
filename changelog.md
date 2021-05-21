@@ -1,5 +1,7 @@
 # mixed-types-num change log
 
+* v 0.5.4 2021-05-21
+  * remove Kleeneans (move them to aern2-mp)
 * v 0.5.3 2021-05-15
   * export clearPotentialErrors (from collect-errors)
 * v 0.5.2 2021-05-14
