@@ -240,18 +240,16 @@ instance
 powUsingExpLog ::
   (CanLogSameType t,
    CanExpSameType t,
-   CanMulSameType t,
    CanTestInteger t,
-   CanTestZero t,
-   CanRecipSameType t)
+   CanTestZero t)
   =>
-  t -> t -> t -> t
-powUsingExpLog one b e =
+   t -> (t -> t -> t) -> (t -> t) -> t -> t -> t
+powUsingExpLog one mul' recip' b e =
   case certainlyIntegerGetIt e of
     Just n ->
-      powUsingMulRecip one b n
+      powUsingMulRecip one mul' recip' b n
     Nothing ->
-      exp ((log b) * (e))
+      exp ((log b) `mul'` (e))
 
 {----  sine and cosine -----}
 

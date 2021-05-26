@@ -44,7 +44,7 @@ import Numeric.MixedTypes.Ord
 -- import Numeric.MixedTypes.MinMaxAbs
 import Numeric.MixedTypes.AddSub
 import Numeric.MixedTypes.Ring
-import Numeric.MixedTypes.Div
+-- import Numeric.MixedTypes.Div ()
 
 
 
@@ -99,30 +99,30 @@ powCN unsafePow b e
     CN.lift2 unsafePow b e
 
 powUsingMul ::
-  (CanBeInteger e,
-   CanMulSameType t)
+  (CanBeInteger e)
    =>
-   t -> t -> e -> t
-powUsingMul one x nPre
+   t -> (t -> t -> t) -> t -> e -> t
+powUsingMul one mul' x nPre
   | n < 0 = error $ "powUsingMul is not defined for negative exponent " ++ show n
   | n == 0 = one
   | otherwise = aux n
   where
+    (.*) = mul'
     n = integer nPre
     aux m
       | m == 1 = x
       | even m =
-        let s = aux (m `P.div` 2) in s * s
+        let s = aux (m `P.div` 2) in s .* s
       | otherwise =
-        let s = aux ((m-1) `P.div` 2) in x * s * s
+        let s = aux ((m-1) `P.div` 2) in x .* s .* s
 
 powUsingMulRecip ::
-  (CanBeInteger e, CanMulSameType b, CanRecipSameType b)
+  (CanBeInteger e)
    =>
-   b -> b -> e -> b
-powUsingMulRecip one x e
-  | eI < 0 = recip $ powUsingMul one x (negate eI)
-  | otherwise = powUsingMul one x eI
+   t -> (t -> t -> t) -> (t -> t) -> t -> e -> t
+powUsingMulRecip one mul' recip' x e
+  | eI < 0 = recip' $ powUsingMul one mul' x (negate eI)
+  | otherwise = powUsingMul one mul' x eI
   where
   eI = integer e
 
