@@ -1,5 +1,7 @@
 # mixed-types-num change log
 
+* v 0.5.5 2021-05-26
+  * powUsingMulRecip etc with custom multiply and recip operations
 * v 0.5.4 2021-05-21
   * remove Kleeneans (move them to aern2-mp)
 * v 0.5.3 2021-05-15
