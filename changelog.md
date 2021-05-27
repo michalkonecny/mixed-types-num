@@ -1,5 +1,8 @@
 # mixed-types-num change log
 
+* v 0.5.6 2021-05-27
+  * add instances: mixed min/max Double $t
+  * add instance: CanGiveUpIfVeryInaccurate Double
 * v 0.5.5 2021-05-26
   * powUsingMulRecip etc with custom multiply and recip operations
 * v 0.5.4 2021-05-21
