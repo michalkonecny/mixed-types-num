@@ -1,7 +1,7 @@
-{-# OPTIONS_GHC -Wno-orphans #-}
-{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
-{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 {-|
     Module      :  Numeric.MixedType.MinMaxAbs
     Description :  Bottom-up typed min, max and abs
@@ -156,23 +156,39 @@ instance CanMinMaxAsymmetric Integer Int where
   min = convertSecond min
   max = convertSecond max
 
-instance CanMinMaxAsymmetric Int Rational where
-  type MinMaxType Int Rational = Rational
-  min = convertFirst min
-  max = convertFirst max
-instance CanMinMaxAsymmetric Rational Int where
-  type MinMaxType Rational Int = Rational
-  min = convertSecond min
-  max = convertSecond max
+$(declForTypes
+  [[t| Integer |], [t| Int |]]
+  (\ t -> [d|
 
-instance CanMinMaxAsymmetric Integer Rational where
-  type MinMaxType Integer Rational = Rational
-  min = convertFirst min
-  max = convertFirst max
-instance CanMinMaxAsymmetric Rational Integer where
-  type MinMaxType Rational Integer = Rational
-  min = convertSecond min
-  max = convertSecond max
+  instance CanMinMaxAsymmetric $t Rational where
+    type MinMaxType $t Rational = Rational
+    min = convertFirst min
+    max = convertFirst max
+  instance CanMinMaxAsymmetric Rational $t where
+    type MinMaxType Rational $t = Rational
+    min = convertSecond min
+    max = convertSecond max
+  |]))
+
+$(declForTypes
+  [[t| Integer |], [t| Int |], [t| Rational |]]
+  (\ t -> [d|
+
+  instance
+    CanMinMaxAsymmetric $t Double
+    where
+    type MinMaxType $t Double = Double
+    min a b = min (double a) b
+    max a b = max (double a) b
+
+  instance
+    CanMinMaxAsymmetric Double $t
+    where
+    type MinMaxType Double $t = Double
+    min a b = min a (double b)
+    max a b = max a (double b)
+
+  |]))
 
 instance (CanMinMaxAsymmetric a b) => CanMinMaxAsymmetric [a] [b] where
   type MinMaxType [a] [b] = [MinMaxType a b]
