@@ -21,6 +21,9 @@ import Numeric.MixedTypes.PreludeHiding
 -- import qualified Prelude as P
 
 import Numeric.CollectErrors ( CN, NumError (NumError) )
+import qualified Numeric.CollectErrors as CN
+
+import Numeric.MixedTypes.Eq
 
 class CanGiveUpIfVeryInaccurate t where
   {-| If the value contains so little information that it is seen as useless,
@@ -42,3 +45,8 @@ numErrorVeryInaccurate context detail =
 instance CanGiveUpIfVeryInaccurate Int
 instance CanGiveUpIfVeryInaccurate Integer
 instance CanGiveUpIfVeryInaccurate Rational
+instance CanGiveUpIfVeryInaccurate Double where
+  giveUpIfVeryInaccurate d
+    | isFinite d = d
+    | isNaN d = CN.prependErrorCertain (CN.NumError "NaN") d
+    | otherwise = CN.prependErrorCertain (CN.NumError "Inifinity") d
