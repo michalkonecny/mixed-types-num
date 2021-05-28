@@ -1,5 +1,7 @@
 # mixed-types-num change log
 
+* v 0.5.7 2021-05-28
+  * before: n^m is rational, now: n^m is integer, n^^m is rational
 * v 0.5.6 2021-05-27
   * add instances: mixed min/max Double $t
   * add instance: CanGiveUpIfVeryInaccurate Double
