@@ -20,6 +20,7 @@ module Numeric.MixedTypes.Power
   , (^), (^^)
   , powUsingMul, integerPowCN
   , powUsingMulRecip
+  , CanTestIsIntegerType(..)
   -- ** Tests
   , specCanPow
 )
@@ -72,6 +73,11 @@ class CanPow b e where
   default ppow :: (PPowType b e ~ PowType b e) => b -> e -> PPowType b e
   ppow = pow
 
+{-|
+  Ability to detect whether a numeric type is restricted to (a subset of) integers.
+  
+  This is useful eg when checking the arguments of the power operator in the CN instance for power.
+-}
 class CanTestIsIntegerType t where
   isIntegerType :: t -> Bool
   isIntegerType _ = False
