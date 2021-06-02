@@ -1,5 +1,7 @@
 # mixed-types-num change log
 
+* v 0.5.8 2021-06-02
+  * add HasRationals to Field
 * v 0.5.7 2021-05-28
   * before: n^m is rational, now: n^m is integer, n^^m is rational
 * v 0.5.6 2021-05-27
