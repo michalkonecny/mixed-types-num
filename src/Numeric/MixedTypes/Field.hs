@@ -26,7 +26,7 @@ import Numeric.MixedTypes.PreludeHiding
 import Numeric.CollectErrors ( CN )
 -- import qualified Numeric.CollectErrors as CN
 
--- import Numeric.MixedTypes.Literals
+import Numeric.MixedTypes.Literals
 -- import Numeric.MixedTypes.Bool
 -- import Numeric.MixedTypes.Eq
 import Numeric.MixedTypes.Ord
@@ -43,6 +43,7 @@ type CanAddSubMulDivBy t s =
 
 class
   (Ring t,
+   HasRationals t,
    CanPowBy t Integer, CanPowBy t Int,
    CanDivSameType t, CanRecipSameType t,
    CanAddSubMulDivBy t Rational,
