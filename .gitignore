@@ -3,3 +3,4 @@ dist
 .dist*
 /old
 /docs-folder
+/*.cabal
