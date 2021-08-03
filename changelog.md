@@ -1,5 +1,8 @@
 # mixed-types-num change log
 
+* v 0.5.9 2021-08-04
+  * compatible with ghc 9.0.1
+  * separated module Mul from Ring
 * v 0.5.8 2021-06-02
   * add HasRationals to Field
 * v 0.5.7 2021-05-28
