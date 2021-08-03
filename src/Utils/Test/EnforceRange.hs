@@ -25,7 +25,7 @@ import Numeric.MixedTypes.Bool
 import Numeric.MixedTypes.Ord
 import Numeric.MixedTypes.MinMaxAbs
 import Numeric.MixedTypes.AddSub
-import Numeric.MixedTypes.Ring
+import Numeric.MixedTypes.Mul
 import Numeric.MixedTypes.Field
 import Numeric.MixedTypes.Round
 

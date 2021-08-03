@@ -47,7 +47,7 @@ import Numeric.MixedTypes.Eq
 import Numeric.MixedTypes.Ord
 -- import Numeric.MixedTypes.MinMaxAbs
 import Numeric.MixedTypes.AddSub
-import Numeric.MixedTypes.Ring
+import Numeric.MixedTypes.Mul
 
 {----  rounded division + modulo -----}
 
