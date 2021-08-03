@@ -34,6 +34,7 @@ module MixedTypesNumPrelude
   module Numeric.MixedTypes.AddSub,
   module Numeric.MixedTypes.Round,
   module Numeric.MixedTypes.Reduce,
+  module Numeric.MixedTypes.Mul,
   module Numeric.MixedTypes.Ring,
   module Numeric.MixedTypes.Div,
   module Numeric.MixedTypes.Power,
@@ -63,6 +64,7 @@ import Numeric.MixedTypes.MinMaxAbs
 import Numeric.MixedTypes.AddSub
 import Numeric.MixedTypes.Round
 import Numeric.MixedTypes.Reduce
+import Numeric.MixedTypes.Mul
 import Numeric.MixedTypes.Ring
 import Numeric.MixedTypes.Div
 import Numeric.MixedTypes.Power
