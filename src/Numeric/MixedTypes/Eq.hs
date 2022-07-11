@@ -23,6 +23,7 @@ module Numeric.MixedTypes.Eq
   , specHasEq, specHasEqNotMixed
   , specConversion
   -- ** Specific comparisons
+  , CanTestValid(..), specResultIsValid1, specResultIsValid2, specResultIsValid1Pre, specResultIsValid2Pre
   , CanTestNaN(..)
   , CanTestFinite(..)
   , CanTestInteger(..)
@@ -254,7 +255,44 @@ $(declForTypes
   |]))
 
 
-{---- Checking whether it is finite -----}
+{---- Checking whether it is valid / finite -----}
+
+class CanTestValid t where
+  isValid :: t -> Bool
+
+{-|
+  HSpec property checking the validity of unary operations' results.
+ -}
+specResultIsValid1 ::
+  (Arbitrary t1, Show t1, CanTestValid t1, CanTestValid t2)
+  =>
+  (t1 -> t2) -> String -> T t1 -> Spec
+specResultIsValid1 = specResultIsValid1Pre (const True)
+
+specResultIsValid1Pre ::
+  (Arbitrary t1, Show t1, CanTestValid t1, CanTestValid t2)
+  =>
+  (t1 -> Bool) -> (t1 -> t2) -> String -> T t1 -> Spec
+specResultIsValid1Pre pre f fName (T tName1 :: T t1) =
+  it (printf "Function %s returns a valid result for valid %s inputs" fName tName1) $ do
+    property $ \ (x :: t1) -> isValid x && pre x ==> isValid (f x)
+
+{-|
+  HSpec properties that check validity of operations' results.
+ -}
+specResultIsValid2 ::
+  (Arbitrary t1, Show t1, Arbitrary t2, Show t2, CanTestValid t1, CanTestValid t2, CanTestValid t3)
+  =>
+  (t1 -> t2 -> t3) -> String -> T t1 -> T t2 -> Spec
+specResultIsValid2 = specResultIsValid2Pre (\_ _ -> True)
+
+specResultIsValid2Pre ::
+  (Arbitrary t1, Show t1, Arbitrary t2, Show t2, CanTestValid t1, CanTestValid t2, CanTestValid t3)
+  =>
+  (t1 -> t2 -> Bool) -> (t1 -> t2 -> t3) -> String -> T t1 -> T t2 -> Spec
+specResultIsValid2Pre pre f fName (T t1Name :: T t1) (T t2Name :: T t2) =
+  it (printf "Function %s returns a valid result for valid %s, %s inputs" fName t1Name t2Name) $ do
+    property $ \ (x :: t1) (y :: t2) -> isValid x && isValid y && pre x y ==> isValid (f x y)
 
 class CanTestNaN t where
   isNaN :: t -> Bool

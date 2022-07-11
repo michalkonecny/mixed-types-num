@@ -1,5 +1,7 @@
 # mixed-types-num change log
 
+* v 0.5.10 ??
+  * isValid and spec helpers for validity of operations
 * v 0.5.9 2021-08-04
   * compatible with ghc 9.0.1
   * separated module Mul from Ring
