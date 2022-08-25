@@ -193,7 +193,7 @@ instance HasOrderAsymmetric Double Int where
   leq d n = leq d (integer n)
 
 instance
-  (HasOrderAsymmetric a b, CanBeErrors es)
+  (HasOrderAsymmetric a b, CanBeErrors es, CanTestCertainly (OrderCompareType a b))
   =>
   HasOrderAsymmetric (CollectErrors es a) (CollectErrors es b)
   where
@@ -209,7 +209,7 @@ $(declForTypes
   (\ t -> [d|
 
     instance
-      (HasOrderAsymmetric $t b, CanBeErrors es)
+      (HasOrderAsymmetric $t b, CanBeErrors es, CanTestCertainly (OrderCompareType $t b))
       =>
       HasOrderAsymmetric $t (CollectErrors es  b)
       where
@@ -221,7 +221,7 @@ $(declForTypes
       geq = CE.liftT1 geq
 
     instance
-      (HasOrderAsymmetric a $t, CanBeErrors es)
+      (HasOrderAsymmetric a $t, CanBeErrors es, CanTestCertainly (OrderCompareType a $t))
       =>
       HasOrderAsymmetric (CollectErrors es a) $t
       where

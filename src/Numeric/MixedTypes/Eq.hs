@@ -222,7 +222,7 @@ instance (HasEqAsymmetric a b) => HasEqAsymmetric (Maybe a) (Maybe b) where
   equalTo _ _ = convertExactly False
 
 instance
-  (HasEqAsymmetric a b, CanBeErrors es)
+  (HasEqAsymmetric a b, CanBeErrors es, CanTestCertainly (EqCompareType a b))
   =>
   HasEqAsymmetric (CollectErrors es a) (CollectErrors es  b)
   where
@@ -235,7 +235,7 @@ $(declForTypes
   (\ t -> [d|
 
     instance
-      (HasEqAsymmetric $t b, CanBeErrors es)
+      (HasEqAsymmetric $t b, CanBeErrors es, CanTestCertainly (EqCompareType $t b))
       =>
       HasEqAsymmetric $t (CollectErrors es  b)
       where
@@ -244,7 +244,7 @@ $(declForTypes
       equalTo = CE.liftT1 equalTo
 
     instance
-      (HasEqAsymmetric a $t, CanBeErrors es)
+      (HasEqAsymmetric a $t, CanBeErrors es, CanTestCertainly (EqCompareType a $t))
       =>
       HasEqAsymmetric (CollectErrors es a) $t
       where

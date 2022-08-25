@@ -250,13 +250,22 @@ instance CanAndOrAsymmetric Bool Bool where
   or2 = (P.||)
 
 instance
-  (CanAndOrAsymmetric t1 t2, CanBeErrors es)
+  (CanAndOrAsymmetric t1 t2, CanBeErrors es,
+  HasBools t2, CanTestCertainly t1)
   =>
   CanAndOrAsymmetric (CollectErrors es t1) (CollectErrors es t2)
   where
   type AndOrType (CollectErrors es t1) (CollectErrors es t2) = CollectErrors es (AndOrType t1 t2)
-  and2 = CE.lift2 and2
-  or2 = CE.lift2 or2
+  and2 b1CE (b2CE::b2T) = 
+    case b1CE of
+      CE.CollectErrors (Just b1) _ | isCertainlyFalse b1 -> 
+        CE.lift2 and2 b1CE (convertExactly False :: b2T) -- avoid evaluating b2CE
+      _ -> CE.lift2 and2 b1CE b2CE
+  or2 b1CE (b2CE::b2T) = 
+    case b1CE of
+      CE.CollectErrors (Just b1) _ | isCertainlyTrue b1 -> 
+        CE.lift2 or2 b1CE (convertExactly True :: b2T) -- avoid evaluating b2CE
+      _ -> CE.lift2 or2 b1CE b2CE
 
 instance
   (CanAndOrAsymmetric t1 Bool, CanBeErrors es)
