@@ -1,5 +1,7 @@
 # mixed-types-num change log
 
+* v 0.5.11 2022-08-25
+  * left-first and/or for CE/CN monad
 * v 0.5.10 2022-07-13
   * isValid and spec helpers for validity of operations
 * v 0.5.9 2021-08-04
