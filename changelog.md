@@ -1,5 +1,8 @@
 # mixed-types-num change log
 
+* v 0.5.12 2023-08-14
+  * compatible with ghc 9.6.2
+  * remove dependency on mtl
 * v 0.5.11 2022-08-25
   * left-first and/or for CE/CN monad
 * v 0.5.10 2022-07-13
