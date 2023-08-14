@@ -48,7 +48,6 @@ library:
   - -Wall
   dependencies:
   - template-haskell
-  - mtl
 
 tests:
   mixed-types-num-test:

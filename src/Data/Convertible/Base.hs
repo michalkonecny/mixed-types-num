@@ -36,7 +36,6 @@ module Data.Convertible.Base( -- * The conversion process
                              )
 where
 import Prelude
-import Control.Monad.Error
 import Data.Typeable
 
 {- | The result of a safe conversion via 'safeConvert'. -}
@@ -96,9 +95,6 @@ data ConvertError = ConvertError {
       convDestType :: String,
       convErrorMessage :: String}
                     deriving (Eq, Read, Show)
-
-instance Error ConvertError where
-    strMsg x = ConvertError "(unknown)" "(unknown)" "(unknown)" x
 
 convError' :: (Show a, Typeable a, Typeable b) =>
                String -> a -> b -> ConvertResult b
