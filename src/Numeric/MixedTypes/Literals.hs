@@ -40,9 +40,9 @@ module Numeric.MixedTypes.Literals
   -- * Generalised if-then-else
   , HasIfThenElse(..), HasIfThenElseSameType
   -- * Convenient conversions
-  , CanBeInteger, integer, integers, HasIntegers, fromInteger_
+  , CanBeInteger, integer, integers, HasIntegers, fromInteger_, HasIntegersWithSample, fromIntegerWithSample
   , CanBeInt, int, ints
-  , CanBeRational, rational, rationals, HasRationals, fromRational_
+  , CanBeRational, rational, rationals, HasRationals, fromRational_, HasRationalsWithSample, fromRationalWithSample
   , CanBeDouble, double, doubles
   , ConvertibleExactly(..), convertExactly, convertExactlyTargetSample
   , ConvertResult, ConvertError, convError
@@ -133,6 +133,10 @@ type HasIntegers t = ConvertibleExactly Integer t
 fromInteger_ :: (HasIntegers t) => Integer -> t
 fromInteger_ = convertExactly
 
+type HasIntegersWithSample t = ConvertibleExactly (t, Integer) t
+fromIntegerWithSample :: (HasIntegersWithSample t) => t -> Integer -> t
+fromIntegerWithSample sampleT n = convertExactly (sampleT, n)
+
 (!!) :: (CanBeInteger n) => [a] -> n -> a
 list !! ix = List.genericIndex list (integer ix)
 -- list !! ix = List.genericIndex list (P.max 0 ((integer ix) P.- 1)) -- deliberately wrong - test the test!
@@ -189,6 +193,10 @@ rationals = map convertExactly
 type HasRationals t = ConvertibleExactly Rational t
 fromRational_ :: (HasRationals t) => Rational -> t
 fromRational_ = convertExactly
+
+type HasRationalsWithSample t = ConvertibleExactly (t, Rational) t
+fromRationalWithSample :: (HasRationalsWithSample t) => t -> Rational -> t
+fromRationalWithSample sampleT q = convertExactly (sampleT, q)
 
 type CanBeDouble t = Convertible t Double
 double :: (CanBeDouble t) => t -> Double
