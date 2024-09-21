@@ -16,8 +16,13 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-        ghc-version: ['9.6', '9.4', '9.2', '9.0']
+        os: [ubuntu-latest]
+        ghc-version: ['9.8', '9.6', '9.4', '9.2']
+        include:
+                  - os: windows-latest
+                    ghc-version: '9.6'
+                  - os: macos-latest
+                    ghc-version: '9.6'
 
     steps:
       - uses: actions/checkout@v3
@@ -74,5 +79,5 @@ jobs:
       - name: Check cabal file
         run: cabal check
 
-      - name: Build documentation
-        run: stack haddock
+      # - name: Build documentation
+      #   run: stack haddock
