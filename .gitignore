@@ -4,3 +4,4 @@ dist
 /old
 /docs-folder
 /*.cabal
+/*.code-workspace
