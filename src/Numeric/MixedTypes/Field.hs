@@ -43,7 +43,7 @@ type CanAddSubMulDivBy t s =
 
 class
   (Ring t,
-   HasRationals t,
+   HasRationalsWithSample t,
    CanPowBy t Integer, CanPowBy t Int,
    CanDivSameType t, CanRecipSameType t,
    CanAddSubMulDivBy t Rational,

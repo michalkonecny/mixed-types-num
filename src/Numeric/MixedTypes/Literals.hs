@@ -223,18 +223,38 @@ convertExactly a =
 convertExactlyTargetSample :: (ConvertibleExactly t1 t2) => t2 -> t1 -> t2
 convertExactlyTargetSample _sample = convertExactly
 
+-- HasIntegers Integer, CanBeInteger Integer
 instance ConvertibleExactly Integer Integer -- use CVT instance by default
+-- CanBeInteger Int
 instance ConvertibleExactly Int Integer
 
+-- HasIntegersWithSample Integer
+instance ConvertibleExactly (Integer, Integer) Integer where
+  safeConvertExactly (_sample, value) = safeConvert value
+
+-- CanBeInt Int
 instance ConvertibleExactly Int Int where
   safeConvertExactly n = Right n
+
+-- CanBeRational Rational
 instance ConvertibleExactly Rational Rational where
   safeConvertExactly q = Right q
 
+-- HasIntegers Int
 instance ConvertibleExactly Integer Int
 instance ConvertibleExactly Int Rational
+-- HasIntegers Rational
 instance ConvertibleExactly Integer Rational
 
+-- HasIntegersWithSample Rational
+instance ConvertibleExactly (Rational, Integer) Rational where
+  safeConvertExactly (_sample, value) = safeConvert value
+
+-- HasRationalsWithSample Rational
+instance ConvertibleExactly (Rational, Rational) Rational where
+  safeConvertExactly (_sample, value) = safeConvertExactly value
+
+-- HasIntegers Double
 instance ConvertibleExactly Integer Double where
   safeConvertExactly n =
     do
@@ -327,6 +347,17 @@ convertSecond = convertSecondUsing (\ _ b -> convertExactly b)
 --   where
 --   safeConvertExactly = fmap pure . safeConvertExactly
 --
+
+instance (HasIntegers t, Monoid es) => 
+  -- HasIntegersWithSample (CollectErrors es t)
+  ConvertibleExactly (CollectErrors es t, Integer) (CollectErrors es t) where
+  safeConvertExactly (_sample, value) = fmap pure $ safeConvertExactly value
+
+instance (HasRationals t, Monoid es) =>   
+  -- HasRationalsWithSample (CollectErrors es t)
+  ConvertibleExactly (CollectErrors es t, Rational) (CollectErrors es t) where
+  safeConvertExactly (_sample, value) = fmap pure $ safeConvertExactly value
+
 
 $(declForTypes
   [[t| Bool |], [t| Integer |], [t| Int |], [t| Rational |], [t| Double |]]

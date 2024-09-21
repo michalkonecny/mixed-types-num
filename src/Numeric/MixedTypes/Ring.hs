@@ -42,7 +42,7 @@ class
    HasEq t t,
    HasEq t Integer, CanAddSubMulBy t Integer,
    HasEq t Int, CanAddSubMulBy t Int,
-   HasIntegers t) => Ring t
+   HasIntegersWithSample t) => Ring t
 
 instance Ring Integer
 instance Ring (CN Integer)
