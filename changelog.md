@@ -1,5 +1,8 @@
 # mixed-types-num change log
 
+* v 0.6.0 2024-09-21
+  * Ring now requires HasIntegersWithSample instead of HasIntegers
+  * Field now requires HasRationalsWithSample instead of HasRationals
 * v 0.5.12 2023-08-14
   * compatible with ghc 9.6.2
   * remove dependency on mtl
