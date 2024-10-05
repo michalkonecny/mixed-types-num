@@ -1,10 +1,10 @@
 name:                mixed-types-num
-version:             0.6.1
+version:             0.6.2
 github:              "michalkonecny/mixed-types-num"
 license:             BSD3
 author:              "Michal Konecny"
 maintainer:          "mikkonecny@gmail.com"
-copyright:           "2015-2023 Michal Konecny"
+copyright:           "2015-2024 Michal Konecny"
 
 extra-source-files:
 - README.md
