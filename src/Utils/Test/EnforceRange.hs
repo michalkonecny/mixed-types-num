@@ -33,7 +33,7 @@ type CanEnforceRange t b =
     (CanAddSubMulDivBy t Integer
     , CanAddSameType t, CanSubSameType t, CanAbsSameType t
     , CanDivIModIntegerSameType t
-    , ConvertibleExactly b t
+    , ConvertibleExactlyWithSample b t
     , HasOrderCertainly t t)
 
 {-| 
@@ -50,17 +50,17 @@ enforceRange (Just l_, Just u_) (a::t)
     | l !<! b && b !<! u = b
     | otherwise = (u+l)/2
     where
-    l = convertExactly l_ :: t
-    u = convertExactly u_ :: t
+    l = convertExactlyWithSample a l_ :: t
+    u = convertExactlyWithSample a u_ :: t
     b = l + ((abs a) `mod` (u-l))
 enforceRange (Just l_, _) (a::t)
     | l !<! a = a
     | otherwise = (2*l-a+1)
     where
-    l = convertExactly l_ :: t
+    l = convertExactlyWithSample a l_ :: t
 enforceRange (_, Just u_) (a::t)
     | a !<! u = a
     | otherwise = (2*u-a-1)
     where
-    u = convertExactly u_ :: t
+    u = convertExactlyWithSample a u_ :: t
 enforceRange _ a = a

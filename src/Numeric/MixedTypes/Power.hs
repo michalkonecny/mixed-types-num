@@ -177,13 +177,13 @@ specCanPow ::
 specCanPow (T typeName1 :: T t1) (T typeName2 :: T t2) =
   describe (printf "CanPow %s %s" typeName1 typeName2) $ do
     it "x^0 = 1" $ do
-      property $ \ (x :: t1) ->
-        let one = (convertExactly 1 :: t1) in
-        let z = (convertExactly 0 :: t2) in
+      property $ \ (x :: t1) (sampleT1 :: t1) (sampleT2 :: t2) ->
+        let one = (convertExactlyWithSample sampleT1 1 :: t1) in
+        let z = (convertExactlyWithSample sampleT2 0 :: t2) in
         (x ^ z) ?==?$ one
     it "x^1 = x" $ do
-      property $ \ (x :: t1) ->
-        let one = (convertExactly 1 :: t2) in
+      property $ \ (x :: t1) (sampleT2 :: t2) ->
+        let one = (convertExactlyWithSample sampleT2 1 :: t2) in
         (x ^ one) ?==?$ x
     it "x^(y+1) = x*x^y" $ do
       property $ \ (x :: t1) (y :: t2) ->

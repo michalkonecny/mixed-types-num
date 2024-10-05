@@ -17,7 +17,7 @@ module Numeric.MixedTypes.Mul
 (
   -- ** Multiplication
   CanMul, CanMulAsymmetric(..), CanMulBy, CanMulSameType
-  , (*), product
+  , (*), product, productWithSample
   -- ** Tests
   , specCanMul, specCanMulNotMixed, specCanMulSameType
 )
@@ -74,6 +74,9 @@ type CanMulSameType t =
 product :: (CanMulSameType t, ConvertibleExactly Integer t) => [t] -> t
 product xs = List.foldl' mul (convertExactly 1) xs
 
+productWithSample :: (CanMulSameType t, ConvertibleExactlyWithSample Integer t) => t -> [t] -> t
+productWithSample sampleT xs = List.foldl' mul (convertExactlyWithSample sampleT 1) xs
+
 {-|
   HSpec properties that each implementation of CanMul should satisfy.
  -}
@@ -82,7 +85,8 @@ specCanMul ::
 specCanMul (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "CanMul %s %s, CanMul %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "absorbs 1" $ do
-      property $ \ (x :: t1) -> let one = (convertExactly 1 :: t2) in (x * one) ?==?$ x
+      property $ \ (x :: t1) (sampleT2 :: t2) -> 
+        let one = (convertExactlyWithSample sampleT2 1 :: t2) in (x * one) ?==?$ x
     it "is commutative" $ do
       property $ \ (x :: t1) (y :: t2) -> (x * y) ?==?$ (y * x)
     it "is associative" $ do
@@ -107,7 +111,7 @@ specCanMulNotMixed (t :: T t) = specCanMul t t t
   HSpec properties that each implementation of CanMulSameType should satisfy.
  -}
 specCanMulSameType ::
-  (Show t, ConvertibleExactly Integer t,
+  (Show t, Arbitrary t, ConvertibleExactlyWithSample Integer t,
    CanTestCertainly (EqCompareType t t), HasEqAsymmetric t t,
    CanMulAsymmetric t t, MulType t t ~ t)
    =>
@@ -115,10 +119,13 @@ specCanMulSameType ::
 specCanMulSameType (T typeName :: T t) =
   describe (printf "CanMulSameType %s" typeName) $ do
     it "has product working over integers" $ do
-      property $ \ (xsi :: [Integer]) ->
-        (product $ (map convertExactly xsi :: [t])) ?==?$ (convertExactly (product xsi) :: t)
+      property $ \ (xsi :: [Integer]) (sampleT :: t) ->
+        (productWithSample sampleT $ (map (convertExactlyWithSample sampleT) xsi :: [t])) 
+        ?==?$ 
+        (convertExactlyWithSample sampleT (product xsi) :: t)
     it "has product [] = 1" $ do
-        (product ([] :: [t])) ?==?$ (convertExactly 1 :: t)
+      property $ \ (sampleT :: t) ->
+        (productWithSample sampleT ([] :: [t])) ?==?$ (convertExactlyWithSample sampleT 1 :: t)
   where
   infix 4 ?==?$
   (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property

@@ -255,7 +255,8 @@ specCanNegNum (T typeName :: T t) =
         (x ?==? x) ==> -- avoid NaN
           (negate (negate x)) ?==?$ x
     it "takes 0 to 0" $ do
-      let z = convertExactly 0 :: t in negate z ?==? z
+      property $ \ (sampleT :: t) ->
+        let z = convertExactlyWithSample sampleT 0 :: t in negate z ?==? z
     it "takes positive to negative" $ do
       property $ \ (x :: t) ->
         (isFinite x) ==> -- avoid NaN

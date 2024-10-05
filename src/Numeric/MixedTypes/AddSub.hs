@@ -17,7 +17,7 @@ module Numeric.MixedTypes.AddSub
 (
     -- * Addition
     CanAdd, CanAddAsymmetric(..), CanAddThis, CanAddSameType
-    , (+), sum
+    , (+), sum, sumWithSample
   -- ** Tests
     , specCanAdd, specCanAddNotMixed, specCanAddSameType
     -- * Subtraction
@@ -81,6 +81,9 @@ type CanAddSameType t =
 sum :: (CanAddSameType t, ConvertibleExactly Integer t) => [t] -> t
 sum xs = List.foldl' add (convertExactly 0) xs
 
+sumWithSample :: (CanAddSameType t, ConvertibleExactlyWithSample Integer t) => t -> [t] -> t
+sumWithSample sampleT xs = List.foldl' add (convertExactlyWithSample sampleT 0) xs
+
 {-|
   HSpec properties that each implementation of CanAdd should satisfy.
  -}
@@ -89,7 +92,8 @@ specCanAdd ::
 specCanAdd (T typeName1 :: T t1) (T typeName2 :: T t2) (T typeName3 :: T t3) =
   describe (printf "CanAdd %s %s, CanAdd %s %s" typeName1 typeName2 typeName2 typeName3) $ do
     it "absorbs 0" $ do
-      property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x + z) ?==?$ x
+      property $ \ (x :: t1) (sampleT2 :: t2) -> 
+        let z = (convertExactlyWithSample sampleT2 0 :: t2) in (x + z) ?==?$ x
     it "is commutative" $ do
       property $ \ (x :: t1) (y :: t2) -> (x + y) ?==?$ (y + x)
     it "is associative" $ do
@@ -121,17 +125,20 @@ specCanAddNotMixed (t :: T t) = specCanAdd t t t
   HSpec properties that each implementation of CanAddSameType should satisfy.
  -}
 specCanAddSameType ::
-  (ConvertibleExactly Integer t, Show t,
-   HasEqCertainly t t, CanAddSameType t)
+  (ConvertibleExactlyWithSample Integer t, Show t,
+   HasEqCertainly t t, CanAddSameType t, Arbitrary t)
    =>
    T t -> Spec
 specCanAddSameType (T typeName :: T t) =
   describe (printf "CanAddSameType %s" typeName) $ do
     it "has sum working over integers" $ do
-      property $ \ (xsi :: [Integer]) ->
-        (sum $ (map convertExactly xsi :: [t])) ?==?$ (convertExactly (sum xsi) :: t)
+      property $ \ (xsi :: [Integer]) (sampleT :: t) ->
+        (sumWithSample sampleT $ (map (convertExactlyWithSample sampleT) xsi :: [t])) 
+        ?==?$ 
+        (convertExactlyWithSample sampleT (sum xsi) :: t)
     it "has sum [] = 0" $ do
-        (sum ([] :: [t])) ?==?$ (convertExactly 0 :: t)
+      property $ \ (sampleT :: t) ->
+        (sumWithSample sampleT ([] :: [t])) ?==?$ (convertExactlyWithSample sampleT 0 :: t)
   where
   (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property
   (?==?$) = printArgsIfFails2 "?==?" (?==?)
@@ -240,9 +247,11 @@ specCanSub ::
 specCanSub (T typeName1 :: T t1) (T typeName2 :: T t2) =
   describe (printf "CanSub %s %s" typeName1 typeName2) $ do
     it "x-0 = x" $ do
-      property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x - z) ?==?$ x
+      property $ \ (x :: t1) (sampleT2 :: t2) -> 
+        let z = (convertExactlyWithSample sampleT2 0 :: t2) in (x - z) ?==?$ x
     it "x-x = 0" $ do
-      property $ \ (x :: t1) -> let z = (convertExactly 0 :: t1) in (x - x) ?==?$ z
+      property $ \ (x :: t1) (sampleR :: SubType t1 t1) -> 
+        let z = (convertExactlyWithSample sampleR 0 :: SubType t1 t1) in (x - x) ?==?$ z
     it "x-y = x+(-y)" $ do
       property $ \ (x :: t1) (y :: t2) ->
         (x - y) ?==?$ (x + (negate y))

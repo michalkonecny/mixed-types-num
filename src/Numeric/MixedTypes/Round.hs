@@ -255,8 +255,8 @@ specCanRound (T typeName :: T t) =
           let diffCeilingFloorX = ceiling x - floor x in
           (0 ?<=? diffCeilingFloorX) .&&. (diffCeilingFloorX ?<=? 1)
     it "holds floor x = round x = ceiling x for integers" $ do
-      property $ \ (xi :: Integer) ->
-        let x = convertExactly xi :: t in
+      property $ \ (xi :: Integer) (sampleT :: t) ->
+        let x = convertExactlyWithSample sampleT xi :: t in
           (floor x !==!$ round x) .&&. (round x !==!$ ceiling x)
   where
   (?<=?$) :: (HasOrderCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property

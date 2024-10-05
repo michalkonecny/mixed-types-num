@@ -102,15 +102,16 @@ specCanDiv (T typeName1 :: T t1) (T typeName2 :: T t2) =
         (isCertainlyNonZero x && isCertainlyNonZero (recip x)) ==>
           recip (recip x) ?==?$ x
     it "x/1 = x" $ do
-      property $ \ (x :: t1) -> let one = (convertExactly 1 :: t2) in (x / one) ?==?$ x
+      property $ \ (x :: t1) (sampleT2 :: t2) -> 
+        let one = (convertExactlyWithSample sampleT2 1 :: t2) in (x / one) ?==?$ x
     it "x/x = 1" $ do
-      property $ \ (x :: t1) ->
+      property $ \ (x :: t1) (sampleR :: DivType t1 t1) ->
         (isCertainlyNonZero x) ==>
-          let one = (convertExactly 1 :: t1) in (x / x) ?==?$ one
+          let one = (convertExactlyWithSample sampleR 1 :: DivType t1 t1) in (x / x) ?==?$ one
     it "x/y = x*(1/y)" $ do
-      property $ \ (x :: t1) (y :: t2) ->
+      property $ \ (x :: t1) (y :: t2) (sampleT1 :: t1) ->
         (isCertainlyNonZero y) ==>
-          let one = (convertExactly 1 :: t1) in (x / y) ?==?$ x * (one/y)
+          let one = (convertExactlyWithSample sampleT1 1 :: t1) in (x / y) ?==?$ x * (one/y)
   where
   infix 4 ?==?$
   (?==?$) :: (HasEqCertainlyAsymmetric a b, Show a, Show b) => a -> b -> Property

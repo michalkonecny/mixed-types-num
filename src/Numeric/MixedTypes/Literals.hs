@@ -45,7 +45,7 @@ module Numeric.MixedTypes.Literals
   , CanBeInt, int, ints
   , CanBeRational, rational, rationals, HasRationals, fromRational_, HasRationalsWithSample, fromRationalWithSample
   , CanBeDouble, double, doubles
-  , ConvertibleExactly(..), convertExactly, convertExactlyTargetSample
+  , ConvertibleExactly(..), convertExactly, convertExactlyWithSample
   , ConvertResult, ConvertError, convError
   -- * Prelude List operations versions without Int
   , (!!), length, replicate, take, drop, splitAt
@@ -56,7 +56,7 @@ module Numeric.MixedTypes.Literals
   , printArgsIfFails2
   -- * Helper functions
   , convertFirst, convertSecond
-  , convertFirstUsing, convertSecondUsing
+  , convertFirstUsing, convertSecondUsing, ConvertibleExactlyWithSample
 )
 where
 
@@ -136,9 +136,9 @@ fromInteger_ = convertExactly
 
 data WithSample s t = WithSample s t
 
-type HasIntegersWithSample t = ConvertibleExactly (WithSample t Integer) t
+type HasIntegersWithSample t = ConvertibleExactlyWithSample Integer t
 fromIntegerWithSample :: (HasIntegersWithSample t) => t -> Integer -> t
-fromIntegerWithSample sampleT n = convertExactly (WithSample sampleT n)
+fromIntegerWithSample sampleT n = convertExactlyWithSample sampleT n
 
 (!!) :: (CanBeInteger n) => [a] -> n -> a
 list !! ix = List.genericIndex list (integer ix)
@@ -197,9 +197,9 @@ type HasRationals t = ConvertibleExactly Rational t
 fromRational_ :: (HasRationals t) => Rational -> t
 fromRational_ = convertExactly
 
-type HasRationalsWithSample t = ConvertibleExactly (WithSample t Rational) t
+type HasRationalsWithSample t = ConvertibleExactlyWithSample Rational t
 fromRationalWithSample :: (HasRationalsWithSample t) => t -> Rational -> t
-fromRationalWithSample sampleT q = convertExactly (WithSample sampleT q)
+fromRationalWithSample sampleT q = convertExactlyWithSample sampleT q
 
 type CanBeDouble t = Convertible t Double
 double :: (CanBeDouble t) => t -> Double
@@ -217,14 +217,17 @@ class ConvertibleExactly t1 t2 where
   default safeConvertExactly :: (Convertible t1 t2) => t1 -> ConvertResult t2
   safeConvertExactly = safeConvert
 
+type ConvertibleExactlyWithSample t1 t2 = ConvertibleExactly (WithSample t2 t1) t2
+
 convertExactly :: (ConvertibleExactly t1 t2) => t1 -> t2
 convertExactly a =
   case safeConvertExactly a of
     Right v -> v
     Left err -> error (show err)
 
-convertExactlyTargetSample :: (ConvertibleExactly t1 t2) => t2 -> t1 -> t2
-convertExactlyTargetSample _sample = convertExactly
+convertExactlyWithSample :: ConvertibleExactlyWithSample t1 t2 => t2 -> t1 -> t2
+convertExactlyWithSample sampleT a = convertExactly (WithSample sampleT a)
+
 
 -- HasIntegers Integer, CanBeInteger Integer
 instance ConvertibleExactly Integer Integer -- use CVT instance by default
@@ -233,6 +236,14 @@ instance ConvertibleExactly Int Integer
 
 -- HasIntegersWithSample Integer
 instance ConvertibleExactly (WithSample Integer Integer) Integer where
+  safeConvertExactly (WithSample _ value) = safeConvert value
+
+-- HasIntsWithSample Integer
+instance ConvertibleExactly (WithSample Int Integer) Int where
+  safeConvertExactly (WithSample _ value) = safeConvert value
+
+-- CanBeIntegerWithSample Int
+instance ConvertibleExactly (WithSample Integer Int) Integer where
   safeConvertExactly (WithSample _ value) = safeConvert value
 
 -- CanBeInt Int
@@ -266,6 +277,10 @@ instance ConvertibleExactly Integer Double where
       (m, fr) | m P.== n P.&& fr P.== (double 0) -> return d
       _ -> convError "Integer could not be exactly converted to Double" n
 
+-- HasIntegersWithSample Double
+instance ConvertibleExactly (WithSample Double Integer) Double where
+  safeConvertExactly (WithSample _ value) = safeConvertExactly value
+
 instance ConvertibleExactly Int Double where
   safeConvertExactly n =
     do
@@ -273,6 +288,10 @@ instance ConvertibleExactly Int Double where
     case P.properFraction d of
       (m, fr) | m P.== n P.&& fr P.== (double 0) -> return d
       _ -> convError "Int could not be exactly converted to Double" n
+
+-- HasIntsWithSample Double
+instance ConvertibleExactly (WithSample Double Int) Double where
+  safeConvertExactly (WithSample _ value) = safeConvertExactly value
 
 instance ConvertibleExactly Double Double where
   safeConvertExactly d = Right d
@@ -342,14 +361,6 @@ convertSecond ::
   (a -> a -> c) {-^ same-type operation -} ->
   (a -> b -> c) {-^ mixed-type operation -}
 convertSecond = convertSecondUsing (\ _ b -> convertExactly b)
-
--- instance
---   (ConvertibleExactly t1 t2, CanBeErrors es)
---   =>
---   ConvertibleExactly t1 (CollectErrors es t2)
---   where
---   safeConvertExactly = fmap pure . safeConvertExactly
---
 
 instance (HasIntegers t, Monoid es) => 
   -- HasIntegersWithSample (CollectErrors es t)

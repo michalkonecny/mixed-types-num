@@ -148,27 +148,27 @@ $(declForTypes
 
     instance (HasEqAsymmetric $t b) => HasEqAsymmetric $t (Complex b) where
       type EqCompareType $t (Complex b) = EqCompareType $t b
-      equalTo n (a2 :+ i2) = (n == a2) && (convertExactlyTargetSample n 0 == i2)
+      equalTo n (a2 :+ i2) = (n == a2) && (convertExactlyWithSample n 0 == i2)
 
     instance (HasEqAsymmetric a $t) => HasEqAsymmetric (Complex a) $t where
       type EqCompareType (Complex a) $t = EqCompareType a $t
-      equalTo (a1 :+ i1) n = (a1 == n) && (i1 == convertExactlyTargetSample n 0)
+      equalTo (a1 :+ i1) n = (a1 == n) && (i1 == convertExactlyWithSample n 0)
 
     instance (CanAddAsymmetric $t b) => CanAddAsymmetric $t (Complex b) where
       type AddType $t (Complex b) = Complex (AddType $t b)
-      add n (a2 :+ i2) = (n + a2) :+ (convertExactlyTargetSample n 0 + i2)
+      add n (a2 :+ i2) = (n + a2) :+ (convertExactlyWithSample n 0 + i2)
 
     instance (CanAddAsymmetric a $t) => CanAddAsymmetric (Complex a) $t where
       type AddType (Complex a) $t = Complex (AddType a $t)
-      add (a1 :+ i1) n = (a1 + n) :+ (i1 + (convertExactlyTargetSample n 0))
+      add (a1 :+ i1) n = (a1 + n) :+ (i1 + (convertExactlyWithSample n 0))
 
     instance (CanSub $t b) => CanSub $t (Complex b) where
       type SubType $t (Complex b) = Complex (SubType $t b)
-      sub n (a2 :+ i2) = (n - a2) :+ (convertExactlyTargetSample n 0 - i2)
+      sub n (a2 :+ i2) = (n - a2) :+ (convertExactlyWithSample n 0 - i2)
 
     instance (CanSub a $t) => CanSub (Complex a) $t where
       type SubType (Complex a) $t = Complex (SubType a $t)
-      sub (a1 :+ i1) n = (a1 - n) :+ (i1 - (convertExactlyTargetSample n 0))
+      sub (a1 :+ i1) n = (a1 - n) :+ (i1 - (convertExactlyWithSample n 0))
 
     instance
       (CanMulAsymmetric $t b) => CanMulAsymmetric $t (Complex b)

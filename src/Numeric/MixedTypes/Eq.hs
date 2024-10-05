@@ -385,19 +385,20 @@ class CanTestZero t where
   HSpec properties that each implementation of CanTestZero should satisfy.
  -}
 specCanTestZero ::
-  (CanTestZero t, ConvertibleExactly Integer t)
+  (CanTestZero t, ConvertibleExactlyWithSample Integer t, Arbitrary t, P.Show t)
   =>
   T t -> Spec
 specCanTestZero (T typeName :: T t) =
   describe (printf "CanTestZero %s" typeName) $ do
     it "converted non-zero Integer is not isCertainlyZero" $ do
-      property $ \ (x :: Integer) ->
-        x /= 0 ==> (not $ isCertainlyZero (convertExactly x :: t))
+      property $ \ (x :: Integer) (sampleT :: t) ->
+        x /= 0 ==> (not $ isCertainlyZero (convertExactlyWithSample sampleT x :: t))
     it "converted non-zero Integer is isCertainlyNonZero" $ do
-      property $ \ (x :: Integer) ->
-        x /= 0 ==> (isCertainlyNonZero (convertExactly x :: t))
+      property $ \ (x :: Integer) (sampleT :: t) ->
+        x /= 0 ==> (isCertainlyNonZero (convertExactlyWithSample sampleT x :: t))
     it "converted 0.0 is not isCertainlyNonZero" $ do
-      (isCertainlyNonZero (convertExactly 0 :: t)) `shouldBe` False
+      property $ \ (sampleT :: t) ->
+        (isCertainlyNonZero (convertExactlyWithSample sampleT 0 :: t)) `shouldBe` False
 
 instance CanTestZero Int
 instance CanTestZero Integer
@@ -434,7 +435,7 @@ class CanPickNonZero t where
   HSpec properties that each implementation of CanPickNonZero should satisfy.
  -}
 specCanPickNonZero ::
-  (CanPickNonZero t, CanTestZero t, ConvertibleExactly Integer t, Show t, Arbitrary t)
+  (CanPickNonZero t, CanTestZero t, ConvertibleExactlyWithSample Integer t, Show t, Arbitrary t)
   =>
   T t -> Spec
 specCanPickNonZero (T typeName :: T t) =
@@ -447,9 +448,11 @@ specCanPickNonZero (T typeName :: T t) =
           Just (v, _) -> isCertainlyNonZero v
           _ -> False)
     it "returns Nothing when all the elements are 0" $ do
-      case pickNonZero [(convertExactly i :: t, ()) | i <- [0,0,0]] of
-        Nothing -> True
-        _ -> False
+      property $ \ (sampleT :: t) ->
+        let z = convertExactlyWithSample sampleT 0 :: t in
+        case pickNonZero [(z, ()), (z, ()), (z, ())] of
+          Nothing -> True
+          _ -> False
 
 instance CanPickNonZero Int
 instance CanPickNonZero Integer
